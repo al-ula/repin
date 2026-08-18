@@ -1,0 +1,112 @@
+[
+  {
+    "id": "TEXT-RUST",
+    "label": "text",
+    "extension": ".rs",
+    "bytes": 13,
+    "digest": "blake3:2d1ebfa706ba230165250f744796a92accba5e1b6fa357983b65319da33f8e93",
+    "expected": "text",
+    "inhouse": "text",
+    "maintained": "unknown"
+  },
+  {
+    "id": "TEXT-NO-EXT",
+    "label": "text",
+    "extension": "",
+    "bytes": 23,
+    "digest": "blake3:7e154294ee52e839e521f9e5731a8b0444bcd61843c0a0845cee5a4afd7b7768",
+    "expected": "text",
+    "inhouse": "text",
+    "maintained": "unknown"
+  },
+  {
+    "id": "TEXT-MINIFIED",
+    "label": "text",
+    "extension": ".js",
+    "bytes": 18,
+    "digest": "blake3:add93436bdff9a6c969ecde4e5fdef02b9947aa105e5261baeee8891f14713c8",
+    "expected": "text",
+    "inhouse": "text",
+    "maintained": "unknown"
+  },
+  {
+    "id": "TEXT-GENERATED",
+    "label": "text",
+    "extension": ".rs",
+    "bytes": 35,
+    "digest": "blake3:913ed2c7df585c712786ad59f83eff9e80a64532983696ae5658d2a1a464d550",
+    "expected": "text",
+    "inhouse": "text",
+    "maintained": "unknown"
+  },
+  {
+    "id": "TEXT-NUL-LIKE-ESCAPE",
+    "label": "text",
+    "extension": ".txt",
+    "bytes": 18,
+    "digest": "blake3:0af47faf313a252afbf3dd82b145deb37a99b946ec6d1517e63bad28fc2a1813",
+    "expected": "text",
+    "inhouse": "text",
+    "maintained": "unknown"
+  },
+  {
+    "id": "BINARY-NUL",
+    "label": "binary",
+    "extension": ".rs",
+    "bytes": 5,
+    "digest": "blake3:6a243de139fad9c8e28af05a0af27f0a5a7732fe3735f0fc2dd4395a9d9bbda1",
+    "expected": "binary",
+    "inhouse": "binary",
+    "maintained": "unknown"
+  },
+  {
+    "id": "BINARY-ARCHIVE",
+    "label": "binary",
+    "extension": ".txt",
+    "bytes": 6,
+    "digest": "blake3:a91ff2d389640280f4ad60493cd30625379d7190bd7585dd178ebb7ac62cbfb0",
+    "expected": "binary",
+    "inhouse": "binary",
+    "maintained": "application/zip"
+  },
+  {
+    "id": "BINARY-UTF16-NOBOM",
+    "label": "binary",
+    "extension": ".txt",
+    "bytes": 8,
+    "digest": "blake3:cde44e94c9764e247343b017aae5a2d369c30682541ecfde33fa3edbae4f8b97",
+    "expected": "binary",
+    "inhouse": "binary",
+    "maintained": "unknown"
+  },
+  {
+    "id": "BINARY-UTF32-NOBOM",
+    "label": "binary",
+    "extension": ".txt",
+    "bytes": 8,
+    "digest": "blake3:e6819334759cbc549e8c4be70075671de27ed2579d9ea2488f6ee6e7e8d1da8a",
+    "expected": "binary",
+    "inhouse": "binary",
+    "maintained": "unknown"
+  },
+  {
+    "id": "BINARY-INVALID",
+    "label": "binary",
+    "extension": ".md",
+    "bytes": 3,
+    "digest": "blake3:2739ddca802c7403dbcd80c1d096e2a82d5843703eeaef72e048dc034f1ac55b",
+    "expected": "binary",
+    "inhouse": "binary",
+    "maintained": "unknown"
+  },
+  {
+    "id": "BINARY-MISLEADING-EXT",
+    "label": "binary",
+    "extension": ".rs",
+    "bytes": 6,
+    "digest": "blake3:1be59978795c7f49e8652c10ec03e8004e6750a21f26c915534e55dab0d1d3bc",
+    "expected": "binary",
+    "inhouse": "binary",
+    "maintained": "image/png"
+  }
+]

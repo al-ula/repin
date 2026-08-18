@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repin://experiments/f4-hybrid-diagnostic-v1",
+  "title": "Repin F4 hybrid-benefit diagnostic probe",
+  "type": "object",
+  "required": [
+    "schema",
+    "experiment",
+    "run_id",
+    "condition",
+    "client_mode",
+    "order_index",
+    "model_order",
+    "process_affinity",
+    "available_workers",
+    "server_queue_capacity",
+    "warmups",
+    "samples",
+    "service_requests",
+    "remote_requests",
+    "models"
+  ],
+  "properties": {
+    "schema": { "const": "f4-hybrid-diagnostic-v1" },
+    "experiment": { "const": "F4" },
+    "run_id": { "type": "string" },
+    "condition": { "enum": ["pinned", "unpinned"] },
+    "client_mode": { "enum": ["native", "matched"] },
+    "order_index": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "model_order": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "enum": ["sync", "hybrid", "async"] }
+    },
+    "process_affinity": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "available_workers": { "const": 4 },
+    "server_queue_capacity": { "const": 8 },
+    "warmups": { "const": 2 },
+    "samples": { "const": 10 },
+    "service_requests": { "const": 64 },
+    "remote_requests": { "const": 32 },
+    "binary_size_bytes": { "type": "integer", "minimum": 1 },
+    "clean_build_time_ms": { "type": ["number", "null"], "minimum": 0 },
+    "models": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "model",
+          "order_index",
+          "configured_thread_count",
+          "runtime_thread_count",
+          "server_worker_count",
+          "client_concurrency",
+          "workloads"
+        ],
+        "properties": {
+          "model": { "enum": ["sync", "hybrid", "async"] },
+          "order_index": { "type": "integer", "minimum": 0, "maximum": 2 },
+          "configured_thread_count": { "type": "integer", "minimum": 1 },
+          "runtime_thread_count": { "type": "integer", "minimum": 0 },
+          "server_worker_count": { "const": 4 },
+          "client_concurrency": { "type": "integer", "minimum": 1 },
+          "workloads": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "workload",
+                "requests",
+                "delay_us",
+                "warmups",
+                "samples",
+                "rps_samples",
+                "p50",
+                "p95",
+                "max"
+              ],
+              "properties": {
+                "workload": { "enum": ["service", "remote"] },
+                "requests": { "enum": [32, 64] },
+                "delay_us": { "type": "integer", "minimum": 1 },
+                "warmups": { "const": 2 },
+                "samples": { "type": "array", "minItems": 10, "maxItems": 10 },
+                "rps_samples": {
+                  "type": "array",
+                  "minItems": 10,
+                  "maxItems": 10,
+                  "items": { "type": "number", "minimum": 0 }
+                },
+                "p50": { "type": "number", "minimum": 0 },
+                "p95": { "type": "number", "minimum": 0 },
+                "max": { "type": "number", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

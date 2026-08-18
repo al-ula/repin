@@ -1,0 +1,192 @@
+{
+  "candidate": "gix-0.86.0 vs bounded git subprocess",
+  "cases": [
+    {
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "new.txt"
+          },
+          {
+            "kind": "modified",
+            "path": "tracked.txt"
+          }
+        ],
+        "head": "04891aee39d21d0ba5dc6139d92ea6fe38b7ac32",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "new.txt"
+          },
+          {
+            "kind": "modified",
+            "path": "tracked.txt"
+          }
+        ]
+      },
+      "expected": "same_normalized_changed_set",
+      "id": "F015-DIRTY",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "ignored": "ignored.log",
+        "reported_paths": [
+          {
+            "kind": "added",
+            "path": "new.txt"
+          },
+          {
+            "kind": "modified",
+            "path": "tracked.txt"
+          }
+        ]
+      },
+      "expected": "ignored_omitted",
+      "id": "F015-IGNORED",
+      "observed": "ignored_omitted",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ],
+        "head": "04891aee39d21d0ba5dc6139d92ea6fe38b7ac32",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ]
+      },
+      "expected": "same_normalized_changed_set",
+      "id": "F015-BRANCH-SWITCH",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "branch": "",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "linked.txt"
+          }
+        ],
+        "head": "04891aee39d21d0ba5dc6139d92ea6fe38b7ac32",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "linked.txt"
+          }
+        ]
+      },
+      "expected": "same_normalized_changed_set",
+      "id": "F015-WORKTREE",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "shallow.txt"
+          }
+        ],
+        "head": "04891aee39d21d0ba5dc6139d92ea6fe38b7ac32",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "shallow.txt"
+          }
+        ]
+      },
+      "expected": "same_normalized_changed_set",
+      "id": "F015-SHALLOW",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ],
+        "head": "85398e365beb6ba8f8aaa64c33a11632a5aa6190",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ]
+      },
+      "expected": "same_normalized_changed_set",
+      "id": "F015-SUBMODULE",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "branch": "main",
+        "gix": [],
+        "head": "85398e365beb6ba8f8aaa64c33a11632a5aa6190",
+        "stdout_truncated": false,
+        "subprocess": []
+      },
+      "expected": "same_normalized_changed_set",
+      "id": "F015-REWRITTEN-HISTORY",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "fallback": "full_scan"
+      },
+      "expected": "observable_fallback",
+      "id": "F015-MISSING-GIT",
+      "observed": "observable_fallback",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "shell": false,
+        "timeout_ms": 25
+      },
+      "expected": "kill_and_reap",
+      "id": "F015-CANCELLATION",
+      "observed": "kill_and_reap",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "env_clear": true,
+        "explicit_executable": true,
+        "hooks_and_aliases": "disabled",
+        "output_limit": 65536
+      },
+      "expected": "sanitized_bounded_no_shell",
+      "id": "F015-SUBPROCESS-POLICY",
+      "observed": "sanitized_bounded_no_shell",
+      "outcome": "pass"
+    }
+  ],
+  "normalized_shape": "branch,head,changed_paths,change_kind,fallback_reason"
+}

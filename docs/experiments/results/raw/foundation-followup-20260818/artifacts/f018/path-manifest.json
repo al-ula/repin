@@ -1,0 +1,20 @@
+{
+  "outside_root": "/tmp/.tmp8KVklr/outside",
+  "selected": [
+    ".gitignore",
+    "binary.rs",
+    "escape.txt",
+    "src/main.rs"
+  ],
+  "stable_ids": [
+    "P-TRAVERSAL",
+    "P-ABSOLUTE",
+    "P-ESCAPE",
+    "P-CYCLE",
+    "P-SWAP",
+    "P-DEEP",
+    "P-ENCODING",
+    "P-CASE",
+    "P-MUTATE"
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "experiment": "F-009",
+  "run_id": "foundation-followup-20260818",
+  "status": "complete",
+  "overall_outcome": "pass",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F009-INHOUSE-CONFUSION",
+      "expected": "zero_labeled_errors",
+      "observed": "zero_labeled_errors",
+      "outcome": "pass",
+      "details": {
+        "metrics": {
+          "evaluated": 11,
+          "false_negative": 0,
+          "false_positive": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "true_negative": 5,
+          "true_positive": 6,
+          "unknown": 0
+        },
+        "rows": 11
+      }
+    },
+    {
+      "id": "F009-MAINTAINED-COMPARISON",
+      "expected": "recorded",
+      "observed": "recorded",
+      "outcome": "pass",
+      "details": {
+        "candidate": "infer-0.19.0",
+        "metrics": {
+          "evaluated": 2,
+          "false_negative": 0,
+          "false_positive": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "true_negative": 0,
+          "true_positive": 2,
+          "unknown": 9
+        }
+      }
+    },
+    {
+      "id": "F009-POLICY",
+      "expected": "bounded_fail_closed_diagnostic",
+      "observed": "bounded_fail_closed_diagnostic",
+      "outcome": "pass",
+      "details": {
+        "explicit_exclusions_win": true,
+        "prefix_bytes": 8192,
+        "provisional_strategy": "inhouse_nul_control_utf8_check",
+        "unknown_maintained_result": "binary_or_skip_diagnostic"
+      }
+    }
+  ],
+  "measurements": [],
+  "notes": [
+    "The in-house policy is a provisional evidence recommendation, not a production default."
+  ],
+  "artifacts": [
+    "artifacts/f018/sniff-corpus.json",
+    "artifacts/f009/sniff-decision.json"
+  ]
+}

@@ -1,0 +1,418 @@
+{
+  "artifacts": [
+    "manifest.json",
+    "report.json",
+    "commands/",
+    "artifacts/"
+  ],
+  "case_ids": [
+    "Q012-TOOL-CARGO-DENY",
+    "Q012-TOOL-CARGO-AUDIT",
+    "Q012-TOOL-CARGO-SBOM",
+    "Q012-TOOL-CARGO-AUDITABLE",
+    "Q006-DENY-BASELINE",
+    "Q006-DENY-GPL",
+    "Q006-DENY-GIT-SOURCE",
+    "Q007-EXCEPTION-FILE",
+    "Q007-AUDIT-BASELINE",
+    "Q007-AUDIT-TIME-ADVISORY",
+    "Q008-SBOM-SPIKE-SPDX",
+    "Q008-SBOM-SPIKE-CYCLONEDX",
+    "Q008-SBOM-USEARCH-SPDX",
+    "Q008-AUDITABLE-SPIKE-BUILD",
+    "Q008-AUDITABLE-SPIKE-BUILD-INSPECT",
+    "Q008-AUDITABLE-USEARCH-BUILD",
+    "Q008-AUDITABLE-USEARCH-BUILD-INSPECT"
+  ],
+  "cases": [
+    {
+      "details": {
+        "version_command": {
+          "available": true,
+          "command": [
+            "cargo-deny",
+            "--version"
+          ],
+          "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike",
+          "exit_code": 0,
+          "label": "version-cargo-deny",
+          "stderr_path": "commands/version-cargo-deny.stderr",
+          "stdout_path": "commands/version-cargo-deny.stdout"
+        }
+      },
+      "expected": "0.20.2",
+      "id": "Q012-TOOL-CARGO-DENY",
+      "observed": "0.20.2",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "version_command": {
+          "available": true,
+          "command": [
+            "cargo-audit",
+            "--version"
+          ],
+          "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike",
+          "exit_code": 0,
+          "label": "version-cargo-audit",
+          "stderr_path": "commands/version-cargo-audit.stderr",
+          "stdout_path": "commands/version-cargo-audit.stdout"
+        }
+      },
+      "expected": "0.22.2",
+      "id": "Q012-TOOL-CARGO-AUDIT",
+      "observed": "0.22.2",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "version_command": {
+          "available": true,
+          "command": [
+            "cargo-sbom",
+            "--version"
+          ],
+          "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike",
+          "exit_code": 0,
+          "label": "version-cargo-sbom",
+          "stderr_path": "commands/version-cargo-sbom.stderr",
+          "stdout_path": "commands/version-cargo-sbom.stdout"
+        }
+      },
+      "expected": "0.10.0",
+      "id": "Q012-TOOL-CARGO-SBOM",
+      "observed": "0.10.0",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "version_command": {
+          "available": true,
+          "command": [
+            "cargo",
+            "install",
+            "--list",
+            "--root",
+            "/tmp/repin-q-tools"
+          ],
+          "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike",
+          "exit_code": 0,
+          "label": "version-cargo-auditable",
+          "stderr_path": "commands/version-cargo-auditable.stderr",
+          "stdout_path": "commands/version-cargo-auditable.stdout"
+        }
+      },
+      "expected": "0.7.5",
+      "id": "Q012-TOOL-CARGO-AUDITABLE",
+      "observed": "0.7.5",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "available": true,
+        "command": [
+          "cargo",
+          "deny",
+          "--config",
+          "/home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml",
+          "check",
+          "licenses",
+          "bans",
+          "sources"
+        ],
+        "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike",
+        "exit_code": 0,
+        "label": "deny-baseline",
+        "stderr_path": "commands/deny-baseline.stderr",
+        "stdout_path": "commands/deny-baseline.stdout"
+      },
+      "expected": "pass",
+      "id": "Q006-DENY-BASELINE",
+      "observed": "pass",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "available": true,
+        "command": [
+          "cargo",
+          "deny",
+          "--config",
+          "/home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml",
+          "check",
+          "licenses",
+          "bans",
+          "sources"
+        ],
+        "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q012-gpl",
+        "exit_code": 6,
+        "label": "deny-gpl",
+        "stderr_path": "commands/deny-gpl.stderr",
+        "stdout_path": "commands/deny-gpl.stdout"
+      },
+      "expected": "reject",
+      "id": "Q006-DENY-GPL",
+      "observed": "reject",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "available": true,
+        "command": [
+          "cargo",
+          "deny",
+          "--config",
+          "/home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml",
+          "check",
+          "licenses",
+          "bans",
+          "sources"
+        ],
+        "cwd": "/home/seer/Projects/repin/docs/experiments/results/raw/q-release-tools-20260818/generated-fixtures/q012-git-source/project",
+        "exit_code": 8,
+        "label": "deny-git-source",
+        "stderr_path": "commands/deny-git-source.stderr",
+        "stdout_path": "commands/deny-git-source.stdout"
+      },
+      "expected": "reject",
+      "id": "Q006-DENY-GIT-SOURCE",
+      "observed": "reject",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "count": 0
+      },
+      "expected": "valid",
+      "id": "Q007-EXCEPTION-FILE",
+      "observed": "valid",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "command": {
+          "available": true,
+          "command": [
+            "cargo",
+            "audit",
+            "--json",
+            "--file",
+            "/home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock"
+          ],
+          "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike",
+          "exit_code": 0,
+          "label": "audit-baseline",
+          "stderr_path": "commands/audit-baseline.stderr",
+          "stdout_path": "commands/audit-baseline.stdout"
+        },
+        "findings": [],
+        "policy": {
+          "blocking": false,
+          "decisions": [],
+          "exception_errors": [],
+          "outcome": "pass",
+          "warnings": false
+        }
+      },
+      "expected": "clean",
+      "id": "Q007-AUDIT-BASELINE",
+      "observed": "clean",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "command": {
+          "available": true,
+          "command": [
+            "cargo",
+            "audit",
+            "--json",
+            "--file",
+            "/home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q012-time/Cargo.lock"
+          ],
+          "cwd": "/home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q012-time",
+          "exit_code": 1,
+          "label": "audit-time-advisory",
+          "stderr_path": "commands/audit-time-advisory.stderr",
+          "stdout_path": "commands/audit-time-advisory.stdout"
+        },
+        "findings": [
+          {
+            "id": "RUSTSEC-2020-0071",
+            "kind": "vulnerability",
+            "package": "time",
+            "severity": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "title": "Potential segfault in the time crate",
+            "version": "0.1.45"
+          }
+        ],
+        "policy": {
+          "blocking": true,
+          "decisions": [
+            {
+              "decision": "block",
+              "exception": null,
+              "finding": {
+                "id": "RUSTSEC-2020-0071",
+                "kind": "vulnerability",
+                "package": "time",
+                "severity": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "title": "Potential segfault in the time crate",
+                "version": "0.1.45"
+              }
+            }
+          ],
+          "exception_errors": [],
+          "outcome": "fail",
+          "warnings": false
+        }
+      },
+      "expected": "advisory_detected",
+      "id": "Q007-AUDIT-TIME-ADVISORY",
+      "observed": "advisory_detected",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "artifact": "artifacts/sbom-spike-spdx.json",
+        "expected_metadata_package_count": 232,
+        "format": "spdx_json_2_3",
+        "missing_metadata_packages": [],
+        "missing_packages": [],
+        "package_count": 215,
+        "package_record_count": 232,
+        "package_set_matches_metadata": true,
+        "relationship_count": 743,
+        "required_field_errors": {},
+        "required_packages": [
+          "tree-sitter",
+          "tree-sitter-javascript",
+          "tree-sitter-md",
+          "tree-sitter-rust",
+          "tree-sitter-typescript"
+        ],
+        "schema_fields_ok": true,
+        "unexpected_metadata_packages": []
+      },
+      "expected": "valid_sbom",
+      "id": "Q008-SBOM-SPIKE-SPDX",
+      "observed": "valid_sbom",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "artifact": "artifacts/sbom-spike-cyclonedx.json",
+        "expected_metadata_package_count": 231,
+        "format": "cyclone_dx_json_1_6",
+        "missing_metadata_packages": [],
+        "missing_packages": [],
+        "package_count": 214,
+        "package_record_count": 231,
+        "package_set_matches_metadata": true,
+        "relationship_count": 157,
+        "required_field_errors": {},
+        "required_packages": [
+          "tree-sitter",
+          "tree-sitter-javascript",
+          "tree-sitter-md",
+          "tree-sitter-rust",
+          "tree-sitter-typescript"
+        ],
+        "schema_fields_ok": true,
+        "unexpected_metadata_packages": []
+      },
+      "expected": "valid_sbom",
+      "id": "Q008-SBOM-SPIKE-CYCLONEDX",
+      "observed": "valid_sbom",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "artifact": "artifacts/sbom-usearch-spdx.json",
+        "expected_metadata_package_count": 13,
+        "format": "spdx_json_2_3",
+        "missing_metadata_packages": [],
+        "missing_packages": [],
+        "package_count": 13,
+        "package_record_count": 13,
+        "package_set_matches_metadata": true,
+        "relationship_count": 18,
+        "required_field_errors": {},
+        "required_packages": [
+          "cxx",
+          "usearch"
+        ],
+        "schema_fields_ok": true,
+        "unexpected_metadata_packages": []
+      },
+      "expected": "valid_sbom",
+      "id": "Q008-SBOM-USEARCH-SPDX",
+      "observed": "valid_sbom",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "sha256": "da77973b3738c6fa2a577d45df248c147f2310a9ca9f4b5cbe48b00e88585001"
+      },
+      "expected": "auditable_binary",
+      "id": "Q008-AUDITABLE-SPIKE-BUILD",
+      "observed": "auditable_binary",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "binary": "/home/seer/Projects/repin/docs/experiments/foundation_spike/target/release/repin-foundation-spike",
+        "dependency_report_nonempty": true,
+        "exit_code": 0,
+        "report": "artifacts/auditable-spike-build-audit.txt",
+        "sha256": "da77973b3738c6fa2a577d45df248c147f2310a9ca9f4b5cbe48b00e88585001"
+      },
+      "expected": "inspectable",
+      "id": "Q008-AUDITABLE-SPIKE-BUILD-INSPECT",
+      "observed": "inspectable",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "sha256": "ddba4527646e64cf90a472d1fea233c5be978d63604c7dfe1cc7c445542542f0"
+      },
+      "expected": "auditable_binary",
+      "id": "Q008-AUDITABLE-USEARCH-BUILD",
+      "observed": "auditable_binary",
+      "outcome": "pass"
+    },
+    {
+      "details": {
+        "binary": "/home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q008-usearch/target/release/q008-usearch-inventory",
+        "dependency_report_nonempty": true,
+        "exit_code": 0,
+        "report": "artifacts/auditable-usearch-build-audit.txt",
+        "sha256": "ddba4527646e64cf90a472d1fea233c5be978d63604c7dfe1cc7c445542542f0"
+      },
+      "expected": "inspectable",
+      "id": "Q008-AUDITABLE-USEARCH-BUILD-INSPECT",
+      "observed": "inspectable",
+      "outcome": "pass"
+    }
+  ],
+  "decision_status": "deferred",
+  "experiment": "F7-Q-follow-up",
+  "hard_blocker": false,
+  "measurements": [],
+  "notes": [
+    "Q-003/Q-006/Q-007/Q-008/Q-012 follow-up evidence; no production dependency is accepted.",
+    "SPDX JSON 2.3 is the provisional canonical SBOM output; CycloneDX JSON 1.6 is a compatibility comparison.",
+    "USearch is inventoried only in an isolated Q-008 fixture; S3 remains deferred.",
+    "All requested tools and the advisory database were available on this host; future unavailable cases remain explicit failures rather than silent passes."
+  ],
+  "overall_outcome": "inconclusive",
+  "run_id": "q-release-tools-20260818",
+  "status": "complete",
+  "tool_pins": {
+    "cargo-audit": "0.22.2",
+    "cargo-auditable": "0.7.5",
+    "cargo-deny": "0.20.2",
+    "cargo-sbom": "0.10.0"
+  }
+}

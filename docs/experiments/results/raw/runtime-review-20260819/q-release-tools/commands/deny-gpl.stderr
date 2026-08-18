@@ -1,0 +1,65 @@
+error[rejected]: failed to satisfy license requirements
+  ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q012-gpl/bad-gpl/Cargo.toml:5:12
+  │
+5 │ license = "GPL-3.0-only"
+  │            ━━━━━━━━━━━━
+  │            │
+  │            rejected: license is not explicitly allowed
+  │
+  ├ GPL-3.0-only - GNU General Public License v3.0 only:
+  ├   - OSI approved
+  ├   - FSF Free/Libre
+  ├   - Copyleft
+  ├ q012-bad-gpl v0.1.0
+    └── q012-gpl-root v0.1.0
+
+error[wildcard]: found 1 wildcard dependency for crate 'q012-gpl-root'
+  ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q012-gpl/Cargo.toml:9:16
+  │
+9 │ q012-bad-gpl = { path = "bad-gpl" }
+  │                ━━━━━━━━━━━━━━━━━━━━ wildcard dependency
+  │
+  ├ q012-gpl-root v0.1.0
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:15:6
+   │
+15 │     "Apache-2.0",
+   │      ━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:16:6
+   │
+16 │     "Apache-2.0 WITH LLVM-exception",
+   │      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:17:6
+   │
+17 │     "BSD-2-Clause",
+   │      ━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:18:6
+   │
+18 │     "CC0-1.0",
+   │      ━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:19:6
+   │
+19 │     "MIT-0",
+   │      ━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:21:6
+   │
+21 │     "Unicode-3.0",
+   │      ━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/deny.toml:20:6
+   │
+20 │     "Unlicense",
+   │      ━━━━━━━━━ unmatched license allowance
+

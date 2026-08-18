@@ -1,0 +1,140 @@
+# Planning Task Backlog
+
+Byte-sized tasks derived from the current documentation review. Each task should produce one reviewable artifact or decision input; completing a task does not advance the lifecycle stage by itself.
+
+```text
+Status: open
+Current lifecycle stage: planning
+Task size target: one focused change or one reproducible experiment
+```
+
+### Rust-foundation preparation checkpoint — 2026-08-18
+
+The first Rust-foundation spike is now prepared: candidate pins, platform
+subsets, deterministic capture/range rules, adversarial path cases,
+prepare/revalidate semantics, cancellation targets, comparison workloads, and
+quality-tool inputs are linked below. The remaining F-series items are
+execution work (prototypes or comparative runs), and F-016 intentionally waits
+for the watching milestone. This checkpoint does not accept a dependency or
+advance the repository out of the planning lifecycle.
+
+### First Linux PoC foundation run recorded — 2026-08-18
+
+The F1, F2, F3, F4, F6, and F7 Linux PoC runner outputs and raw JSON evidence
+are now retained in the result ledger. The batch is an evidence-capture pass: its
+provisional recommendations are inputs to later plan finalization, not
+candidate acceptance, rejection, or implementation defaults. No hard blocker
+was observed in F4. Its overall result remains inconclusive because platform
+and lower-tier expansion is intentionally deferred. Only a demonstrated
+normative-contract failure that prevents dependent work is a hard blocker;
+incomplete coverage and unavailable tools remain follow-up tasks.
+
+### Open Rust-foundation follow-up evidence pass — 2026-08-18
+
+The shared follow-up harness ran the open tasks in dependency order:
+`F-017 -> F-018 -> F-009 -> F-019 -> F-014 -> F-015 -> F-020`. The final
+retained run is [foundation-followup-20260818-v7](experiments/results/raw/foundation-followup-20260818-v7/batch.json),
+with a repeat run used to verify byte-identical normalized artifacts. All seven
+reports are complete and pass their required Linux x86_64/glibc cases. The
+reports remain provisional evidence and do not select dependencies or defaults.
+
+F-016 remains intentionally open: the follow-up runner does not pin or execute
+`notify`; watching planning must begin at I3 first.
+
+## P0 — Resolve before experimentation
+
+- [x] **P-001 Define the current OS support scope.** Linux x86_64/glibc is the sole implementation and qualification target until the fully featured PoC is complete; macOS, Windows, musl/static, and additional architectures are post-PoC work. Recorded in [Technology Candidates](technology-candidates.md).
+- [x] **P-014 Define the current platform profile.** The Linux x86_64/glibc PoC runs the complete matrix and release-artifact checks. Non-Linux and lower-tier platform work starts only after the PoC is fully featured and its implementation profile is finalized. Recorded in [Technology Candidates](technology-candidates.md).
+- [x] **P-002 Define the experimental Rust version policy.** Use current stable with Rust 2024 edition, commit lockfiles, batch routine updates monthly, and handle urgent security/correctness updates immediately. Set the evidence-based MSRV during plan finalization. Recorded in [Technology Candidates](technology-candidates.md).
+- [x] **P-003 Choose first extraction fixture families.** Use Rust, Markdown, TypeScript, and JavaScript with curated synthetic fixtures plus pinned public-repository snapshots. Recorded in [Initial Fixture and Corpus Manifest](experiments/fixtures.md).
+- [x] **P-004 Define corpus size bands.** Defined Micro through Large normal bands up to 10,000 selected files/250 MiB plus independently bounded pathological cases in [Initial Fixture and Corpus Manifest](experiments/fixtures.md); generated/vendor/dependency content is excluded normally.
+- [x] **P-005 Define experiment result template.** Added [Experiment Result Template](experiments/template.md) with traceability, pinned environment, reproducible method, raw evidence, failure/recovery, pass-condition, limitation, and provisional recommendation sections; linked from both experiment plans.
+- [x] **P-006 Tag persisted hashes.** Defined neutral `Hash { algorithm, digest }`, equality, persistence/public requirements, and boundary text rendering in [Results and Evidence](results.md); applied it to incremental deduplication.
+- [x] **P-007 Specify configuration precedence.** Defined defaults < user < trusted project < explicit CLI/API overrides, environment references only, and immutable safety floors in [Host Integration](host-integration.md).
+- [x] **P-008 Specify lexical lag in result coverage.** Known-lagging lexical state is bypassed in favor of current direct scan plus graph channels; warnings are mandatory and coverage is partial only when fallback coverage is incomplete. Recorded across results, retrieval, storage, API, and conformance docs.
+- [x] **P-009 Define rebuild request semantics.** `graph` and `all` reconstruct authoritative plus enabled derived state; `lexical` and `vector` rebuild independently without changing graph revision. Added cancellation/commit behavior in [Public API](api.md), with progress events now defined by C-008.
+- [x] **P-010 Resolve API call-option shape.** Applied uniform trailing `call?: CallOptions` to potentially blocking operations and defined in-process/service mappings in [Public API](api.md).
+- [x] **P-011 Define store record ownership.** Defined owner-scoped producer claims, referencing-file ownership for resolved/unresolved facts, independent inferred claims, and deterministic canonical materialization in [Graph Model](graph-model.md) and [Storage](storage.md).
+- [x] **P-012 Define durable change-history storage.** Store one immutable normalized `UpdateSummary` atomically per graph revision, compact whole revisions behind a persisted floor, and return structured `TooOld` on gaps/unknown tokens. Numeric count/age defaults remain an experiment output.
+- [x] **P-013 Define stale-plan retry policy.** Allow at most two automatic reprepare attempts in the original call budget; then commit nothing stale, retain/coalesce reconciliation work, and return retryable `UPDATE_CONFLICT`. Recorded in incremental, results, conformance, and storage experiment docs.
+
+## P1 — Storage experiment preparation
+
+- [x] **S-001 Pin redb candidate version.** Pinned the S1 spike to unyanked `redb` 4.1.0 (SHA-256 `8e925444704b5f17d32bf42f5b6e2df050bceebc3dcd6e71cc73dafe8092e839`), with `MIT OR Apache-2.0`, declared Rust 1.89, Rust 2024, and no initial optional features; recorded in [Technology Candidates — S-001 experiment pin](technology-candidates.md#s-001-experiment-pin) and [Storage Adapter Experiments — S1 candidate pin](experiments/storage.md#s1-candidate-pin).
+- [x] **S-002 Draft experimental redb key encoding.** Added versioned length-delimited key rules and S1 tables for owner claims, canonical nodes/edges, name/file/forward/reverse/unresolved indexes, files, revisions/history, index state, pending work, and version records in [Storage Adapter Experiments — S1 experimental key encoding](experiments/storage.md#s1-experimental-key-encoding-s-002).
+- [x] **S-003 Generate high-fan-in graph fixture.** Specified the seeded, portable `G-FANIN` generator with per-hub expected in-degree, skew/unresolved parameters, multi-owner claims, oversized-batch fan-in, and post-removal/post-demotion oracles in [Fixtures — G-FANIN](experiments/fixtures.md#generator-g-fanin-high-fan-in-s-003).
+- [x] **S-004 Generate file-replacement fixture.** Specified the seeded `G-REPLACE` generator parameterizing owned nodes, edges, unresolved references, cross-file targets, multi-owner shared facts, and an edit sequence with exact expected post-step state in [Fixtures — G-REPLACE](experiments/fixtures.md#generator-g-replace-file-replacement-s-004).
+- [x] **S-005 Define crash injection boundaries for S1.** Set the durability floor at crash consistency with a permitted commit tail loss, made a successful commit return the acknowledgement, required both process-termination and file-fault injection, and named `(point, fault)` pairs `P1`–`P14` with expected durable state, the `P13` resumable-migration exception, and recovery assertions in [Storage Adapter Experiments — S1 durability and crash injection](experiments/storage.md#s1-durability-and-crash-injection-s-005); reflected in [Storage — required capabilities](storage.md#required-capabilities).
+- [x] **S-006 Evaluate `fs4`/platform writer locks.** Pinned `fs4` 1.1.0 (SHA-256 `7e72ed92b67c146290f88e9c89d60ca163ea417a446f61ffd7b72df3e7f1dfd5`, `MIT OR Apache-2.0`, Rust 1.75.0, `sync` feature) in [Technology Candidates — S-006 writer-lock candidate pin](technology-candidates.md#s-006-writer-lock-candidate-pin) and specified 11 cases covering contention, crash release, stale metadata, PID-reuse irrelevance, lock-file deletion, observer/direct-only fallback, same-process double open, unsupported filesystems, per-platform behavior, and Tantivy `fs4` coexistence in [Storage Adapter Experiments — S1 project writer-lock evaluation](experiments/storage.md#s1-project-writer-lock-evaluation-s-006).
+- [x] **S-007 Pin Tantivy candidate version.** Pinned S2 to unyanked `tantivy` 0.26.1 (SHA-256 `edde6a10743fff00a4e1a8c9ef020bf5f3cbad301b7d2d39f2b07f123c4eac07`, `MIT`, Rust 1.86, edition 2021, `mmap`-only) with stemming, stop words, and compression deliberately disabled, and recorded the MIT-versus-redb license difference and the mmap/fault-injection interaction in [Technology Candidates — S-007 experiment pin](technology-candidates.md#s-007-experiment-pin) and [Storage Adapter Experiments — S2 candidate pin](experiments/storage.md#s2-candidate-pin).
+- [x] **S-008 Draft Tantivy document schema.** Defined file/symbol document kinds, exact-term `docKey` removal, all required filter fields, the dual exact-plus-`code_split` name/body indexing decision, `bodyOffsets` region mapping with dual index-derived and re-read verification for `C-005`, revision/content-hash staleness fields, and `s2SchemaVersion` in [Storage Adapter Experiments — S2 experimental document schema](experiments/storage.md#s2-experimental-document-schema-s-008).
+- [x] **S-009 Build lexical evidence fixture.** Specified 12 generated families (`L-ASCII`, `L-UNICODE`, `L-CRLF`, `L-CASE`, `L-PHRASE`, `L-PREFIX`, `L-REGEX`, `L-OVERLAP`, `L-LONG`, `L-DUP`, `L-STALE`, `L-DELETE`) with exact expected keys, byte and character ranges, and required negative cases in [Storage Adapter Experiments — S2 lexical evidence fixture](experiments/storage.md#s2-lexical-evidence-fixture-s-009).
+- [x] **S-010 Define lexical repair alternatives.** Compared `R1` pending-work journal, `R2` revision-diff reconstruction, and `R3` full rebuild with shared invariants, composition rules, the `TooOld` fallback path, and the measured rebuild-versus-repair crossover in [Storage Adapter Experiments — S2 lexical repair alternatives](experiments/storage.md#s2-lexical-repair-alternatives-s-010).
+- [x] **S-011 Write S4 failure oracle.** Defined points `T1`–`T9` with exact expected graph revision, per-index acknowledged revisions, pending work, and query behavior, plus three always-asserted invariants and required recording of the observed quadruple, in [Storage Adapter Experiments — S4 failure oracle](experiments/storage.md#s4-failure-oracle-s-011).
+- [x] **S-012 Decide whether S3 is deferred.** S3 is deferred: vector search serves only optional semantic retrieval, so Stage 2 exit is evaluated without it. Reopen trigger, non-blocking status, and the prohibition on treating any vector candidate as accepted are recorded in [Technology Candidates — S-012 USearch deferral](technology-candidates.md#s-012-usearch-deferral); S4 now runs with the vector adapter absent.
+- [x] **S-013 Shortlist USearch alternatives.** Recorded USearch, a pure-Rust HNSW crate, and exact brute-force search as candidates evaluated against the identical `Vector` contract, with per-candidate risks and a rule that acceptance requires comparison rather than default, in [Technology Candidates — S-013 vector candidate shortlist](technology-candidates.md#s-013-vector-candidate-shortlist).
+
+## P1 — Rust foundation experiment preparation
+
+- [x] **F-001 Pin tree-sitter core and Rust/Markdown/TypeScript/JavaScript grammar candidates.** Added the first-spike core/grammar/query pin set, split-Markdown decision, and native-build requirements in [Rust Foundation Experiments — candidate pins](experiments/rust-foundation.md#candidate-pins-for-the-first-foundation-spike); acceptance remains an experiment result.
+- [x] **F-002 Write deterministic capture ordering rule.** Added the versioned capture sort tuple and pre-dedup diagnostic requirement in [Rust Foundation Experiments — F1 preparation](experiments/rust-foundation.md#f1-preparation-capture-order-and-range-oracle).
+- [x] **F-003 Build range fixture matrix.** Added the reviewed ASCII/Unicode/combining/tab/CRLF/invalid-UTF-8/long-line matrix and canonical invalid-sequence mapping in [Rust Foundation Experiments — F1 preparation](experiments/rust-foundation.md#f1-preparation-capture-order-and-range-oracle).
+- [x] **F-004 Prototype byte-to-character line index.** Compared a full per-byte map, 64-byte scalar checkpoints, and bounded line scans for ASCII, UTF-8, and invalid-byte fixtures; recorded correctness and construction/lookup/memory trade-offs in [Experiment Result: F-004](experiments/results/f004-line-index.md). Shape B remains a provisional follow-up candidate; no production representation was selected.
+- [x] **F-005 Define parser timeout strategy.** Defined bounded parser safe points, isolated-worker fallback measurement, and skip semantics in [Rust Foundation Experiments — F4 preparation](experiments/rust-foundation.md#f4-preparation-proposed-safe-point-budgets-and-workloads).
+- [x] **F-006 Pin `cap-std`, `ignore`, and `globset` candidates.** Added exact first-spike pins plus platform and selection-precedence checks in [Rust Foundation Experiments — candidate pins](experiments/rust-foundation.md#candidate-pins-for-the-first-foundation-spike).
+- [x] **F-007 Build path adversarial fixture.** Added the stable-ID adversarial path manifest and expected outcomes in [Rust Foundation Experiments — F2 preparation](experiments/rust-foundation.md#f2-preparation-adversarial-path-manifest-and-open-protocol).
+- [x] **F-008 Prototype root-capability opens.** Compared canonicalize-then-open with `cap-std`/`cap-fs-ext` root-relative opens across traversal, absolute, escape, component-swap, and final-symlink races; the capability path returned no out-of-root bytes in 200 Linux race attempts. Recorded in [Experiment Result: F-008](experiments/results/f008-root-capability.md); platform-expansion validation is post-PoC work.
+- [x] **F-009 Select content-sniffing strategy.** Compared the bounded in-house classifier with `infer` 0.19.0, retained precision/recall and unknown handling, and documented the provisional false-positive/fail-closed policy in [Experiment Result: F-009](experiments/results/f009-content-sniff.md).
+- [x] **F-010 Pin BLAKE3 and benchmark file-size bands.** Pinned the first-spike BLAKE3 candidate and separated resident-read, file-read, and read-plus-hash measurements in [Rust Foundation Experiments — F3 hash/read benchmark matrix](experiments/rust-foundation.md#f3-preparation-hashread-benchmark-matrix); measured results remain Stage 2 evidence.
+- [x] **F-011 Draft prepare/revalidate state machine.** Added `InputSnapshot`, stale/reprepare transitions, and host-supplied versus filesystem validation in [Rust Foundation Experiments — F3 preparation](experiments/rust-foundation.md#f3-preparation-snapshot-and-revalidation-state-machine).
+- [x] **F-012 Define cancellation latency budgets.** Added proposed safe-point bounds and shutdown target before runtime comparison in [Rust Foundation Experiments — F4 preparation](experiments/rust-foundation.md#f4-preparation-proposed-safe-point-budgets-and-workloads).
+- [x] **F-013 Decide sync-versus-async experiment workloads.** Fixed local, watch, service, and remote-model comparison workloads and the provisional synchronous-core hypothesis in [Rust Foundation Experiments — F4 preparation](experiments/rust-foundation.md#f4-preparation-proposed-safe-point-budgets-and-workloads).
+- [x] **F-014 Compare `regex` and `regex-automata`.** Retained syntax, exact spans, expensive-pattern compile/memory, and 64 KiB cancellation evidence in [Experiment Result: F-014](experiments/results/f014-regex.md).
+- [x] **F-015 Compare `gix` and bounded Git subprocess adapters.** Retained the dirty/branch/shallow/submodule/worktree/ignored/rewritten/missing/incompatible matrix, sanitized subprocess policy, cancellation, and fallback evidence in [Experiment Result: F-015](experiments/results/f015-vcs.md).
+- [ ] **F-016 Pin `notify` only when I3 planning starts.** Record platform backend versions and overflow semantics.
+- [x] **F-017 Complete F1 evidence gaps.** Ran the reviewed query packs, full range oracle, and parser cancellation/isolated-worker cases on the Linux PoC target in [Experiment Result: F-017](experiments/results/f017-f1-followup.md); platform reruns remain post-PoC.
+- [x] **F-018 Complete F2 evidence gaps.** Ran the full adversarial path, reconciliation, encoding, case, limit, mutation, omission-reason, and labeled content-sniff cases in [Experiment Result: F-018](experiments/results/f018-f2-followup.md) without selecting a policy; platform reruns remain post-PoC.
+- [x] **F-019 Complete F3 evidence gaps.** Retained all file-read/read-plus-hash distributions, two-reprepare outcomes, and create/delete/recreate/rename/coalescing graph-oracle sequences in [Experiment Result: F-019](experiments/results/f019-f3-followup.md) without selecting a retry or hash default.
+- [x] **F-020 Complete F6 evidence gaps.** Aggregated expensive-pattern bounds, cancellation checks, and the gix/subprocess VCS comparison matrix in [Experiment Result: F-020](experiments/results/f020-f6-followup.md) without selecting an adapter.
+- [x] **F-021 Implement and run the F4 Linux PoC spike.** Compared bounded sync, hybrid adapter-boundary, and Tokio orchestration models; retained the initial full raw evidence while preserving the synchronous core contract in [Experiment Result: F4](experiments/results/f4-cancellation.md). Non-Linux x64 and Tier 2/lower-tier work remains post-PoC.
+- [x] **F-022 Run the F4 confirmatory Linux replication.** Ran three serial full replicates pinned to CPUs 0-3, retained host metadata and raw samples, and validated byte-equivalent reports, exact IDs, 72 cases, and 54 measurements. The strict hybrid p95 gate failed for service and remote; retain sync as the conservative default and revise measurement before another selection attempt. Tier 2 and non-Linux work remains deferred until a separately approved post-PoC expansion plan.
+- [x] **F-023 Audit the F4 hybrid-benefit reversal.** Ran the fixed 12-cell Linux diagnostic matrix for affinity, model order, and native/matched client concurrency. All cells completed with exact request counts, zero loopback errors, and bounded workers/queues; no controlled factor reproduced the initial sync slowdown at the required 25% threshold. Classify the discrepancy as unresolved, retain sync as the default, and close runtime selection as inconclusive. A new full selection run requires a separately approved plan; Tier 2 and non-Linux work remains deferred.
+
+## P1 — Quality, security, and release tooling
+
+- [x] **Q-001 Add a `proptest` strategy design.** Added the seeded change-sequence strategy and graph-equality oracle requirements in [Rust Foundation Experiments — F7 preparation](experiments/rust-foundation.md#f7-preparation-reusable-quality-artifacts).
+- [x] **Q-002 Define graph canonicalization for equality.** Added [Conformance — Graph equality](conformance.md#graph-equality): compares nodes, edges with `EdgeId`, unresolved references with `from`/`edgeKind`, skips, diagnostics, per-owner claim sets, derivation, and confidence exactly; ignores revisions, timestamps, ordering, adapter internals, occurrence counts, and the provenance representative of a multi-occurrence fact.
+- [x] **Q-003 Evaluate `insta` and `assert_cmd`.** Pinned `insta` 1.48.0 and `assert_cmd` 2.2.2, retained the normalized reviewed snapshot, and passed the CLI JSON/stdout/stderr/exit-code tests in [F7 Q follow-up evidence](experiments/results/f7-toolchain.md#result).
+- [x] **Q-004 List initial fuzz targets.** Listed range conversion, path normalization, redaction, query parsing, and parser-adapter targets in [Rust Foundation Experiments — F7 preparation](experiments/rust-foundation.md#f7-preparation-reusable-quality-artifacts).
+- [x] **Q-005 Define fuzz resource guards.** Added required input, time, corpus, crash-retention, and sanitizer guard fields in [Rust Foundation Experiments — F7 preparation](experiments/rust-foundation.md#f7-preparation-reusable-quality-artifacts).
+- [x] **Q-006 Draft `cargo-deny` policy.** Added the experiment-only [`deny.toml`](experiments/foundation_spike/deny.toml), retained duplicate warnings, and verified clean, GPL, and unapproved Git-source outcomes in [F7 Q follow-up evidence](experiments/results/f7-toolchain.md#result).
+- [x] **Q-007 Define advisory response policy.** Added the [advisory response policy](experiments/advisory-policy.md), exact 30-day exception validator/tests, and the blocking `time` 0.1.45/RUSTSEC-2020-0071 fixture.
+- [x] **Q-008 Select SBOM format/tool.** Selected SPDX JSON 2.3 with CycloneDX JSON 1.6 compatibility output, and verified tree-sitter plus the isolated USearch/CXX inventory in [F7 Q follow-up evidence](experiments/results/f7-toolchain.md#result).
+- [x] **Q-009 Split benchmark classes.** Assigned Criterion, iai-callgrind, and fixed-corpus harnesses in [Rust Foundation Experiments — F7 preparation](experiments/rust-foundation.md#f7-preparation-reusable-quality-artifacts).
+- [x] **Q-010 Define PoC checks and future platform expansion.** Defined the complete Linux PoC matrix and artifact/dependency checks; deferred non-Linux CI and artifact jobs until the PoC is fully featured in [Rust Foundation Experiments — Preparation profile](experiments/rust-foundation.md#preparation-profile).
+- [x] **Q-011 Add documentation consistency checks.** Added mdBook navigation/configuration and validated source/generated links and fragments, unique anchors, chapter completeness, lifecycle terminology, `mdbook build`, and `mdbook test`.
+- [x] **Q-012 Run the F7 release-tool evidence pass.** Installed the exact pinned `cargo-deny`, `cargo-audit`, `cargo-sbom`, and `cargo-auditable` candidates, executed the retained negative fixtures, retained hashes/commands/SBOMs/binary reports in the [raw Q run](experiments/results/raw/q-release-tools-20260818/report.json), and kept release-tool selection deferred.
+- [x] **Q-013 Audit runtime topology and ownership terminology.** Reconciled references to equal deployment topologies, direct client `open()`, per-project daemons, client-owned writer locks, and unconditional state-directory deletion across [Architecture](architecture.md), [Public API](api.md), [Runtime and IPC](runtime.md), [Storage](storage.md), [Host Integration](host-integration.md), and [Roadmap](roadmap.md).
+
+## P2 — Contract clarifications
+
+- [x] **C-001 Define regex syntax and complexity contract.** Defined the bounded regular-language baseline, explicit unsupported syntax behavior, exact spans, and cancellation semantics in [Retrieval — Direct-regex contract](retrieval.md#direct-regex-contract); dependency comparison remains F-014.
+- [x] **C-002 Define root identity across relocation.** Defined caller-owned logical `RootId`, explicit rebind/reconciliation behavior, replacement detection, and no path-derived continuity in [Incremental Updates — Root identity and relocation](incremental.md#root-identity-and-relocation) and [Public API](api.md#1-project-bound-client-surface).
+- [x] **C-003 Define same-name discriminator behavior.** Defined canonical sibling ordering and overload insertion/prepend/reorder ID churn examples in [Graph Model — Same-name discriminator examples](graph-model.md#same-name-discriminator-examples).
+- [x] **C-004 Define file snapshot read semantics.** Defined root-relative `FileSnapshot` identity, handle revalidation, host-supplied content behavior, and stale-plan handling in [Incremental Updates — Transactions](incremental.md#5-transactions).
+- [x] **C-005 Define lexical evidence source.** Required re-read/hash/range verification against the working tree before exposing lexical evidence in [Storage — Lexical evidence verification](storage.md#lexical-evidence-verification).
+- [x] **C-006 Define provider identity exposure.** Defined composition-root provider aliases, private-to-public producer mapping, version/location metadata, and untrusted provider-response handling in [Results and Evidence — Public provider identity](results.md#public-provider-identity) and [Host Integration](host-integration.md#2-capability-negotiation).
+- [x] **C-007 Define pagination stance.** Chose bounded non-pageable v1 results with explicit truncation and no continuation token in [Results and Evidence — Pagination stance for v1](results.md#pagination-stance-for-v1) and [Public API](api.md#5-retrieval).
+- [x] **C-008 Define progress event contract.** Defined API-level progress stages, event cadence, cancellation, loss behavior, and host/service mapping in [Public API — Progress events](api.md#progress-events).
+- [x] **C-009 Define state-directory permissions by platform.** Defined the Linux PoC permission behavior and retained Windows ACL policy, repair/refusal behavior, symlink checks, and `STATE_PERMISSIONS` diagnostics for post-PoC platform expansion in [Safety and Data Handling — State-directory permissions](safety.md#state-directory-permissions).
+- [x] **C-010 Define config/schema migration ownership.** Separated configuration-loader migration, store-schema migration, domain version invalidation, and derived-index repair in [Storage — Migration ownership](storage.md#migration-ownership) and [Host Integration](host-integration.md#8-configuration).
+- [x] **C-011 Define the global daemon and path-addressed project contexts.** Specified the private per-user rendezvous socket and singleton lease, nearest-ancestor discovery, explicit roots, canonical database-path registry, active alias guard, daemon-owned project locks, bound connections, degraded attachment, idle eviction, and runtime error taxonomy in [Runtime and IPC](runtime.md), with the client/internal construction split in [Public API](api.md).
+
+### Runtime validation
+
+- [x] **F-024 Run the runtime daemon/context experiment.** Exercised concurrent cold-start races, nearest-ancestor and explicit-root selection, incomplete markers, alias detection, copied-database isolation, context sharing, observer/degraded attachment, ten-minute idle eviction, final daemon exit, client termination, crash restart, stale socket repair, and protocol/deadline/cancellation/progress behavior in [Rust Foundation Experiments — F8 runtime](experiments/rust-foundation.md#f8-runtime-daemon-and-project-contexts); the retained F8 report is in the [2026-08-19 Linux PoC experiment review](experiments/results/runtime-contract-review-20260819.md).
+- [x] **Q-014 Re-run the Q release-tool audit with writable advisory state.** Repeated the pinned baseline/time advisory and auditable-binary inspection cases from Q-012 with a writable Cargo home and `--no-fetch`; all 17 cases passed in the [2026-08-19 Linux PoC experiment review](experiments/results/runtime-contract-review-20260819.md).
+
+## Completion rule
+
+A task is complete only when its output is linked from the relevant normative, candidate, or experiment document and any new uncertainty is captured as another task. Tasks may be reordered as dependencies become clearer; they must not be silently dropped during plan finalization.

@@ -1,0 +1,311 @@
+{
+  "experiment": "F6",
+  "run_id": "foundation-tier1-20260818",
+  "status": "complete_with_gaps",
+  "overall_outcome": "inconclusive",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F6-REGEX-HIGH-literal",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 1,
+        "pattern": "alpha",
+        "span": [
+          3,
+          8
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-AUTOMATA-literal",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 1,
+        "pattern": "alpha",
+        "span": [
+          3,
+          8
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-HIGH-unicode",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 1,
+        "pattern": "\\p{Greek}+",
+        "span": [
+          19,
+          27
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-AUTOMATA-unicode",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 1,
+        "pattern": "\\p{Greek}+",
+        "span": [
+          19,
+          27
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-HIGH-multiline",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 1,
+        "pattern": "(?m)^fn\\s+\\w+",
+        "span": [
+          0,
+          8
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-AUTOMATA-multiline",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 1,
+        "pattern": "(?m)^fn\\s+\\w+",
+        "span": [
+          0,
+          8
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-HIGH-alternation",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 2,
+        "pattern": "alpha|beta",
+        "span": [
+          3,
+          8
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-AUTOMATA-alternation",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "matches": 2,
+        "pattern": "alpha|beta",
+        "span": [
+          3,
+          8
+        ]
+      }
+    },
+    {
+      "id": "F6-REGEX-HIGH-unsupported-lookaround",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "error": "regex parse error:\n    (?=alpha)\n    ^^^\nerror: look-around, including look-ahead and look-behind, is not supported",
+        "pattern": "(?=alpha)"
+      }
+    },
+    {
+      "id": "F6-REGEX-AUTOMATA-unsupported-lookaround",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "error": "error parsing pattern 0",
+        "pattern": "(?=alpha)"
+      }
+    },
+    {
+      "id": "F6-REGEX-HIGH-unsupported-backref",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "error": "regex parse error:\n    (alpha)\\1\n           ^^\nerror: backreferences are not supported",
+        "pattern": "(alpha)\\1"
+      }
+    },
+    {
+      "id": "F6-REGEX-AUTOMATA-unsupported-backref",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "error": "error parsing pattern 0",
+        "pattern": "(alpha)\\1"
+      }
+    },
+    {
+      "id": "F6-REGEX-SAFE-POINT",
+      "expected": "chunked",
+      "observed": "chunked",
+      "outcome": "pass",
+      "details": {
+        "bytes": 393216,
+        "safe_point_bytes": 65536
+      }
+    },
+    {
+      "id": "F6-VCS-SUBPROCESS",
+      "expected": "changed_paths",
+      "observed": "changed_paths",
+      "outcome": "pass",
+      "details": {
+        "normalized": [
+          "new.txt",
+          "tracked.txt"
+        ],
+        "shell": false,
+        "status": " M tracked.txt\n?? new.txt\n"
+      }
+    },
+    {
+      "id": "F6-VCS-GIX",
+      "expected": "optional",
+      "observed": "not_enabled",
+      "outcome": "fail",
+      "details": {
+        "candidate": "gix-0.86.0",
+        "reason": "feature not enabled"
+      }
+    },
+    {
+      "id": "F6-VCS-MISSING",
+      "expected": "fallback_observable",
+      "observed": "fallback_observable",
+      "outcome": "pass",
+      "details": {
+        "fallback": "full_scan"
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "name": "regex_compile_literal_us",
+      "unit": "microseconds",
+      "samples": [
+        18.556,
+        3.927
+      ],
+      "details": {
+        "candidate_order": [
+          "regex",
+          "regex-automata"
+        ]
+      }
+    },
+    {
+      "name": "regex_compile_unicode_us",
+      "unit": "microseconds",
+      "samples": [
+        195.03,
+        166.61599999999999
+      ],
+      "details": {
+        "candidate_order": [
+          "regex",
+          "regex-automata"
+        ]
+      }
+    },
+    {
+      "name": "regex_compile_multiline_us",
+      "unit": "microseconds",
+      "samples": [
+        236.379,
+        222.763
+      ],
+      "details": {
+        "candidate_order": [
+          "regex",
+          "regex-automata"
+        ]
+      }
+    },
+    {
+      "name": "regex_compile_alternation_us",
+      "unit": "microseconds",
+      "samples": [
+        29.647,
+        17.864
+      ],
+      "details": {
+        "candidate_order": [
+          "regex",
+          "regex-automata"
+        ]
+      }
+    },
+    {
+      "name": "regex_compile_unsupported-lookaround_us",
+      "unit": "microseconds",
+      "samples": [
+        3.146,
+        0.181
+      ],
+      "details": {
+        "candidate_order": [
+          "regex",
+          "regex-automata"
+        ]
+      }
+    },
+    {
+      "name": "regex_compile_unsupported-backref_us",
+      "unit": "microseconds",
+      "samples": [
+        2.786,
+        0.791
+      ],
+      "details": {
+        "candidate_order": [
+          "regex",
+          "regex-automata"
+        ]
+      }
+    },
+    {
+      "name": "regex_chunk_scan_us",
+      "unit": "microseconds",
+      "samples": [
+        736.548
+      ],
+      "details": {
+        "bytes": 393216,
+        "matches": 65532,
+        "safe_point_bytes": 65536
+      }
+    }
+  ],
+  "notes": [
+    "Regex exact spans are measured in original byte offsets; the public line/column conversion remains the F1 oracle.",
+    "The default run records the bounded subprocess protocol; the feature-enabled run records gix repository discovery, and neither selects a VCS adapter."
+  ],
+  "artifacts": [
+    "report.json",
+    "manifest.json"
+  ]
+}

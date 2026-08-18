@@ -1,0 +1,4 @@
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+      Loaded 1217 security advisories (from /home/seer/.cargo/advisory-db)
+    Updating crates.io index
+       Found 'cargo auditable' data in /home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q008-usearch/target/release/q008-usearch-inventory (25 dependencies)

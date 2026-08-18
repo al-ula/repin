@@ -1,0 +1,5 @@
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+error: couldn't fetch advisory database: I/O operation failed: failed to obtain lock file '/home/seer/.cargo/advisory-db..lock'
+Caused by:
+  -> failed to obtain lock file '/home/seer/.cargo/advisory-db..lock'
+  -> attempted to take an exclusive lock on a read-only path

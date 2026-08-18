@@ -1,0 +1,32 @@
+{
+  "experiment": "F-008",
+  "run_id": "f008-linux-2026-08-18-rustc-1.97.1",
+  "platform": "Linux 7.1.4-204.fc44.x86_64",
+  "cpu": "AMD Ryzen 7 5825U with Radeon Graphics",
+  "toolchain": {
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "1.97.1 (c9804866f 2026-07-14)"
+  },
+  "pins": {
+    "blake3": "1.8.5",
+    "cap-fs-ext": "4.0.2",
+    "cap-std": "4.0.2",
+    "lock_sha256": "587c2e1253316a48f993e36b9063a15d582d089ece8878c56db49e8dfb2a1408"
+  },
+  "iterations_per_case": 100,
+  "max_bytes": 1024,
+  "cases": [
+    {"protocol":"canonicalize_then_open","case":"P-NORMAL","outcomes":{"accepted_in_root":100}},
+    {"protocol":"canonicalize_then_open","case":"P-TRAVERSAL","outcomes":{"rejected":100}},
+    {"protocol":"canonicalize_then_open","case":"P-ABSOLUTE","outcomes":{"rejected":100}},
+    {"protocol":"canonicalize_then_open","case":"P-ESCAPE","outcomes":{"rejected":100}},
+    {"protocol":"canonicalize_then_open","case":"P-SWAP-COMPONENT","outcomes":{"outside_root":100}},
+    {"protocol":"canonicalize_then_open","case":"P-SWAP-FINAL","outcomes":{"outside_root":100}},
+    {"protocol":"root_capability_open","case":"P-NORMAL","outcomes":{"accepted_in_root":100}},
+    {"protocol":"root_capability_open","case":"P-TRAVERSAL","outcomes":{"rejected":100}},
+    {"protocol":"root_capability_open","case":"P-ABSOLUTE","outcomes":{"rejected":100}},
+    {"protocol":"root_capability_open","case":"P-ESCAPE","outcomes":{"rejected":100}},
+    {"protocol":"root_capability_open","case":"P-SWAP-COMPONENT","outcomes":{"rejected":100}},
+    {"protocol":"root_capability_open","case":"P-SWAP-FINAL","outcomes":{"rejected":100}}
+  ]
+}

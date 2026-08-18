@@ -1,0 +1,123 @@
+{
+  "experiment": "F2",
+  "run_id": "foundation-tier1-20260818",
+  "status": "complete_with_gaps",
+  "overall_outcome": "inconclusive",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F2-SELECTION",
+      "expected": "selection_matches",
+      "observed": "selection_matches",
+      "outcome": "pass",
+      "details": {
+        "expected": [
+          ".gitignore",
+          "binary.rs",
+          "escape.txt",
+          "src/main.rs"
+        ],
+        "observed": [
+          ".gitignore",
+          "binary.rs",
+          "escape.txt",
+          "src/main.rs"
+        ]
+      }
+    },
+    {
+      "id": "F2-CAPABILITY-NORMAL",
+      "expected": "in_root",
+      "observed": "in_root",
+      "outcome": "pass",
+      "details": {
+        "bytes": 13
+      }
+    },
+    {
+      "id": "F2-CAPABILITY-TRAVERSAL",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "returned_bytes": null
+      }
+    },
+    {
+      "id": "F2-CAPABILITY-SYMLINK",
+      "expected": "rejected_or_unavailable",
+      "observed": "rejected_or_unavailable",
+      "outcome": "pass",
+      "details": {
+        "returned_bytes": null
+      }
+    },
+    {
+      "id": "F2-SNIFF-text",
+      "expected": "text",
+      "observed": "text",
+      "outcome": "pass",
+      "details": {
+        "bytes": 13
+      }
+    },
+    {
+      "id": "F2-SNIFF-binary",
+      "expected": "binary",
+      "observed": "binary",
+      "outcome": "pass",
+      "details": {
+        "bytes": 5
+      }
+    },
+    {
+      "id": "F2-SNIFF-invalid",
+      "expected": "binary",
+      "observed": "binary",
+      "outcome": "pass",
+      "details": {
+        "bytes": 3
+      }
+    },
+    {
+      "id": "F2-SNIFF-minified",
+      "expected": "text",
+      "observed": "text",
+      "outcome": "pass",
+      "details": {
+        "bytes": 100
+      }
+    },
+    {
+      "id": "F2-SNIFF-MAINTAINED",
+      "expected": "optional",
+      "observed": "not_enabled",
+      "outcome": "fail",
+      "details": {
+        "candidate": "infer-0.19.0",
+        "reason": "feature not enabled"
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "name": "discovery_5_runs_us",
+      "unit": "microseconds",
+      "samples": [
+        1043.421
+      ],
+      "details": {
+        "files": 4
+      }
+    }
+  ],
+  "notes": [
+    "F-008 Linux race evidence is retained separately; this run checks discovery integration and capability-relative reads.",
+    "The maintained content-sniff comparator is feature-gated; the feature-enabled run records it as an observation and does not select it."
+  ],
+  "artifacts": [
+    "report.json",
+    "manifest.json"
+  ]
+}

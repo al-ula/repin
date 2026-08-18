@@ -1,0 +1,146 @@
+{
+  "experiment": "F-018",
+  "run_id": "foundation-followup-20260818",
+  "status": "complete",
+  "overall_outcome": "pass",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F018-SELECTION",
+      "expected": "precedence_and_exclusions",
+      "observed": "precedence_and_exclusions",
+      "outcome": "pass",
+      "details": {
+        "selected": [
+          ".gitignore",
+          "binary.rs",
+          "escape.txt",
+          "src/main.rs"
+        ]
+      }
+    },
+    {
+      "id": "F018-P-NORMAL",
+      "expected": "in_root",
+      "observed": "in_root",
+      "outcome": "pass",
+      "details": {
+        "bytes": 13
+      }
+    },
+    {
+      "id": "F018-P-TRAVERSAL",
+      "expected": "reject_before_open",
+      "observed": "reject_before_open",
+      "outcome": "pass",
+      "details": {}
+    },
+    {
+      "id": "F018-P-ABSOLUTE",
+      "expected": "reject_before_open",
+      "observed": "reject_before_open",
+      "outcome": "pass",
+      "details": {}
+    },
+    {
+      "id": "F018-P-ESCAPE",
+      "expected": "fail_closed",
+      "observed": "fail_closed",
+      "outcome": "pass",
+      "details": {}
+    },
+    {
+      "id": "F018-P-CYCLE",
+      "expected": "bounded_skip",
+      "observed": "bounded_skip",
+      "outcome": "pass",
+      "details": {}
+    },
+    {
+      "id": "F018-P-DEEP",
+      "expected": "bounded_skip",
+      "observed": "bounded_skip",
+      "outcome": "pass",
+      "details": {
+        "depth": 40,
+        "limit": 32
+      }
+    },
+    {
+      "id": "F018-P-ENCODING",
+      "expected": "opaque_or_explicit_skip",
+      "observed": "opaque_identity",
+      "outcome": "pass",
+      "details": {
+        "lossy_collision": false
+      }
+    },
+    {
+      "id": "F018-P-CASE",
+      "expected": "report_platform_observation",
+      "observed": "case_sensitive_linux",
+      "outcome": "pass",
+      "details": {
+        "distinct": true
+      }
+    },
+    {
+      "id": "F018-P-SWAP",
+      "expected": "no_out_of_root_bytes",
+      "observed": "no_out_of_root_bytes",
+      "outcome": "pass",
+      "details": {
+        "attempts": 32
+      }
+    },
+    {
+      "id": "F018-P-MUTATE",
+      "expected": "reconciliation_converges",
+      "observed": "reconciliation_converges",
+      "outcome": "pass",
+      "details": {
+        "created": true,
+        "paths": 10
+      }
+    },
+    {
+      "id": "F018-SNIFF-INHOUSE",
+      "expected": "labeled_bounded_result",
+      "observed": "labeled_bounded_result",
+      "outcome": "pass",
+      "details": {
+        "rows": 11
+      }
+    },
+    {
+      "id": "F018-SNIFF-MAINTAINED",
+      "expected": "comparison_recorded",
+      "observed": "comparison_recorded",
+      "outcome": "pass",
+      "details": {
+        "candidate": "infer-0.19.0"
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "name": "f018_discovery_us",
+      "unit": "microseconds",
+      "samples": [
+        0.0
+      ],
+      "details": {
+        "measurement": "correctness-only fixture pass",
+        "paths": 4
+      }
+    }
+  ],
+  "notes": [
+    "Containment uses root-relative capability opens with no-follow final components and post-read identity checks."
+  ],
+  "artifacts": [
+    "artifacts/f018/sniff-corpus.json",
+    "artifacts/f018/path-manifest.json"
+  ]
+}

@@ -1,0 +1,8 @@
+cargo-audit v0.22.2:
+    cargo-audit
+cargo-auditable v0.7.5:
+    cargo-auditable
+cargo-deny v0.20.2:
+    cargo-deny
+cargo-sbom v0.10.0:
+    cargo-sbom

@@ -1,0 +1,557 @@
+{
+  "experiment": "F-014",
+  "run_id": "foundation-followup-20260818",
+  "status": "complete",
+  "overall_outcome": "pass",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F014-SYNTAX-literal",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "pattern": "alpha",
+        "regex": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        "regex_automata": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              3,
+              8
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-class",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "pattern": "[a-z]+",
+        "regex": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              8
+            ],
+            [
+              14,
+              18
+            ],
+            [
+              28,
+              34
+            ]
+          ]
+        },
+        "regex_automata": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              8
+            ],
+            [
+              14,
+              18
+            ],
+            [
+              28,
+              34
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-unicode",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "pattern": "\\p{Greek}+",
+        "regex": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              19,
+              27
+            ]
+          ]
+        },
+        "regex_automata": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              19,
+              27
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-multiline",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "pattern": "(?m)^fn\\s+\\w+",
+        "regex": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              0,
+              8
+            ]
+          ]
+        },
+        "regex_automata": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              0,
+              8
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-alternation",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "pattern": "alpha|beta",
+        "regex": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              3,
+              8
+            ],
+            [
+              14,
+              18
+            ]
+          ]
+        },
+        "regex_automata": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              3,
+              8
+            ],
+            [
+              14,
+              18
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-quantifier",
+      "expected": "accepted",
+      "observed": "accepted",
+      "outcome": "pass",
+      "details": {
+        "pattern": "a{1,16}",
+        "regex": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              3,
+              4
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              17,
+              18
+            ],
+            [
+              28,
+              34
+            ]
+          ]
+        },
+        "regex_automata": {
+          "accepted": true,
+          "error": null,
+          "spans": [
+            [
+              3,
+              4
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              17,
+              18
+            ],
+            [
+              28,
+              34
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-lookaround",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "pattern": "(?=alpha)",
+        "regex": {
+          "accepted": false,
+          "error": "regex parse error:\n    (?=alpha)\n    ^^^\nerror: look-around, including look-ahead and look-behind, is not supported",
+          "spans": null
+        },
+        "regex_automata": {
+          "accepted": false,
+          "error": "error parsing pattern 0",
+          "spans": null
+        }
+      }
+    },
+    {
+      "id": "F014-SYNTAX-backreference",
+      "expected": "rejected",
+      "observed": "rejected",
+      "outcome": "pass",
+      "details": {
+        "pattern": "(alpha)\\1",
+        "regex": {
+          "accepted": false,
+          "error": "regex parse error:\n    (alpha)\\1\n           ^^\nerror: backreferences are not supported",
+          "spans": null
+        },
+        "regex_automata": {
+          "accepted": false,
+          "error": "error parsing pattern 0",
+          "spans": null
+        }
+      }
+    },
+    {
+      "id": "F014-EXPENSIVE-expensive-nested",
+      "expected": "bounded_compile",
+      "observed": "bounded_compile",
+      "outcome": "pass",
+      "details": {
+        "automata_rss_delta_kib": 0,
+        "pattern": "(a|aa)+b",
+        "regex_rss_delta_kib": 0
+      }
+    },
+    {
+      "id": "F014-EXPENSIVE-expensive-unicode",
+      "expected": "bounded_compile",
+      "observed": "bounded_compile",
+      "outcome": "pass",
+      "details": {
+        "automata_rss_delta_kib": 0,
+        "pattern": "(\\p{Greek}|[a-z]){1,64}",
+        "regex_rss_delta_kib": 0
+      }
+    },
+    {
+      "id": "F014-EXPENSIVE-expensive-anchored",
+      "expected": "bounded_compile",
+      "observed": "bounded_compile",
+      "outcome": "pass",
+      "details": {
+        "automata_rss_delta_kib": 0,
+        "pattern": "^([a-z]+ ){1,128}$",
+        "regex_rss_delta_kib": 0
+      }
+    },
+    {
+      "id": "F014-CANCELLATION",
+      "expected": "64k_safe_point",
+      "observed": "64k_safe_point",
+      "outcome": "pass",
+      "details": {
+        "regex": [
+          true,
+          65536,
+          124.04599999999999
+        ],
+        "regex_automata": [
+          true,
+          65536,
+          122.202
+        ]
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "name": "f014_compile_literal_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        3.747,
+        2.585,
+        2.244
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "alpha"
+      }
+    },
+    {
+      "name": "f014_compile_literal_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        2.9859999999999998,
+        1.8139999999999998,
+        1.824
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "alpha"
+      }
+    },
+    {
+      "name": "f014_compile_class_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        16.15,
+        12.524000000000001,
+        12.193
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "[a-z]+"
+      }
+    },
+    {
+      "name": "f014_compile_class_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        13.726,
+        11.661999999999999,
+        12.052999999999999
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "[a-z]+"
+      }
+    },
+    {
+      "name": "f014_compile_unicode_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        146.017,
+        139.485,
+        137.15
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "\\p{Greek}+"
+      }
+    },
+    {
+      "name": "f014_compile_unicode_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        143.973,
+        196.754,
+        138.26299999999998
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "\\p{Greek}+"
+      }
+    },
+    {
+      "name": "f014_compile_multiline_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        233.744,
+        217.553,
+        263.169
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "(?m)^fn\\s+\\w+"
+      }
+    },
+    {
+      "name": "f014_compile_multiline_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        219.056,
+        212.273,
+        219.687
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "(?m)^fn\\s+\\w+"
+      }
+    },
+    {
+      "name": "f014_compile_alternation_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        18.345000000000002,
+        15.760000000000002,
+        15.679
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "alpha|beta"
+      }
+    },
+    {
+      "name": "f014_compile_alternation_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        16.301,
+        15.579,
+        15.46
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "alpha|beta"
+      }
+    },
+    {
+      "name": "f014_compile_quantifier_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        10.109,
+        8.135,
+        7.995
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "a{1,16}"
+      }
+    },
+    {
+      "name": "f014_compile_quantifier_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        8.626,
+        8.216000000000001,
+        8.216000000000001
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "a{1,16}"
+      }
+    },
+    {
+      "name": "f014_compile_lookaround_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        0.9820000000000001,
+        0.812,
+        0.7320000000000001
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "(?=alpha)"
+      }
+    },
+    {
+      "name": "f014_compile_lookaround_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        0.19999999999999998,
+        0.16,
+        0.15
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "(?=alpha)"
+      }
+    },
+    {
+      "name": "f014_compile_backreference_regex_us",
+      "unit": "microseconds",
+      "samples": [
+        1.443,
+        1.243,
+        1.1820000000000002
+      ],
+      "details": {
+        "candidate": "regex",
+        "pattern": "(alpha)\\1"
+      }
+    },
+    {
+      "name": "f014_compile_backreference_automata_us",
+      "unit": "microseconds",
+      "samples": [
+        0.741,
+        0.631,
+        0.582
+      ],
+      "details": {
+        "candidate": "regex-automata",
+        "pattern": "(alpha)\\1"
+      }
+    },
+    {
+      "name": "f014_cancel_scan_us",
+      "unit": "microseconds",
+      "samples": [
+        124.04599999999999,
+        122.202
+      ],
+      "details": {
+        "input_bytes": 196608,
+        "safe_point_bytes": 65536
+      }
+    }
+  ],
+  "notes": [
+    "Both candidates were measured against the same patterns and haystack; no adapter is selected."
+  ],
+  "artifacts": [
+    "artifacts/f014/regex-comparison.json"
+  ]
+}

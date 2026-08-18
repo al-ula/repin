@@ -1,0 +1,26 @@
+[
+  {
+    "language": "rust",
+    "path": "fixtures/f1-query-v1/rust.scm",
+    "sha256": "dbc40a69f2dc4379cadfd44106eeb7aea57adab643b38ae52562783b166b1d01",
+    "query": "(function_item name: (identifier) @definition) @function\n(struct_item name: (type_identifier) @definition) @struct\n(use_declaration) @reference\n"
+  },
+  {
+    "language": "markdown",
+    "path": "fixtures/f1-query-v1/markdown.scm",
+    "sha256": "8a2a25c0afadbd913fcc6a2b690b5961bbcdd6f673c874500c66dcd23bd09e82",
+    "query": "(atx_heading) @heading\n(link_reference_definition) @link\n"
+  },
+  {
+    "language": "typescript",
+    "path": "fixtures/f1-query-v1/typescript.scm",
+    "sha256": "68f660221abde58a43a16ef1a3de61eceb1857fd4fb729d82bc35fc423b3ea3a",
+    "query": "(function_declaration name: (identifier) @definition) @function\n(class_declaration name: (type_identifier) @definition) @class\n(import_statement) @reference\n"
+  },
+  {
+    "language": "javascript",
+    "path": "fixtures/f1-query-v1/javascript.scm",
+    "sha256": "c80420d686ff7da1727faaf00e8ae56af979cb9252ed3924d34d74fec8bf1cd4",
+    "query": "(function_declaration name: (identifier) @definition) @function\n(class_declaration name: (identifier) @definition) @class\n(import_statement) @reference\n"
+  }
+]

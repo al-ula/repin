@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repin://experiments/f4-hybrid-audit-v1",
+  "title": "Repin F4 hybrid-benefit audit aggregate",
+  "type": "object",
+  "required": [
+    "schema",
+    "experiment",
+    "run_id",
+    "validation",
+    "baseline_comparison",
+    "preserved_input_hashes",
+    "normalization",
+    "probes",
+    "driver_evidence",
+    "classified_driver",
+    "discrepancy_explained",
+    "recommendation"
+  ],
+  "properties": {
+    "schema": { "const": "f4-hybrid-audit-v1" },
+    "experiment": { "const": "F4" },
+    "run_id": { "type": "string" },
+    "validation": {
+      "type": "object",
+      "required": [
+        "probe_cells",
+        "conditions",
+        "client_modes",
+        "orders",
+        "models_per_probe",
+        "workloads_per_model",
+        "warmups_per_workload",
+        "samples_per_workload",
+        "service_requests",
+        "remote_requests",
+        "all_errors_zero"
+      ],
+      "properties": {
+        "probe_cells": { "const": 12 },
+        "conditions": { "const": ["pinned", "unpinned"] },
+        "client_modes": { "const": ["native", "matched"] },
+        "models_per_probe": { "const": 3 },
+        "workloads_per_model": { "const": 2 },
+        "warmups_per_workload": { "const": 2 },
+        "samples_per_workload": { "const": 10 },
+        "service_requests": { "const": 64 },
+        "remote_requests": { "const": 32 },
+        "all_errors_zero": { "const": true }
+      }
+    },
+    "baseline_comparison": { "type": "object" },
+    "preserved_input_hashes": {
+      "type": "object",
+      "required": ["tier1", "confirmatory"],
+      "properties": {
+        "tier1": { "type": "object", "minProperties": 1 },
+        "confirmatory": { "type": "object", "minProperties": 1 }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "required": ["timing_fields_excluded", "host_fields_excluded"],
+      "properties": {
+        "timing_fields_excluded": { "type": "array", "items": { "type": "string" } },
+        "host_fields_excluded": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["cell", "condition", "client_mode", "order_index", "host_metadata", "models", "normalized"],
+        "properties": {
+          "cell": { "type": "string" },
+          "condition": { "enum": ["pinned", "unpinned"] },
+          "client_mode": { "enum": ["native", "matched"] },
+          "order_index": { "type": "integer", "minimum": 0, "maximum": 2 },
+          "host_metadata": {
+            "type": "object",
+            "required": [
+              "schema",
+              "affinity_mode",
+              "rustc",
+              "cargo",
+              "kernel",
+              "architecture",
+              "online_cpus",
+              "process_affinity",
+              "load_average",
+              "taskset_version"
+            ],
+            "properties": {
+              "schema": { "const": "f4-confirmatory-host-v1" },
+              "affinity_mode": { "enum": ["pinned", "unpinned"] },
+              "online_cpus": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+              "process_affinity": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+              "load_average": { "type": "object" }
+            }
+          },
+          "models": {
+            "type": "array",
+            "minItems": 6,
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "required": [
+                "model",
+                "workload",
+                "p50",
+                "p95",
+                "max",
+                "rps_samples",
+                "elapsed_us_samples",
+                "client_max_active",
+                "server_max_active",
+                "client_max_queue",
+                "server_max_queue"
+              ],
+              "properties": {
+                "model": { "enum": ["sync", "hybrid", "async"] },
+                "workload": { "enum": ["service", "remote"] },
+                "rps_samples": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "number" } },
+                "elapsed_us_samples": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "number", "exclusiveMinimum": 0 } },
+                "p50": { "type": "number" },
+                "p95": { "type": "number" },
+                "max": { "type": "number" }
+              }
+            }
+          },
+          "normalized": { "type": "object" }
+        }
+      }
+    },
+    "driver_evidence": { "type": "object" },
+    "classified_driver": { "enum": ["environment/affinity", "ordering/warmup", "client-concurrency fairness", "unresolved"] },
+    "discrepancy_explained": { "type": "boolean" },
+    "recommendation": { "type": "string" }
+  }
+}

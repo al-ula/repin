@@ -1,0 +1,14 @@
+    Updating git repository `file:///tmp/repin-q-release-tools-rerun-20260819/generated-fixtures/q012-git-source/git-dep`
+error: failed to get `q012-git-source` as a dependency of package `q012-git-root v0.1.0 (/tmp/repin-q-release-tools-rerun-20260819/generated-fixtures/q012-git-source/project)`
+
+Caused by:
+  failed to load source for dependency `q012-git-source`
+
+Caused by:
+  unable to update file:///tmp/repin-q-release-tools-rerun-20260819/generated-fixtures/q012-git-source/git-dep?rev=effaff53153b850ddfe50c4a90d5503710a0e739
+
+Caused by:
+  failed to create directory `/home/seer/.cargo/git/db/git-dep-2b286f1ed3e5e9ab`
+
+Caused by:
+  Read-only file system (os error 30)

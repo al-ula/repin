@@ -1,0 +1,325 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2026-08-18T15:36:45Z",
+    "creators": [
+      "Tool: cargo-sbom-v0.10.0"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://spdx.org/spdxdocs/q008-usearch-e2d8b54f-cd3a-42dc-a413-0701878fdbe9",
+  "files": [
+    {
+      "SPDXID": "SPDXRef-File-q008-usearch-inventory",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "81f5d1abbca16f43d24cb22619e7c992516c0e91"
+        }
+      ],
+      "fileName": "./Cargo.lock",
+      "fileTypes": [
+        "SOURCE",
+        "TEXT"
+      ]
+    }
+  ],
+  "name": "q008-usearch",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-hashbrown-0.17.1",
+      "description": "A Rust port of Google's SwissTable hash map",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/hashbrown@0.17.1",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "hashbrown",
+      "versionInfo": "0.17.1"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-foldhash-0.2.0",
+      "description": "A fast, non-cryptographic, minimally DoS-resistant hashing algorithm.",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/foldhash@0.2.0",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "name": "foldhash",
+      "versionInfo": "0.2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-usearch-2.26.0",
+      "description": "Smaller & Faster Single-File Vector Search Engine from Unum",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/usearch@2.26.0",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "usearch",
+      "versionInfo": "2.26.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-proc-macro2-1.0.107",
+      "description": "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case.",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/proc-macro2@1.0.107",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "proc-macro2",
+      "versionInfo": "1.0.107"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-link-cplusplus-1.0.12",
+      "description": "Link libstdc++ or libc++ automatically or manually",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/link-cplusplus@1.0.12",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "link-cplusplus",
+      "versionInfo": "1.0.12"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cxxbridge-macro-1.0.199",
+      "description": "Implementation detail of the `cxx` crate.",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/cxxbridge-macro@1.0.199",
+          "referenceType": "purl"
+        }
+      ],
+      "homepage": "https://cxx.rs",
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "cxxbridge-macro",
+      "versionInfo": "1.0.199"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-q008-usearch-inventory-0.1.0",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "q008-usearch-inventory",
+      "versionInfo": "0.1.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-indexmap-2.14.0",
+      "description": "A hash table with consistent order and fast iteration.",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/indexmap@2.14.0",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "Apache-2.0 OR MIT",
+      "licenseDeclared": "Apache-2.0 OR MIT",
+      "name": "indexmap",
+      "versionInfo": "2.14.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-quote-1.0.47",
+      "description": "Quasi-quoting macro quote!(...)",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/quote@1.0.47",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "quote",
+      "versionInfo": "1.0.47"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cxx-1.0.199",
+      "description": "Safe interop between Rust and C++",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/cxx@1.0.199",
+          "referenceType": "purl"
+        }
+      ],
+      "homepage": "https://cxx.rs",
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "cxx",
+      "versionInfo": "1.0.199"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-syn-3.0.3",
+      "description": "Parser for Rust source code",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/syn@3.0.3",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0",
+      "name": "syn",
+      "versionInfo": "3.0.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-equivalent-1.0.2",
+      "description": "Traits for key comparison in maps.",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/equivalent@1.0.2",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "Apache-2.0 OR MIT",
+      "licenseDeclared": "Apache-2.0 OR MIT",
+      "name": "equivalent",
+      "versionInfo": "1.0.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-unicode-ident-1.0.24",
+      "description": "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31",
+      "downloadLocation": "registry+https://github.com/rust-lang/crates.io-index",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/unicode-ident@1.0.24",
+          "referenceType": "purl"
+        }
+      ],
+      "licenseConcluded": "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "licenseDeclared": "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "name": "unicode-ident",
+      "versionInfo": "1.0.24"
+    }
+  ],
+  "relationships": [
+    {
+      "relatedSpdxElement": "SPDXRef-Package-usearch-2.26.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-q008-usearch-inventory-0.1.0"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-link-cplusplus-1.0.12",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxx-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-proc-macro2-1.0.107",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-quote-1.0.47"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-File-q008-usearch-inventory",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-foldhash-0.2.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxx-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-equivalent-1.0.2",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-indexmap-2.14.0"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-hashbrown-0.17.1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-indexmap-2.14.0"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-quote-1.0.47",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxxbridge-macro-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-cxx-1.0.199",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-usearch-2.26.0"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-cxxbridge-macro-1.0.199",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxx-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-proc-macro2-1.0.107",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxxbridge-macro-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-unicode-ident-1.0.24",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-syn-3.0.3"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-indexmap-2.14.0",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxxbridge-macro-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-syn-3.0.3",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-cxxbridge-macro-1.0.199"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-unicode-ident-1.0.24",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-proc-macro2-1.0.107"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-proc-macro2-1.0.107",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-syn-3.0.3"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-q008-usearch-inventory-0.1.0",
+      "relationshipType": "GENERATED_FROM",
+      "spdxElementId": "SPDXRef-File-q008-usearch-inventory"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-quote-1.0.47",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-syn-3.0.3"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}

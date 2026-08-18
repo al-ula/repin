@@ -1,0 +1,1050 @@
+{
+  "manifest": {
+    "run_id": "foundation-tier1-20260818",
+    "lifecycle_stage": "experimentation",
+    "platform_tier": "Tier 1",
+    "target": "x86_64",
+    "os": "linux",
+    "architecture": "x86_64",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+    "source_revision": "working-tree-status: 287d90736980a64a6501020db7d9329515d26cde87b970831ee380a451be5064",
+    "candidate_pins": {
+      "blake3": "1.8.5",
+      "cap-std/cap-fs-ext": "4.0.2",
+      "gix": "0.86.0 (optional feature)",
+      "globset": "0.4.19",
+      "ignore": "0.4.31",
+      "infer": "0.19.0 (optional feature)",
+      "regex": "1.13.1",
+      "regex-automata": "0.4.16",
+      "tree-sitter": "0.26.11",
+      "tree-sitter-javascript": "0.25.0",
+      "tree-sitter-md": "0.5.3",
+      "tree-sitter-rust": "0.24.2",
+      "tree-sitter-typescript": "0.23.2"
+    },
+    "active_features": [
+      "default"
+    ],
+    "fixture_manifest": "docs/experiments/fixtures.md",
+    "reproducibility": {
+      "build_profile": "release",
+      "fixture_seed": "repin-foundation-1",
+      "source_policy": "working tree; no production code",
+      "warmup_policy": "one warmup then five samples"
+    }
+  },
+  "experiments": [
+    {
+      "experiment": "F1",
+      "run_id": "foundation-tier1-20260818",
+      "status": "complete",
+      "overall_outcome": "inconclusive",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F1-DETERMINISM-rust",
+          "expected": "stable",
+          "observed": "stable",
+          "outcome": "pass",
+          "details": {
+            "captures": 18,
+            "fixture_bytes": 72
+          }
+        },
+        {
+          "id": "F1-DETERMINISM-markdown",
+          "expected": "stable",
+          "observed": "stable",
+          "outcome": "pass",
+          "details": {
+            "captures": 7,
+            "fixture_bytes": 46
+          }
+        },
+        {
+          "id": "F1-DETERMINISM-typescript",
+          "expected": "stable",
+          "observed": "stable",
+          "outcome": "pass",
+          "details": {
+            "captures": 15,
+            "fixture_bytes": 60
+          }
+        },
+        {
+          "id": "F1-DETERMINISM-javascript",
+          "expected": "stable",
+          "observed": "stable",
+          "outcome": "pass",
+          "details": {
+            "captures": 10,
+            "fixture_bytes": 44
+          }
+        },
+        {
+          "id": "R-ASCII",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 17,
+            "offsets": [
+              0,
+              8,
+              17
+            ]
+          }
+        },
+        {
+          "id": "R-UTF8",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 11,
+            "offsets": [
+              0,
+              5,
+              11
+            ]
+          }
+        },
+        {
+          "id": "R-COMBINE",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 3,
+            "offsets": [
+              0,
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "id": "R-TAB",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 6,
+            "offsets": [
+              0,
+              3,
+              6
+            ]
+          }
+        },
+        {
+          "id": "R-CRLF",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 14,
+            "offsets": [
+              0,
+              7,
+              14
+            ]
+          }
+        },
+        {
+          "id": "R-INVALID",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 3,
+            "offsets": [
+              0,
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "id": "R-EMPTY",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 0,
+            "offsets": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": "F1-MALFORMED",
+          "expected": "bounded_partial",
+          "observed": "bounded_partial",
+          "outcome": "pass",
+          "details": {
+            "root_kind": "ERROR"
+          }
+        },
+        {
+          "id": "F1-LONG-LINE",
+          "expected": "bounded",
+          "observed": "bounded",
+          "outcome": "pass",
+          "details": {
+            "bytes": 131072
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "parse_capture_rust_us",
+          "unit": "microseconds",
+          "samples": [
+            69.001,
+            26.720000000000002,
+            20.78,
+            18.695,
+            18.335
+          ],
+          "details": {
+            "capture_query": "(_) @node",
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "parse_capture_markdown_us",
+          "unit": "microseconds",
+          "samples": [
+            34.193999999999996,
+            21.701,
+            17.934,
+            16.351,
+            16.031
+          ],
+          "details": {
+            "capture_query": "(_) @node",
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "parse_capture_typescript_us",
+          "unit": "microseconds",
+          "samples": [
+            45.707,
+            22.272,
+            17.974,
+            17.122,
+            16.892
+          ],
+          "details": {
+            "capture_query": "(_) @node",
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "parse_capture_javascript_us",
+          "unit": "microseconds",
+          "samples": [
+            27.763,
+            14.618,
+            12.433,
+            11.681999999999999,
+            11.432
+          ],
+          "details": {
+            "capture_query": "(_) @node",
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "long_line_parse_us",
+          "unit": "microseconds",
+          "samples": [
+            1841.356
+          ],
+          "details": {
+            "bytes": 131072,
+            "has_error": true
+          }
+        }
+      ],
+      "notes": [
+        "Tier-1 Linux run; Tier-2 build and behavior evidence is still required.",
+        "The wildcard query is a deterministic substrate probe, not a production language-pack query."
+      ],
+      "artifacts": [
+        "report.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "experiment": "F2",
+      "run_id": "foundation-tier1-20260818",
+      "status": "complete_with_gaps",
+      "overall_outcome": "inconclusive",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F2-SELECTION",
+          "expected": "selection_matches",
+          "observed": "selection_matches",
+          "outcome": "pass",
+          "details": {
+            "expected": [
+              ".gitignore",
+              "binary.rs",
+              "escape.txt",
+              "src/main.rs"
+            ],
+            "observed": [
+              ".gitignore",
+              "binary.rs",
+              "escape.txt",
+              "src/main.rs"
+            ]
+          }
+        },
+        {
+          "id": "F2-CAPABILITY-NORMAL",
+          "expected": "in_root",
+          "observed": "in_root",
+          "outcome": "pass",
+          "details": {
+            "bytes": 13
+          }
+        },
+        {
+          "id": "F2-CAPABILITY-TRAVERSAL",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "returned_bytes": null
+          }
+        },
+        {
+          "id": "F2-CAPABILITY-SYMLINK",
+          "expected": "rejected_or_unavailable",
+          "observed": "rejected_or_unavailable",
+          "outcome": "pass",
+          "details": {
+            "returned_bytes": null
+          }
+        },
+        {
+          "id": "F2-SNIFF-text",
+          "expected": "text",
+          "observed": "text",
+          "outcome": "pass",
+          "details": {
+            "bytes": 13
+          }
+        },
+        {
+          "id": "F2-SNIFF-binary",
+          "expected": "binary",
+          "observed": "binary",
+          "outcome": "pass",
+          "details": {
+            "bytes": 5
+          }
+        },
+        {
+          "id": "F2-SNIFF-invalid",
+          "expected": "binary",
+          "observed": "binary",
+          "outcome": "pass",
+          "details": {
+            "bytes": 3
+          }
+        },
+        {
+          "id": "F2-SNIFF-minified",
+          "expected": "text",
+          "observed": "text",
+          "outcome": "pass",
+          "details": {
+            "bytes": 100
+          }
+        },
+        {
+          "id": "F2-SNIFF-MAINTAINED",
+          "expected": "optional",
+          "observed": "not_enabled",
+          "outcome": "fail",
+          "details": {
+            "candidate": "infer-0.19.0",
+            "reason": "feature not enabled"
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "discovery_5_runs_us",
+          "unit": "microseconds",
+          "samples": [
+            1043.421
+          ],
+          "details": {
+            "files": 4
+          }
+        }
+      ],
+      "notes": [
+        "F-008 Linux race evidence is retained separately; this run checks discovery integration and capability-relative reads.",
+        "The maintained content-sniff comparator is feature-gated; the feature-enabled run records it as an observation and does not select it."
+      ],
+      "artifacts": [
+        "report.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "experiment": "F3",
+      "run_id": "foundation-tier1-20260818",
+      "status": "complete",
+      "overall_outcome": "inconclusive",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F3-STALE-REVALIDATION",
+          "expected": "stale_rejected",
+          "observed": "stale_rejected",
+          "outcome": "pass",
+          "details": {
+            "current": {
+              "bytes": 12,
+              "hash": {
+                "algorithm": "blake3",
+                "digest": "a660c4fe8a6b77d471d017df95cfd7451bf8d7fec9a3346354202f4797a93159"
+              },
+              "observed_size": 12,
+              "relative_path": "tracked.rs",
+              "root_id": "root-a",
+              "source": "filesystem"
+            },
+            "prepared": {
+              "bytes": 12,
+              "hash": {
+                "algorithm": "blake3",
+                "digest": "86d7c5a7fed67a44a6d0db48c2672308ae11419b42e82bb43c228036ecc24ae0"
+              },
+              "observed_size": 12,
+              "relative_path": "tracked.rs",
+              "root_id": "root-a",
+              "source": "filesystem"
+            }
+          }
+        },
+        {
+          "id": "F3-ORIGIN-DEDUP",
+          "expected": "one_hash",
+          "observed": "one_hash",
+          "outcome": "pass",
+          "details": {
+            "origins": {
+              "host": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+              "scan": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+              "vcs": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+              "watcher": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca"
+            }
+          }
+        },
+        {
+          "id": "F3-RENAME-REOPEN",
+          "expected": "bytes_preserved",
+          "observed": "bytes_preserved",
+          "outcome": "pass",
+          "details": {
+            "new_hash": {
+              "algorithm": "blake3",
+              "digest": "a660c4fe8a6b77d471d017df95cfd7451bf8d7fec9a3346354202f4797a93159"
+            },
+            "old_hash": {
+              "algorithm": "blake3",
+              "digest": "a660c4fe8a6b77d471d017df95cfd7451bf8d7fec9a3346354202f4797a93159"
+            }
+          }
+        },
+        {
+          "id": "F3-HASH-NOT-ID",
+          "expected": "id_stable",
+          "observed": "id_stable",
+          "outcome": "pass",
+          "details": {
+            "node_id": "fd00e9ab0e8456232f887de3bdd174e79c66bc3e1d4b83b65db43574cc07fd38"
+          }
+        },
+        {
+          "id": "F3-HOST-SNAPSHOT",
+          "expected": "algorithm_tagged",
+          "observed": "algorithm_tagged",
+          "outcome": "pass",
+          "details": {
+            "bytes": 3,
+            "hash": {
+              "algorithm": "blake3",
+              "digest": "6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85"
+            },
+            "observed_size": null,
+            "relative_path": "host.rs",
+            "root_id": "root-a",
+            "source": "host_supplied"
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "resident_hash_0_bytes_us",
+          "unit": "microseconds",
+          "samples": [
+            2.194,
+            0.19,
+            0.161,
+            0.16,
+            0.15
+          ],
+          "details": {
+            "bytes": 0,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "resident_hash_1024_bytes_us",
+          "unit": "microseconds",
+          "samples": [
+            1.1620000000000001,
+            0.972,
+            0.9820000000000001,
+            0.9820000000000001,
+            0.9620000000000001
+          ],
+          "details": {
+            "bytes": 1024,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "resident_hash_4096_bytes_us",
+          "unit": "microseconds",
+          "samples": [
+            3.557,
+            1.242,
+            1.223,
+            1.222,
+            1.212
+          ],
+          "details": {
+            "bytes": 4096,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "resident_hash_65536_bytes_us",
+          "unit": "microseconds",
+          "samples": [
+            13.706000000000001,
+            11.883,
+            11.822,
+            11.902999999999999,
+            11.862
+          ],
+          "details": {
+            "bytes": 65536,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "resident_hash_1048576_bytes_us",
+          "unit": "microseconds",
+          "samples": [
+            261.266,
+            217.122,
+            202.875,
+            200.25,
+            206.542
+          ],
+          "details": {
+            "bytes": 1048576,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "resident_hash_4194304_bytes_us",
+          "unit": "microseconds",
+          "samples": [
+            1181.914,
+            1052.3780000000002,
+            928.7139999999999,
+            917.331,
+            890.561
+          ],
+          "details": {
+            "bytes": 4194304,
+            "mode": "resident_read_plus_hash"
+          }
+        }
+      ],
+      "notes": [
+        "The benchmark reports resident hash cost; file-read and read-plus-hash are represented by the snapshot cases and remain to be expanded in a larger corpus run.",
+        "The stale case exercises revalidation without holding a store writer."
+      ],
+      "artifacts": [
+        "report.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "experiment": "F6",
+      "run_id": "foundation-tier1-20260818",
+      "status": "complete_with_gaps",
+      "overall_outcome": "inconclusive",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F6-REGEX-HIGH-literal",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 1,
+            "pattern": "alpha",
+            "span": [
+              3,
+              8
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-AUTOMATA-literal",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 1,
+            "pattern": "alpha",
+            "span": [
+              3,
+              8
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-HIGH-unicode",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 1,
+            "pattern": "\\p{Greek}+",
+            "span": [
+              19,
+              27
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-AUTOMATA-unicode",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 1,
+            "pattern": "\\p{Greek}+",
+            "span": [
+              19,
+              27
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-HIGH-multiline",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 1,
+            "pattern": "(?m)^fn\\s+\\w+",
+            "span": [
+              0,
+              8
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-AUTOMATA-multiline",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 1,
+            "pattern": "(?m)^fn\\s+\\w+",
+            "span": [
+              0,
+              8
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-HIGH-alternation",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 2,
+            "pattern": "alpha|beta",
+            "span": [
+              3,
+              8
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-AUTOMATA-alternation",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "matches": 2,
+            "pattern": "alpha|beta",
+            "span": [
+              3,
+              8
+            ]
+          }
+        },
+        {
+          "id": "F6-REGEX-HIGH-unsupported-lookaround",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "error": "regex parse error:\n    (?=alpha)\n    ^^^\nerror: look-around, including look-ahead and look-behind, is not supported",
+            "pattern": "(?=alpha)"
+          }
+        },
+        {
+          "id": "F6-REGEX-AUTOMATA-unsupported-lookaround",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "error": "error parsing pattern 0",
+            "pattern": "(?=alpha)"
+          }
+        },
+        {
+          "id": "F6-REGEX-HIGH-unsupported-backref",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "error": "regex parse error:\n    (alpha)\\1\n           ^^\nerror: backreferences are not supported",
+            "pattern": "(alpha)\\1"
+          }
+        },
+        {
+          "id": "F6-REGEX-AUTOMATA-unsupported-backref",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "error": "error parsing pattern 0",
+            "pattern": "(alpha)\\1"
+          }
+        },
+        {
+          "id": "F6-REGEX-SAFE-POINT",
+          "expected": "chunked",
+          "observed": "chunked",
+          "outcome": "pass",
+          "details": {
+            "bytes": 393216,
+            "safe_point_bytes": 65536
+          }
+        },
+        {
+          "id": "F6-VCS-SUBPROCESS",
+          "expected": "changed_paths",
+          "observed": "changed_paths",
+          "outcome": "pass",
+          "details": {
+            "normalized": [
+              "new.txt",
+              "tracked.txt"
+            ],
+            "shell": false,
+            "status": " M tracked.txt\n?? new.txt\n"
+          }
+        },
+        {
+          "id": "F6-VCS-GIX",
+          "expected": "optional",
+          "observed": "not_enabled",
+          "outcome": "fail",
+          "details": {
+            "candidate": "gix-0.86.0",
+            "reason": "feature not enabled"
+          }
+        },
+        {
+          "id": "F6-VCS-MISSING",
+          "expected": "fallback_observable",
+          "observed": "fallback_observable",
+          "outcome": "pass",
+          "details": {
+            "fallback": "full_scan"
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "regex_compile_literal_us",
+          "unit": "microseconds",
+          "samples": [
+            18.556,
+            3.927
+          ],
+          "details": {
+            "candidate_order": [
+              "regex",
+              "regex-automata"
+            ]
+          }
+        },
+        {
+          "name": "regex_compile_unicode_us",
+          "unit": "microseconds",
+          "samples": [
+            195.03,
+            166.61599999999999
+          ],
+          "details": {
+            "candidate_order": [
+              "regex",
+              "regex-automata"
+            ]
+          }
+        },
+        {
+          "name": "regex_compile_multiline_us",
+          "unit": "microseconds",
+          "samples": [
+            236.379,
+            222.763
+          ],
+          "details": {
+            "candidate_order": [
+              "regex",
+              "regex-automata"
+            ]
+          }
+        },
+        {
+          "name": "regex_compile_alternation_us",
+          "unit": "microseconds",
+          "samples": [
+            29.647,
+            17.864
+          ],
+          "details": {
+            "candidate_order": [
+              "regex",
+              "regex-automata"
+            ]
+          }
+        },
+        {
+          "name": "regex_compile_unsupported-lookaround_us",
+          "unit": "microseconds",
+          "samples": [
+            3.146,
+            0.181
+          ],
+          "details": {
+            "candidate_order": [
+              "regex",
+              "regex-automata"
+            ]
+          }
+        },
+        {
+          "name": "regex_compile_unsupported-backref_us",
+          "unit": "microseconds",
+          "samples": [
+            2.786,
+            0.791
+          ],
+          "details": {
+            "candidate_order": [
+              "regex",
+              "regex-automata"
+            ]
+          }
+        },
+        {
+          "name": "regex_chunk_scan_us",
+          "unit": "microseconds",
+          "samples": [
+            736.548
+          ],
+          "details": {
+            "bytes": 393216,
+            "matches": 65532,
+            "safe_point_bytes": 65536
+          }
+        }
+      ],
+      "notes": [
+        "Regex exact spans are measured in original byte offsets; the public line/column conversion remains the F1 oracle.",
+        "The default run records the bounded subprocess protocol; the feature-enabled run records gix repository discovery, and neither selects a VCS adapter."
+      ],
+      "artifacts": [
+        "report.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "experiment": "F7",
+      "run_id": "foundation-tier1-20260818",
+      "status": "complete_with_gaps",
+      "overall_outcome": "inconclusive",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F7-SNAPSHOT-NORMALIZATION",
+          "expected": "equal",
+          "observed": "equal",
+          "outcome": "pass",
+          "details": {
+            "normalized": {
+              "nodes": [
+                {
+                  "id": "n1",
+                  "name": "alpha"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "F7-FUZZ-SMOKE",
+          "expected": "no_panics",
+          "observed": "no_panics",
+          "outcome": "pass",
+          "details": {
+            "inputs": 4,
+            "panics": 0
+          }
+        },
+        {
+          "id": "F7-BENCHMARK-PROBE",
+          "expected": "recorded",
+          "observed": "recorded",
+          "outcome": "pass",
+          "details": {
+            "criterion": "not installed in spike",
+            "fixed_loop": "recorded",
+            "iai_callgrind": "not installed in spike"
+          }
+        },
+        {
+          "id": "F7-DEPENDENCY-METADATA",
+          "expected": "recorded",
+          "observed": "recorded",
+          "outcome": "pass",
+          "details": {
+            "command": "cargo metadata --locked --offline --format-version 1",
+            "success": true
+          }
+        },
+        {
+          "id": "F7-TOOL-cargo-deny",
+          "expected": "available",
+          "observed": "unavailable",
+          "outcome": "fail",
+          "details": {
+            "available": false,
+            "version": null
+          }
+        },
+        {
+          "id": "F7-TOOL-cargo-audit",
+          "expected": "available",
+          "observed": "unavailable",
+          "outcome": "fail",
+          "details": {
+            "available": false,
+            "version": null
+          }
+        },
+        {
+          "id": "F7-TOOL-cargo-sbom",
+          "expected": "available",
+          "observed": "unavailable",
+          "outcome": "fail",
+          "details": {
+            "available": false,
+            "version": null
+          }
+        },
+        {
+          "id": "F7-TOOL-cargo-auditable",
+          "expected": "available",
+          "observed": "unavailable",
+          "outcome": "fail",
+          "details": {
+            "available": false,
+            "version": null
+          }
+        },
+        {
+          "id": "F7-POLICY-NEGATIVE-FIXTURE",
+          "expected": "retained",
+          "observed": "retained",
+          "outcome": "pass",
+          "details": {
+            "intentionally_advisory": "synthetic-fixture",
+            "intentionally_disallowed_license": "GPL-3.0-only",
+            "intentionally_disallowed_source": "unapproved-git",
+            "required_behavior": "policy must fail closed"
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "identity_instruction_probe_us",
+          "unit": "microseconds",
+          "samples": [
+            1869.038
+          ],
+          "details": {
+            "iterations": 10000,
+            "tool": "fixed-loop"
+          }
+        }
+      ],
+      "notes": [
+        "This is a toolchain smoke probe, not a release qualification run.",
+        "External policy tools are reported as available or missing; missing tools are evidence gaps, not passes."
+      ],
+      "artifacts": [
+        "report.json",
+        "manifest.json"
+      ]
+    }
+  ],
+  "status": "inconclusive",
+  "decision_status": "deferred",
+  "hard_blocker": false
+}

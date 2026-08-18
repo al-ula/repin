@@ -1,0 +1,52 @@
+[package]
+name = "repin-foundation-spike"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+default-run = "repin-foundation-spike"
+
+[features]
+default = []
+gix-adapter = ["dep:gix"]
+sniff-adapter = ["dep:infer"]
+async-runtime = ["dep:tokio"]
+
+[dependencies]
+blake3 = "=1.8.5"
+cap-fs-ext = "=4.0.2"
+cap-std = "=4.0.2"
+globset = "=0.4.19"
+ignore = "=0.4.31"
+regex = "=1.13.1"
+regex-automata = "=0.4.16"
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+tempfile = "=3.27.0"
+libc = "=0.2.189"
+tokio = { version = "=1.53.1", optional = true, default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util", "macros"] }
+tree-sitter = "=0.26.11"
+tree-sitter-javascript = "=0.25.0"
+tree-sitter-md = "=0.5.3"
+tree-sitter-rust = "=0.24.2"
+tree-sitter-typescript = "=0.23.2"
+
+gix = { version = "=0.86.0", optional = true }
+infer = { version = "=0.19.0", optional = true }
+
+[dev-dependencies]
+assert_cmd = "=2.2.2"
+insta = { version = "=1.48.0", default-features = false, features = ["json"] }
+
+[[bin]]
+name = "repin-f4-spike"
+path = "src/bin/f4.rs"
+
+[[bin]]
+name = "repin-foundation-followup"
+path = "src/bin/foundation_followup.rs"
+
+[[bin]]
+name = "repin-f8-spike"
+path = "src/bin/f8.rs"

@@ -1,0 +1,4 @@
+{
+  "invalid_mapping": "one U+FFFD per maximal invalid run",
+  "matrix": "R-ASCII,R-UTF8,R-COMBINE,R-TAB,R-CRLF,R-INVALID,R-LONG,R-BOUNDARY,R-EMPTY"
+}

@@ -1,0 +1,1849 @@
+{
+  "manifest": {
+    "run_id": "foundation-followup-20260818",
+    "lifecycle_stage": "experimentation",
+    "platform_scope": "Linux x86_64/glibc PoC",
+    "target": "x86_64-unknown-linux-gnu",
+    "os": "linux",
+    "architecture": "x86_64",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+    "command": "cargo run --release --locked --offline --features gix-adapter,sniff-adapter --bin repin-foundation-followup -- run-all --output <run-directory>",
+    "source_revision": "working-tree-status: ae8b504320c2e1960da7b0ea46899aa406e2d75fe6e306e70fb68873224bbb44",
+    "lockfile_sha256": "a81b3bb912717f9ca3934824dd0433f1fc93d53ee1b864f1efc121c972a184c9",
+    "fixture_seed": "repin-foundation-followup-1",
+    "candidate_pins": {
+      "blake3": "1.8.5",
+      "cap-std/cap-fs-ext": "4.0.2",
+      "gix": "0.86.0",
+      "globset": "0.4.19",
+      "ignore": "0.4.31",
+      "infer": "0.19.0",
+      "regex": "1.13.1",
+      "regex-automata": "0.4.16",
+      "sha2": "0.10.9",
+      "tree-sitter": "0.26.11",
+      "tree-sitter-javascript": "0.25.0",
+      "tree-sitter-md": "0.5.3",
+      "tree-sitter-rust": "0.24.2",
+      "tree-sitter-typescript": "0.23.2"
+    },
+    "active_features": [
+      "default",
+      "gix-adapter",
+      "sniff-adapter"
+    ],
+    "fixture_manifest": "docs/experiments/fixtures.md",
+    "task_order": [
+      "F-017",
+      "F-018",
+      "F-009",
+      "F-019",
+      "F-014",
+      "F-015",
+      "F-020"
+    ],
+    "environment": {
+      "cpu_model": "AMD Ryzen 7 5825U with Radeon Graphics",
+      "kernel": "Linux 7.1.4-204.fc44.x86_64 x86_64 GNU/Linux",
+      "logical_cpus": "16",
+      "memory_total": "15690640 kB"
+    },
+    "reproducibility": {
+      "ordering": "canonical bytewise sort then dedup",
+      "raw_policy": "never overwrite prior runs",
+      "run_order": "F-017 -> F-018 -> F-009 -> F-019 -> F-014 -> F-015 -> F-020",
+      "safe_points": "parser callback; 64 KiB regex; child kill/reap"
+    }
+  },
+  "experiments": [
+    {
+      "experiment": "F-017",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F017-CAPTURE-rust",
+          "expected": "byte_identical_order",
+          "observed": "byte_identical_order",
+          "outcome": "pass",
+          "details": {
+            "artifact": "artifacts/f017/captures-rust.json",
+            "post_dedup": 5,
+            "pre_dedup": 5
+          }
+        },
+        {
+          "id": "F017-CAPTURE-markdown",
+          "expected": "byte_identical_order",
+          "observed": "byte_identical_order",
+          "outcome": "pass",
+          "details": {
+            "artifact": "artifacts/f017/captures-markdown.json",
+            "post_dedup": 1,
+            "pre_dedup": 1
+          }
+        },
+        {
+          "id": "F017-CAPTURE-typescript",
+          "expected": "byte_identical_order",
+          "observed": "byte_identical_order",
+          "outcome": "pass",
+          "details": {
+            "artifact": "artifacts/f017/captures-typescript.json",
+            "post_dedup": 5,
+            "pre_dedup": 5
+          }
+        },
+        {
+          "id": "F017-CAPTURE-javascript",
+          "expected": "byte_identical_order",
+          "observed": "byte_identical_order",
+          "outcome": "pass",
+          "details": {
+            "artifact": "artifacts/f017/captures-javascript.json",
+            "post_dedup": 5,
+            "pre_dedup": 5
+          }
+        },
+        {
+          "id": "F017-QUERY-MANIFEST",
+          "expected": "four_sha256_pinned_packs",
+          "observed": "four_sha256_pinned_packs",
+          "outcome": "pass",
+          "details": {
+            "artifact": "artifacts/f017/query-manifest.json"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-ASCII",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 12,
+            "end": {
+              "byte": 5,
+              "column": 6,
+              "line": 1
+            },
+            "start": {
+              "byte": 0,
+              "column": 1,
+              "line": 1
+            },
+            "text": "alpha\nsecond"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-UTF8",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 11,
+            "end": {
+              "byte": 8,
+              "column": 4,
+              "line": 1
+            },
+            "start": {
+              "byte": 1,
+              "column": 2,
+              "line": 1
+            },
+            "text": "aé日😀z"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-COMBINE",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 3,
+            "end": {
+              "byte": 3,
+              "column": 3,
+              "line": 1
+            },
+            "start": {
+              "byte": 0,
+              "column": 1,
+              "line": 1
+            },
+            "text": "é"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-TAB",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 6,
+            "end": {
+              "byte": 6,
+              "column": 7,
+              "line": 1
+            },
+            "start": {
+              "byte": 0,
+              "column": 1,
+              "line": 1
+            },
+            "text": "\talpha"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-CRLF",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 14,
+            "end": {
+              "byte": 8,
+              "column": 4,
+              "line": 2
+            },
+            "start": {
+              "byte": 5,
+              "column": 1,
+              "line": 2
+            },
+            "text": "one\r\ntwo\nthree"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-INVALID",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 4,
+            "end": {
+              "byte": 4,
+              "column": 4,
+              "line": 1
+            },
+            "start": {
+              "byte": 0,
+              "column": 1,
+              "line": 1
+            },
+            "text": "a�b"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-LONG",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 16384,
+            "end": {
+              "byte": 16384,
+              "column": 16385,
+              "line": 1
+            },
+            "start": {
+              "byte": 1024,
+              "column": 1025,
+              "line": 1
+            },
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-BOUNDARY",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 7,
+            "end": {
+              "byte": 3,
+              "column": 3,
+              "line": 1
+            },
+            "start": {
+              "byte": 2,
+              "column": 2,
+              "line": 1
+            },
+            "text": "éx\n日"
+          }
+        },
+        {
+          "id": "F017-RANGE-R-EMPTY",
+          "expected": "exact_position",
+          "observed": "exact_position",
+          "outcome": "pass",
+          "details": {
+            "bytes": 0,
+            "end": {
+              "byte": 0,
+              "column": 1,
+              "line": 1
+            },
+            "start": {
+              "byte": 0,
+              "column": 1,
+              "line": 1
+            },
+            "text": ""
+          }
+        },
+        {
+          "id": "F017-PARSER-CANCELLATION",
+          "expected": "bounded_skip",
+          "observed": "bounded_skip",
+          "outcome": "pass",
+          "details": {
+            "callbacks": 1,
+            "cancelled": true,
+            "elapsed_us": 17.433,
+            "fact_batch": false
+          }
+        },
+        {
+          "id": "F017-ISOLATED-WORKER",
+          "expected": "killed_without_fact_batch",
+          "observed": "killed_without_fact_batch",
+          "outcome": "pass",
+          "details": {
+            "exit_code": null,
+            "fact_batch": false,
+            "input_only": true,
+            "killed": true
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "f017_capture_rust_us",
+          "unit": "microseconds",
+          "samples": [
+            70.614,
+            31.159,
+            22.864,
+            20.368,
+            20.088
+          ],
+          "details": {
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "f017_capture_markdown_us",
+          "unit": "microseconds",
+          "samples": [
+            44.455,
+            23.114,
+            19.186,
+            17.132,
+            26.551000000000002
+          ],
+          "details": {
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "f017_capture_typescript_us",
+          "unit": "microseconds",
+          "samples": [
+            59.754,
+            30.678,
+            23.003999999999998,
+            20.409,
+            20.298000000000002
+          ],
+          "details": {
+            "repetitions": 5
+          }
+        },
+        {
+          "name": "f017_capture_javascript_us",
+          "unit": "microseconds",
+          "samples": [
+            43.251999999999995,
+            23.715,
+            18.535,
+            17.043,
+            16.341
+          ],
+          "details": {
+            "repetitions": 5
+          }
+        }
+      ],
+      "notes": [
+        "Results are Linux PoC evidence; parser and grammar decisions remain deferred."
+      ],
+      "artifacts": [
+        "artifacts/f017/query-manifest.json",
+        "artifacts/f017/range-oracle.json"
+      ]
+    },
+    {
+      "experiment": "F-018",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F018-SELECTION",
+          "expected": "precedence_and_exclusions",
+          "observed": "precedence_and_exclusions",
+          "outcome": "pass",
+          "details": {
+            "selected": [
+              ".gitignore",
+              "binary.rs",
+              "escape.txt",
+              "src/main.rs"
+            ]
+          }
+        },
+        {
+          "id": "F018-P-NORMAL",
+          "expected": "in_root",
+          "observed": "in_root",
+          "outcome": "pass",
+          "details": {
+            "bytes": 13
+          }
+        },
+        {
+          "id": "F018-P-TRAVERSAL",
+          "expected": "reject_before_open",
+          "observed": "reject_before_open",
+          "outcome": "pass",
+          "details": {}
+        },
+        {
+          "id": "F018-P-ABSOLUTE",
+          "expected": "reject_before_open",
+          "observed": "reject_before_open",
+          "outcome": "pass",
+          "details": {}
+        },
+        {
+          "id": "F018-P-ESCAPE",
+          "expected": "fail_closed",
+          "observed": "fail_closed",
+          "outcome": "pass",
+          "details": {}
+        },
+        {
+          "id": "F018-P-CYCLE",
+          "expected": "bounded_skip",
+          "observed": "bounded_skip",
+          "outcome": "pass",
+          "details": {}
+        },
+        {
+          "id": "F018-P-DEEP",
+          "expected": "bounded_skip",
+          "observed": "bounded_skip",
+          "outcome": "pass",
+          "details": {
+            "depth": 40,
+            "limit": 32
+          }
+        },
+        {
+          "id": "F018-P-ENCODING",
+          "expected": "opaque_or_explicit_skip",
+          "observed": "opaque_identity",
+          "outcome": "pass",
+          "details": {
+            "lossy_collision": false
+          }
+        },
+        {
+          "id": "F018-P-CASE",
+          "expected": "report_platform_observation",
+          "observed": "case_sensitive_linux",
+          "outcome": "pass",
+          "details": {
+            "distinct": true
+          }
+        },
+        {
+          "id": "F018-P-SWAP",
+          "expected": "no_out_of_root_bytes",
+          "observed": "no_out_of_root_bytes",
+          "outcome": "pass",
+          "details": {
+            "attempts": 32
+          }
+        },
+        {
+          "id": "F018-P-MUTATE",
+          "expected": "reconciliation_converges",
+          "observed": "reconciliation_converges",
+          "outcome": "pass",
+          "details": {
+            "created": true,
+            "paths": 10
+          }
+        },
+        {
+          "id": "F018-SNIFF-INHOUSE",
+          "expected": "labeled_bounded_result",
+          "observed": "labeled_bounded_result",
+          "outcome": "pass",
+          "details": {
+            "rows": 11
+          }
+        },
+        {
+          "id": "F018-SNIFF-MAINTAINED",
+          "expected": "comparison_recorded",
+          "observed": "comparison_recorded",
+          "outcome": "pass",
+          "details": {
+            "candidate": "infer-0.19.0"
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "f018_discovery_us",
+          "unit": "microseconds",
+          "samples": [
+            0.0
+          ],
+          "details": {
+            "measurement": "correctness-only fixture pass",
+            "paths": 4
+          }
+        }
+      ],
+      "notes": [
+        "Containment uses root-relative capability opens with no-follow final components and post-read identity checks."
+      ],
+      "artifacts": [
+        "artifacts/f018/sniff-corpus.json",
+        "artifacts/f018/path-manifest.json"
+      ]
+    },
+    {
+      "experiment": "F-009",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F009-INHOUSE-CONFUSION",
+          "expected": "zero_labeled_errors",
+          "observed": "zero_labeled_errors",
+          "outcome": "pass",
+          "details": {
+            "metrics": {
+              "evaluated": 11,
+              "false_negative": 0,
+              "false_positive": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "true_negative": 5,
+              "true_positive": 6,
+              "unknown": 0
+            },
+            "rows": 11
+          }
+        },
+        {
+          "id": "F009-MAINTAINED-COMPARISON",
+          "expected": "recorded",
+          "observed": "recorded",
+          "outcome": "pass",
+          "details": {
+            "candidate": "infer-0.19.0",
+            "metrics": {
+              "evaluated": 2,
+              "false_negative": 0,
+              "false_positive": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "true_negative": 0,
+              "true_positive": 2,
+              "unknown": 9
+            }
+          }
+        },
+        {
+          "id": "F009-POLICY",
+          "expected": "bounded_fail_closed_diagnostic",
+          "observed": "bounded_fail_closed_diagnostic",
+          "outcome": "pass",
+          "details": {
+            "explicit_exclusions_win": true,
+            "prefix_bytes": 8192,
+            "provisional_strategy": "inhouse_nul_control_utf8_check",
+            "unknown_maintained_result": "binary_or_skip_diagnostic"
+          }
+        }
+      ],
+      "measurements": [],
+      "notes": [
+        "The in-house policy is a provisional evidence recommendation, not a production default."
+      ],
+      "artifacts": [
+        "artifacts/f018/sniff-corpus.json",
+        "artifacts/f009/sniff-decision.json"
+      ]
+    },
+    {
+      "experiment": "F-019",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F019-REPREPARE",
+          "expected": "two_retries_then_conflict",
+          "observed": "two_retries_then_conflict",
+          "outcome": "pass",
+          "details": {
+            "automatic_reprepare_attempts": 2,
+            "committed": false,
+            "conflict": true,
+            "prepared_digests": [
+              "0ec098cf0e8eb2b53c03051c3b9ad7faa1f7235c49fc88b1a48d636e2f0a5d1c",
+              "1636a9d646c20e01360ba62add3147daf7a8075ecdb8996b23319a526d95c46f",
+              "173a036f08c73156bfd40d5f62590f04675ffc89614ee754f7a7a804da72ebbc"
+            ],
+            "reconciliation_retained": true,
+            "stale_observations": 3
+          }
+        },
+        {
+          "id": "F019-SEQUENCE",
+          "expected": "incremental_equals_fresh",
+          "observed": "incremental_equals_fresh",
+          "outcome": "pass",
+          "details": {
+            "actions": [
+              "create:c.rs",
+              "modify:a.rs",
+              "rename:b.rs->moved.rs",
+              "delete:c.rs",
+              "recreate:c.rs",
+              "resubmit:a.rs",
+              "resubmit:a.rs"
+            ]
+          }
+        },
+        {
+          "id": "F019-COALESCING",
+          "expected": "duplicate_resubmit_coalesced",
+          "observed": "duplicate_resubmit_coalesced",
+          "outcome": "pass",
+          "details": {
+            "duplicate_resubmissions": 2,
+            "graph_equality": true
+          }
+        },
+        {
+          "id": "F019-ORIGIN-DEDUP",
+          "expected": "one_tagged_hash",
+          "observed": "one_tagged_hash",
+          "outcome": "pass",
+          "details": {
+            "origins": {
+              "host": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+              "scan": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+              "vcs": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+              "watcher": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca"
+            }
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "f019_Micro_0_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            0.541,
+            0.15,
+            0.14
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 0,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Micro_0_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            4.699,
+            4.018000000000001,
+            4.008
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 0,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Micro_0_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            4.308,
+            4.1080000000000005,
+            4.188000000000001
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 0,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Micro_1024_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            1.132,
+            0.941,
+            0.922
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 1024,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Micro_1024_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            5.34,
+            4.749,
+            4.7090000000000005
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 1024,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Micro_1024_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            5.661,
+            5.6,
+            5.551
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 1024,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Micro_4096_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            2.675,
+            1.213,
+            1.2020000000000002
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 4096,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Micro_4096_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            5.781000000000001,
+            4.889,
+            4.859
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 4096,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Micro_4096_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            6.202,
+            6.082000000000001,
+            6.002000000000001
+          ],
+          "details": {
+            "band": "Micro",
+            "bytes": 4096,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Small_65536_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            12.755,
+            11.482,
+            11.372
+          ],
+          "details": {
+            "band": "Small",
+            "bytes": 65536,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Small_65536_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            13.033999999999999,
+            8.526,
+            8.466
+          ],
+          "details": {
+            "band": "Small",
+            "bytes": 65536,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Small_65536_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            19.537,
+            19.326999999999998,
+            19.346
+          ],
+          "details": {
+            "band": "Small",
+            "bytes": 65536,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Small_1048576_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            231.78,
+            192.876,
+            181.986
+          ],
+          "details": {
+            "band": "Small",
+            "bytes": 1048576,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Small_1048576_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            510.36899999999997,
+            103.70700000000001,
+            101.613
+          ],
+          "details": {
+            "band": "Small",
+            "bytes": 1048576,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Small_1048576_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            289.711,
+            282.467,
+            287.466
+          ],
+          "details": {
+            "band": "Small",
+            "bytes": 1048576,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Medium_16777216_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            3656.726,
+            3720.077,
+            3615.739
+          ],
+          "details": {
+            "band": "Medium",
+            "bytes": 16777216,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Medium_16777216_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            14259.909,
+            3235.937,
+            2996.9829999999997
+          ],
+          "details": {
+            "band": "Medium",
+            "bytes": 16777216,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Medium_16777216_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            12020.295,
+            6794.177000000001,
+            6484.4580000000005
+          ],
+          "details": {
+            "band": "Medium",
+            "bytes": 16777216,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Large_33554432_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            7443.189,
+            7509.525000000001,
+            7479.178000000001
+          ],
+          "details": {
+            "band": "Large",
+            "bytes": 33554432,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Large_33554432_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            27156.609,
+            27146.399,
+            29222.153000000002
+          ],
+          "details": {
+            "band": "Large",
+            "bytes": 33554432,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Large_33554432_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            32262.589,
+            31851.087,
+            32653.0
+          ],
+          "details": {
+            "band": "Large",
+            "bytes": 33554432,
+            "mode": "file_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Pathological_67108864_resident_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            15277.993,
+            14894.984999999999,
+            14979.737
+          ],
+          "details": {
+            "band": "Pathological",
+            "bytes": 67108864,
+            "mode": "resident_read_plus_hash"
+          }
+        },
+        {
+          "name": "f019_Pathological_67108864_file_read_us",
+          "unit": "microseconds",
+          "samples": [
+            53465.497,
+            52139.849,
+            52356.33
+          ],
+          "details": {
+            "band": "Pathological",
+            "bytes": 67108864,
+            "cache_state": "filesystem_cache_not_forcibly_dropped",
+            "mode": "fresh_file_read"
+          }
+        },
+        {
+          "name": "f019_Pathological_67108864_read_hash_us",
+          "unit": "microseconds",
+          "samples": [
+            63393.978,
+            62130.969000000005,
+            63049.533
+          ],
+          "details": {
+            "band": "Pathological",
+            "bytes": 67108864,
+            "mode": "file_read_plus_hash"
+          }
+        }
+      ],
+      "notes": [
+        "File-read timings distinguish resident, file-read, and read-plus-hash modes; cache eviction is not forced."
+      ],
+      "artifacts": [
+        "artifacts/f019/state-and-sequences.json"
+      ]
+    },
+    {
+      "experiment": "F-014",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F014-SYNTAX-literal",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "pattern": "alpha",
+            "regex": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  3,
+                  8
+                ]
+              ]
+            },
+            "regex_automata": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  3,
+                  8
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-class",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "pattern": "[a-z]+",
+            "regex": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  0,
+                  2
+                ],
+                [
+                  3,
+                  8
+                ],
+                [
+                  14,
+                  18
+                ],
+                [
+                  28,
+                  34
+                ]
+              ]
+            },
+            "regex_automata": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  0,
+                  2
+                ],
+                [
+                  3,
+                  8
+                ],
+                [
+                  14,
+                  18
+                ],
+                [
+                  28,
+                  34
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-unicode",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "pattern": "\\p{Greek}+",
+            "regex": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  19,
+                  27
+                ]
+              ]
+            },
+            "regex_automata": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  19,
+                  27
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-multiline",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "pattern": "(?m)^fn\\s+\\w+",
+            "regex": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  0,
+                  8
+                ]
+              ]
+            },
+            "regex_automata": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  0,
+                  8
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-alternation",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "pattern": "alpha|beta",
+            "regex": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  3,
+                  8
+                ],
+                [
+                  14,
+                  18
+                ]
+              ]
+            },
+            "regex_automata": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  3,
+                  8
+                ],
+                [
+                  14,
+                  18
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-quantifier",
+          "expected": "accepted",
+          "observed": "accepted",
+          "outcome": "pass",
+          "details": {
+            "pattern": "a{1,16}",
+            "regex": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  3,
+                  4
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  17,
+                  18
+                ],
+                [
+                  28,
+                  34
+                ]
+              ]
+            },
+            "regex_automata": {
+              "accepted": true,
+              "error": null,
+              "spans": [
+                [
+                  3,
+                  4
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  17,
+                  18
+                ],
+                [
+                  28,
+                  34
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-lookaround",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "pattern": "(?=alpha)",
+            "regex": {
+              "accepted": false,
+              "error": "regex parse error:\n    (?=alpha)\n    ^^^\nerror: look-around, including look-ahead and look-behind, is not supported",
+              "spans": null
+            },
+            "regex_automata": {
+              "accepted": false,
+              "error": "error parsing pattern 0",
+              "spans": null
+            }
+          }
+        },
+        {
+          "id": "F014-SYNTAX-backreference",
+          "expected": "rejected",
+          "observed": "rejected",
+          "outcome": "pass",
+          "details": {
+            "pattern": "(alpha)\\1",
+            "regex": {
+              "accepted": false,
+              "error": "regex parse error:\n    (alpha)\\1\n           ^^\nerror: backreferences are not supported",
+              "spans": null
+            },
+            "regex_automata": {
+              "accepted": false,
+              "error": "error parsing pattern 0",
+              "spans": null
+            }
+          }
+        },
+        {
+          "id": "F014-EXPENSIVE-expensive-nested",
+          "expected": "bounded_compile",
+          "observed": "bounded_compile",
+          "outcome": "pass",
+          "details": {
+            "automata_rss_delta_kib": 0,
+            "pattern": "(a|aa)+b",
+            "regex_rss_delta_kib": 0
+          }
+        },
+        {
+          "id": "F014-EXPENSIVE-expensive-unicode",
+          "expected": "bounded_compile",
+          "observed": "bounded_compile",
+          "outcome": "pass",
+          "details": {
+            "automata_rss_delta_kib": 0,
+            "pattern": "(\\p{Greek}|[a-z]){1,64}",
+            "regex_rss_delta_kib": 0
+          }
+        },
+        {
+          "id": "F014-EXPENSIVE-expensive-anchored",
+          "expected": "bounded_compile",
+          "observed": "bounded_compile",
+          "outcome": "pass",
+          "details": {
+            "automata_rss_delta_kib": 0,
+            "pattern": "^([a-z]+ ){1,128}$",
+            "regex_rss_delta_kib": 0
+          }
+        },
+        {
+          "id": "F014-CANCELLATION",
+          "expected": "64k_safe_point",
+          "observed": "64k_safe_point",
+          "outcome": "pass",
+          "details": {
+            "regex": [
+              true,
+              65536,
+              126.41000000000001
+            ],
+            "regex_automata": [
+              true,
+              65536,
+              116.03999999999999
+            ]
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "name": "f014_compile_literal_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            3.8979999999999997,
+            2.114,
+            2.2350000000000003
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "alpha"
+          }
+        },
+        {
+          "name": "f014_compile_literal_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            2.5349999999999997,
+            2.084,
+            2.024
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "alpha"
+          }
+        },
+        {
+          "name": "f014_compile_class_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            13.846,
+            12.143,
+            12.664
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "[a-z]+"
+          }
+        },
+        {
+          "name": "f014_compile_class_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            11.873,
+            12.113000000000001,
+            11.511999999999999
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "[a-z]+"
+          }
+        },
+        {
+          "name": "f014_compile_unicode_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            149.955,
+            130.548,
+            127.322
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "\\p{Greek}+"
+          }
+        },
+        {
+          "name": "f014_compile_unicode_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            151.24699999999999,
+            127.943,
+            127.51200000000001
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "\\p{Greek}+"
+          }
+        },
+        {
+          "name": "f014_compile_multiline_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            242.1,
+            243.532,
+            232.221
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "(?m)^fn\\s+\\w+"
+          }
+        },
+        {
+          "name": "f014_compile_multiline_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            206.603,
+            202.33499999999998,
+            211.903
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "(?m)^fn\\s+\\w+"
+          }
+        },
+        {
+          "name": "f014_compile_alternation_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            16.672,
+            14.748,
+            14.778
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "alpha|beta"
+          }
+        },
+        {
+          "name": "f014_compile_alternation_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            15.139000000000001,
+            14.728,
+            14.578
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "alpha|beta"
+          }
+        },
+        {
+          "name": "f014_compile_quantifier_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            8.927,
+            7.995,
+            7.455
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "a{1,16}"
+          }
+        },
+        {
+          "name": "f014_compile_quantifier_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            8.286,
+            7.593999999999999,
+            7.664
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "a{1,16}"
+          }
+        },
+        {
+          "name": "f014_compile_lookaround_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            0.941,
+            0.7010000000000001,
+            0.561
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "(?=alpha)"
+          }
+        },
+        {
+          "name": "f014_compile_lookaround_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            0.19,
+            0.151,
+            0.13
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "(?=alpha)"
+          }
+        },
+        {
+          "name": "f014_compile_backreference_regex_us",
+          "unit": "microseconds",
+          "samples": [
+            1.4020000000000001,
+            1.1119999999999999,
+            1.373
+          ],
+          "details": {
+            "candidate": "regex",
+            "pattern": "(alpha)\\1"
+          }
+        },
+        {
+          "name": "f014_compile_backreference_automata_us",
+          "unit": "microseconds",
+          "samples": [
+            0.6819999999999999,
+            0.6010000000000001,
+            0.5910000000000001
+          ],
+          "details": {
+            "candidate": "regex-automata",
+            "pattern": "(alpha)\\1"
+          }
+        },
+        {
+          "name": "f014_cancel_scan_us",
+          "unit": "microseconds",
+          "samples": [
+            126.41000000000001,
+            116.03999999999999
+          ],
+          "details": {
+            "input_bytes": 196608,
+            "safe_point_bytes": 65536
+          }
+        }
+      ],
+      "notes": [
+        "Both candidates were measured against the same patterns and haystack; no adapter is selected."
+      ],
+      "artifacts": [
+        "artifacts/f014/regex-comparison.json"
+      ]
+    },
+    {
+      "experiment": "F-015",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F015-DIRTY",
+          "expected": "same_normalized_changed_set",
+          "observed": "same_normalized_changed_set",
+          "outcome": "pass",
+          "details": {
+            "branch": "main",
+            "gix": [
+              {
+                "kind": "added",
+                "path": "new.txt"
+              },
+              {
+                "kind": "modified",
+                "path": "tracked.txt"
+              }
+            ],
+            "head": "2e3b6ffd8b7dfabfeea4a097708e6d4d04288b45",
+            "stdout_truncated": false,
+            "subprocess": [
+              {
+                "kind": "added",
+                "path": "new.txt"
+              },
+              {
+                "kind": "modified",
+                "path": "tracked.txt"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F015-IGNORED",
+          "expected": "ignored_omitted",
+          "observed": "ignored_omitted",
+          "outcome": "pass",
+          "details": {
+            "ignored": "ignored.log",
+            "reported_paths": [
+              {
+                "kind": "added",
+                "path": "new.txt"
+              },
+              {
+                "kind": "modified",
+                "path": "tracked.txt"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F015-BRANCH-SWITCH",
+          "expected": "same_normalized_changed_set",
+          "observed": "same_normalized_changed_set",
+          "outcome": "pass",
+          "details": {
+            "branch": "main",
+            "gix": [
+              {
+                "kind": "added",
+                "path": "main.txt"
+              }
+            ],
+            "head": "2e3b6ffd8b7dfabfeea4a097708e6d4d04288b45",
+            "stdout_truncated": false,
+            "subprocess": [
+              {
+                "kind": "added",
+                "path": "main.txt"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F015-WORKTREE",
+          "expected": "same_normalized_changed_set",
+          "observed": "same_normalized_changed_set",
+          "outcome": "pass",
+          "details": {
+            "branch": "",
+            "gix": [
+              {
+                "kind": "added",
+                "path": "linked.txt"
+              }
+            ],
+            "head": "2e3b6ffd8b7dfabfeea4a097708e6d4d04288b45",
+            "stdout_truncated": false,
+            "subprocess": [
+              {
+                "kind": "added",
+                "path": "linked.txt"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F015-SHALLOW",
+          "expected": "same_normalized_changed_set",
+          "observed": "same_normalized_changed_set",
+          "outcome": "pass",
+          "details": {
+            "branch": "main",
+            "gix": [
+              {
+                "kind": "added",
+                "path": "shallow.txt"
+              }
+            ],
+            "head": "2e3b6ffd8b7dfabfeea4a097708e6d4d04288b45",
+            "stdout_truncated": false,
+            "subprocess": [
+              {
+                "kind": "added",
+                "path": "shallow.txt"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F015-SUBMODULE",
+          "expected": "same_normalized_changed_set",
+          "observed": "same_normalized_changed_set",
+          "outcome": "pass",
+          "details": {
+            "branch": "main",
+            "gix": [
+              {
+                "kind": "added",
+                "path": "main.txt"
+              }
+            ],
+            "head": "60a00d7e90a007a13ecc72e4be781e2e3154c9fc",
+            "stdout_truncated": false,
+            "subprocess": [
+              {
+                "kind": "added",
+                "path": "main.txt"
+              }
+            ]
+          }
+        },
+        {
+          "id": "F015-REWRITTEN-HISTORY",
+          "expected": "same_normalized_changed_set",
+          "observed": "same_normalized_changed_set",
+          "outcome": "pass",
+          "details": {
+            "branch": "main",
+            "gix": [],
+            "head": "60a00d7e90a007a13ecc72e4be781e2e3154c9fc",
+            "stdout_truncated": false,
+            "subprocess": []
+          }
+        },
+        {
+          "id": "F015-MISSING-GIT",
+          "expected": "observable_fallback",
+          "observed": "observable_fallback",
+          "outcome": "pass",
+          "details": {
+            "fallback": "full_scan"
+          }
+        },
+        {
+          "id": "F015-INCOMPATIBLE-GIT",
+          "expected": "observable_fallback",
+          "observed": "observable_fallback",
+          "outcome": "pass",
+          "details": {
+            "exit_code": 1,
+            "fallback": "full_scan",
+            "shell": false
+          }
+        },
+        {
+          "id": "F015-CANCELLATION",
+          "expected": "kill_and_reap",
+          "observed": "kill_and_reap",
+          "outcome": "pass",
+          "details": {
+            "shell": false,
+            "timeout_ms": 25
+          }
+        },
+        {
+          "id": "F015-SUBPROCESS-POLICY",
+          "expected": "sanitized_bounded_no_shell",
+          "observed": "sanitized_bounded_no_shell",
+          "outcome": "pass",
+          "details": {
+            "env_clear": true,
+            "explicit_executable": true,
+            "hooks_and_aliases": "disabled",
+            "output_limit": 65536
+          }
+        }
+      ],
+      "measurements": [],
+      "notes": [
+        "The subprocess protocol is sanitized, bounded, shell-free, and cancellable; adapter selection remains deferred."
+      ],
+      "artifacts": [
+        "artifacts/f015/vcs-comparison.json"
+      ]
+    },
+    {
+      "experiment": "F-020",
+      "run_id": "foundation-followup-20260818",
+      "status": "complete",
+      "overall_outcome": "pass",
+      "decision_status": "deferred",
+      "hard_blocker": false,
+      "cases": [
+        {
+          "id": "F020-F014-INPUT",
+          "expected": "retained_regex_bounds_and_cancellation",
+          "observed": "retained_regex_bounds_and_cancellation",
+          "outcome": "pass",
+          "details": {
+            "case_count": 12,
+            "source": "f014-report.json"
+          }
+        },
+        {
+          "id": "F020-F015-INPUT",
+          "expected": "retained_complete_vcs_matrix",
+          "observed": "retained_complete_vcs_matrix",
+          "outcome": "pass",
+          "details": {
+            "case_count": 11,
+            "source": "f015-report.json"
+          }
+        },
+        {
+          "id": "F020-NO-SELECTION",
+          "expected": "deferred_no_production_selection",
+          "observed": "deferred_no_production_selection",
+          "outcome": "pass",
+          "details": {
+            "decision_status": "deferred",
+            "production_adapter_selected": false
+          }
+        }
+      ],
+      "measurements": [],
+      "notes": [
+        "F-020 aggregates retained F6 evidence only; it does not select a production adapter or default."
+      ],
+      "artifacts": [
+        "artifacts/f020/f6-aggregate.json"
+      ]
+    }
+  ],
+  "status": "complete",
+  "decision_status": "deferred",
+  "hard_blocker": false
+}

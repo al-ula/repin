@@ -1,0 +1,214 @@
+{
+  "experiment": "F-015",
+  "run_id": "foundation-followup-20260818",
+  "status": "complete",
+  "overall_outcome": "pass",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F015-DIRTY",
+      "expected": "same_normalized_changed_set",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass",
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "new.txt"
+          },
+          {
+            "kind": "modified",
+            "path": "tracked.txt"
+          }
+        ],
+        "head": "37a98286518b5b672834bd49b182018dd63bf6a0",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "new.txt"
+          },
+          {
+            "kind": "modified",
+            "path": "tracked.txt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F015-IGNORED",
+      "expected": "ignored_omitted",
+      "observed": "ignored_omitted",
+      "outcome": "pass",
+      "details": {
+        "ignored": "ignored.log",
+        "reported_paths": [
+          {
+            "kind": "added",
+            "path": "new.txt"
+          },
+          {
+            "kind": "modified",
+            "path": "tracked.txt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F015-BRANCH-SWITCH",
+      "expected": "same_normalized_changed_set",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass",
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ],
+        "head": "37a98286518b5b672834bd49b182018dd63bf6a0",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F015-WORKTREE",
+      "expected": "same_normalized_changed_set",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass",
+      "details": {
+        "branch": "",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "linked.txt"
+          }
+        ],
+        "head": "37a98286518b5b672834bd49b182018dd63bf6a0",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "linked.txt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F015-SHALLOW",
+      "expected": "same_normalized_changed_set",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass",
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "shallow.txt"
+          }
+        ],
+        "head": "37a98286518b5b672834bd49b182018dd63bf6a0",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "shallow.txt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F015-SUBMODULE",
+      "expected": "same_normalized_changed_set",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass",
+      "details": {
+        "branch": "main",
+        "gix": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ],
+        "head": "4ed35f5d5a1d9601ecae913916e4a5ad765640d7",
+        "stdout_truncated": false,
+        "subprocess": [
+          {
+            "kind": "added",
+            "path": "main.txt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F015-REWRITTEN-HISTORY",
+      "expected": "same_normalized_changed_set",
+      "observed": "same_normalized_changed_set",
+      "outcome": "pass",
+      "details": {
+        "branch": "main",
+        "gix": [],
+        "head": "4ed35f5d5a1d9601ecae913916e4a5ad765640d7",
+        "stdout_truncated": false,
+        "subprocess": []
+      }
+    },
+    {
+      "id": "F015-MISSING-GIT",
+      "expected": "observable_fallback",
+      "observed": "observable_fallback",
+      "outcome": "pass",
+      "details": {
+        "fallback": "full_scan"
+      }
+    },
+    {
+      "id": "F015-INCOMPATIBLE-GIT",
+      "expected": "observable_fallback",
+      "observed": "observable_fallback",
+      "outcome": "pass",
+      "details": {
+        "exit_code": 1,
+        "fallback": "full_scan",
+        "shell": false
+      }
+    },
+    {
+      "id": "F015-CANCELLATION",
+      "expected": "kill_and_reap",
+      "observed": "kill_and_reap",
+      "outcome": "pass",
+      "details": {
+        "shell": false,
+        "timeout_ms": 25
+      }
+    },
+    {
+      "id": "F015-SUBPROCESS-POLICY",
+      "expected": "sanitized_bounded_no_shell",
+      "observed": "sanitized_bounded_no_shell",
+      "outcome": "pass",
+      "details": {
+        "env_clear": true,
+        "explicit_executable": true,
+        "hooks_and_aliases": "disabled",
+        "output_limit": 65536
+      }
+    }
+  ],
+  "measurements": [],
+  "notes": [
+    "The subprocess protocol is sanitized, bounded, shell-free, and cancellable; adapter selection remains deferred."
+  ],
+  "artifacts": [
+    "artifacts/f015/vcs-comparison.json"
+  ]
+}

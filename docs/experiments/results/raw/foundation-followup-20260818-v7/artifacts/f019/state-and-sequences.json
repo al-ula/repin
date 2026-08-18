@@ -1,0 +1,36 @@
+{
+  "hash": {
+    "algorithm": "blake3",
+    "content_not_in_node_id": true
+  },
+  "origin_hashes": {
+    "host": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+    "scan": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+    "vcs": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+    "watcher": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca"
+  },
+  "sequence": {
+    "actions": [
+      "create:c.rs",
+      "modify:a.rs",
+      "rename:b.rs->moved.rs",
+      "delete:c.rs",
+      "recreate:c.rs",
+      "resubmit:a.rs",
+      "resubmit:a.rs"
+    ],
+    "incremental_equals_fresh": true
+  },
+  "state": {
+    "automatic_reprepare_attempts": 2,
+    "committed": false,
+    "conflict": true,
+    "prepared_digests": [
+      "0ec098cf0e8eb2b53c03051c3b9ad7faa1f7235c49fc88b1a48d636e2f0a5d1c",
+      "1636a9d646c20e01360ba62add3147daf7a8075ecdb8996b23319a526d95c46f",
+      "173a036f08c73156bfd40d5f62590f04675ffc89614ee754f7a7a804da72ebbc"
+    ],
+    "reconciliation_retained": true,
+    "stale_observations": 3
+  }
+}

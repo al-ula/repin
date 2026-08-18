@@ -1,0 +1,377 @@
+warning[duplicate]: found 2 duplicate entries for crate 'cpufeatures'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:17:1
+   │  
+17 │ ╭ cpufeatures 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+18 │ │ cpufeatures 0.3.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ cpufeatures v0.2.17
+     └── sha2 v0.10.9
+         └── repin-foundation-spike v0.1.0
+   ├ cpufeatures v0.3.0
+     └── blake3 v1.8.5
+         └── repin-foundation-spike v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'io-lifetimes'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:38:1
+   │  
+38 │ ╭ io-lifetimes 2.0.4 registry+https://github.com/rust-lang/crates.io-index
+39 │ │ io-lifetimes 3.0.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ io-lifetimes v2.0.4
+     └── fs-set-times v0.20.3
+         └── cap-primitives v4.0.2
+             ├── cap-fs-ext v4.0.2
+             │   └── repin-foundation-spike v0.1.0
+             └── cap-std v4.0.2
+                 ├── cap-fs-ext v4.0.2 (*)
+                 └── repin-foundation-spike v0.1.0 (*)
+   ├ io-lifetimes v3.0.1
+     ├── cap-fs-ext v4.0.2
+     │   └── repin-foundation-spike v0.1.0
+     ├── cap-primitives v4.0.2
+     │   ├── cap-fs-ext v4.0.2 (*)
+     │   └── cap-std v4.0.2
+     │       ├── cap-fs-ext v4.0.2 (*)
+     │       └── repin-foundation-spike v0.1.0 (*)
+     ├── cap-std v4.0.2 (*)
+     └── io-extras v0.19.0
+         ├── cap-primitives v4.0.2 (*)
+         └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'windows-sys'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:86:1
+   │  
+86 │ ╭ windows-sys 0.59.0 registry+https://github.com/rust-lang/crates.io-index
+87 │ │ windows-sys 0.60.2 registry+https://github.com/rust-lang/crates.io-index
+88 │ │ windows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ windows-sys v0.59.0
+     ├── fs-set-times v0.20.3
+     │   └── cap-primitives v4.0.2
+     │       ├── cap-fs-ext v4.0.2
+     │       │   └── repin-foundation-spike v0.1.0
+     │       └── cap-std v4.0.2
+     │           ├── cap-fs-ext v4.0.2 (*)
+     │           └── repin-foundation-spike v0.1.0 (*)
+     └── winx v0.36.4
+         └── cap-primitives v4.0.2 (*)
+   ├ windows-sys v0.60.2
+     └── io-extras v0.19.0
+         ├── cap-primitives v4.0.2
+         │   ├── cap-fs-ext v4.0.2
+         │   │   └── repin-foundation-spike v0.1.0
+         │   └── cap-std v4.0.2
+         │       ├── cap-fs-ext v4.0.2 (*)
+         │       └── repin-foundation-spike v0.1.0 (*)
+         └── cap-std v4.0.2 (*)
+   ├ windows-sys v0.61.2
+     ├── cap-fs-ext v4.0.2
+     │   └── repin-foundation-spike v0.1.0
+     ├── cap-primitives v4.0.2
+     │   ├── cap-fs-ext v4.0.2 (*)
+     │   └── cap-std v4.0.2
+     │       ├── cap-fs-ext v4.0.2 (*)
+     │       └── repin-foundation-spike v0.1.0 (*)
+     ├── errno v0.3.14
+     │   └── rustix v1.1.4
+     │       ├── cap-primitives v4.0.2 (*)
+     │       ├── cap-std v4.0.2 (*)
+     │       ├── fs-set-times v0.20.3
+     │       │   └── cap-primitives v4.0.2 (*)
+     │       ├── rustix-linux-procfs v0.1.1
+     │       │   └── cap-primitives v4.0.2 (*)
+     │       └── tempfile v3.27.0
+     │           ├── insta v1.48.0
+     │           │   └── (dev) repin-foundation-spike v0.1.0 (*)
+     │           └── repin-foundation-spike v0.1.0 (*)
+     ├── rustix v1.1.4 (*)
+     ├── tempfile v3.27.0 (*)
+     └── winapi-util v0.1.11
+         ├── ignore v0.4.31
+         │   └── repin-foundation-spike v0.1.0 (*)
+         ├── same-file v1.0.6
+         │   ├── ignore v0.4.31 (*)
+         │   └── walkdir v2.5.0
+         │       └── ignore v0.4.31 (*)
+         └── walkdir v2.5.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-targets'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:89:1
+   │  
+89 │ ╭ windows-targets 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+90 │ │ windows-targets 0.53.5 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ windows-targets v0.52.6
+     └── windows-sys v0.59.0
+         ├── fs-set-times v0.20.3
+         │   └── cap-primitives v4.0.2
+         │       ├── cap-fs-ext v4.0.2
+         │       │   └── repin-foundation-spike v0.1.0
+         │       └── cap-std v4.0.2
+         │           ├── cap-fs-ext v4.0.2 (*)
+         │           └── repin-foundation-spike v0.1.0 (*)
+         └── winx v0.36.4
+             └── cap-primitives v4.0.2 (*)
+   ├ windows-targets v0.53.5
+     └── windows-sys v0.60.2
+         └── io-extras v0.19.0
+             ├── cap-primitives v4.0.2
+             │   ├── cap-fs-ext v4.0.2
+             │   │   └── repin-foundation-spike v0.1.0
+             │   └── cap-std v4.0.2
+             │       ├── cap-fs-ext v4.0.2 (*)
+             │       └── repin-foundation-spike v0.1.0 (*)
+             └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_aarch64_gnullvm'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:91:1
+   │  
+91 │ ╭ windows_aarch64_gnullvm 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+92 │ │ windows_aarch64_gnullvm 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ windows_aarch64_gnullvm v0.52.6
+     └── windows-targets v0.52.6
+         └── windows-sys v0.59.0
+             ├── fs-set-times v0.20.3
+             │   └── cap-primitives v4.0.2
+             │       ├── cap-fs-ext v4.0.2
+             │       │   └── repin-foundation-spike v0.1.0
+             │       └── cap-std v4.0.2
+             │           ├── cap-fs-ext v4.0.2 (*)
+             │           └── repin-foundation-spike v0.1.0 (*)
+             └── winx v0.36.4
+                 └── cap-primitives v4.0.2 (*)
+   ├ windows_aarch64_gnullvm v0.53.1
+     └── windows-targets v0.53.5
+         └── windows-sys v0.60.2
+             └── io-extras v0.19.0
+                 ├── cap-primitives v4.0.2
+                 │   ├── cap-fs-ext v4.0.2
+                 │   │   └── repin-foundation-spike v0.1.0
+                 │   └── cap-std v4.0.2
+                 │       ├── cap-fs-ext v4.0.2 (*)
+                 │       └── repin-foundation-spike v0.1.0 (*)
+                 └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_aarch64_msvc'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:93:1
+   │  
+93 │ ╭ windows_aarch64_msvc 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+94 │ │ windows_aarch64_msvc 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ windows_aarch64_msvc v0.52.6
+     └── windows-targets v0.52.6
+         └── windows-sys v0.59.0
+             ├── fs-set-times v0.20.3
+             │   └── cap-primitives v4.0.2
+             │       ├── cap-fs-ext v4.0.2
+             │       │   └── repin-foundation-spike v0.1.0
+             │       └── cap-std v4.0.2
+             │           ├── cap-fs-ext v4.0.2 (*)
+             │           └── repin-foundation-spike v0.1.0 (*)
+             └── winx v0.36.4
+                 └── cap-primitives v4.0.2 (*)
+   ├ windows_aarch64_msvc v0.53.1
+     └── windows-targets v0.53.5
+         └── windows-sys v0.60.2
+             └── io-extras v0.19.0
+                 ├── cap-primitives v4.0.2
+                 │   ├── cap-fs-ext v4.0.2
+                 │   │   └── repin-foundation-spike v0.1.0
+                 │   └── cap-std v4.0.2
+                 │       ├── cap-fs-ext v4.0.2 (*)
+                 │       └── repin-foundation-spike v0.1.0 (*)
+                 └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_i686_gnu'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:95:1
+   │  
+95 │ ╭ windows_i686_gnu 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+96 │ │ windows_i686_gnu 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ windows_i686_gnu v0.52.6
+     └── windows-targets v0.52.6
+         └── windows-sys v0.59.0
+             ├── fs-set-times v0.20.3
+             │   └── cap-primitives v4.0.2
+             │       ├── cap-fs-ext v4.0.2
+             │       │   └── repin-foundation-spike v0.1.0
+             │       └── cap-std v4.0.2
+             │           ├── cap-fs-ext v4.0.2 (*)
+             │           └── repin-foundation-spike v0.1.0 (*)
+             └── winx v0.36.4
+                 └── cap-primitives v4.0.2 (*)
+   ├ windows_i686_gnu v0.53.1
+     └── windows-targets v0.53.5
+         └── windows-sys v0.60.2
+             └── io-extras v0.19.0
+                 ├── cap-primitives v4.0.2
+                 │   ├── cap-fs-ext v4.0.2
+                 │   │   └── repin-foundation-spike v0.1.0
+                 │   └── cap-std v4.0.2
+                 │       ├── cap-fs-ext v4.0.2 (*)
+                 │       └── repin-foundation-spike v0.1.0 (*)
+                 └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_i686_gnullvm'
+   ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:97:1
+   │  
+97 │ ╭ windows_i686_gnullvm 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+98 │ │ windows_i686_gnullvm 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ windows_i686_gnullvm v0.52.6
+     └── windows-targets v0.52.6
+         └── windows-sys v0.59.0
+             ├── fs-set-times v0.20.3
+             │   └── cap-primitives v4.0.2
+             │       ├── cap-fs-ext v4.0.2
+             │       │   └── repin-foundation-spike v0.1.0
+             │       └── cap-std v4.0.2
+             │           ├── cap-fs-ext v4.0.2 (*)
+             │           └── repin-foundation-spike v0.1.0 (*)
+             └── winx v0.36.4
+                 └── cap-primitives v4.0.2 (*)
+   ├ windows_i686_gnullvm v0.53.1
+     └── windows-targets v0.53.5
+         └── windows-sys v0.60.2
+             └── io-extras v0.19.0
+                 ├── cap-primitives v4.0.2
+                 │   ├── cap-fs-ext v4.0.2
+                 │   │   └── repin-foundation-spike v0.1.0
+                 │   └── cap-std v4.0.2
+                 │       ├── cap-fs-ext v4.0.2 (*)
+                 │       └── repin-foundation-spike v0.1.0 (*)
+                 └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_i686_msvc'
+    ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:99:1
+    │  
+ 99 │ ╭ windows_i686_msvc 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+100 │ │ windows_i686_msvc 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_i686_msvc v0.52.6
+      └── windows-targets v0.52.6
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.2
+              │       ├── cap-fs-ext v4.0.2
+              │       │   └── repin-foundation-spike v0.1.0
+              │       └── cap-std v4.0.2
+              │           ├── cap-fs-ext v4.0.2 (*)
+              │           └── repin-foundation-spike v0.1.0 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.2 (*)
+    ├ windows_i686_msvc v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.2
+                  │   ├── cap-fs-ext v4.0.2
+                  │   │   └── repin-foundation-spike v0.1.0
+                  │   └── cap-std v4.0.2
+                  │       ├── cap-fs-ext v4.0.2 (*)
+                  │       └── repin-foundation-spike v0.1.0 (*)
+                  └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_x86_64_gnu'
+    ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:101:1
+    │  
+101 │ ╭ windows_x86_64_gnu 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+102 │ │ windows_x86_64_gnu 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_x86_64_gnu v0.52.6
+      └── windows-targets v0.52.6
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.2
+              │       ├── cap-fs-ext v4.0.2
+              │       │   └── repin-foundation-spike v0.1.0
+              │       └── cap-std v4.0.2
+              │           ├── cap-fs-ext v4.0.2 (*)
+              │           └── repin-foundation-spike v0.1.0 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.2 (*)
+    ├ windows_x86_64_gnu v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.2
+                  │   ├── cap-fs-ext v4.0.2
+                  │   │   └── repin-foundation-spike v0.1.0
+                  │   └── cap-std v4.0.2
+                  │       ├── cap-fs-ext v4.0.2 (*)
+                  │       └── repin-foundation-spike v0.1.0 (*)
+                  └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_x86_64_gnullvm'
+    ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:103:1
+    │  
+103 │ ╭ windows_x86_64_gnullvm 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+104 │ │ windows_x86_64_gnullvm 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_x86_64_gnullvm v0.52.6
+      └── windows-targets v0.52.6
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.2
+              │       ├── cap-fs-ext v4.0.2
+              │       │   └── repin-foundation-spike v0.1.0
+              │       └── cap-std v4.0.2
+              │           ├── cap-fs-ext v4.0.2 (*)
+              │           └── repin-foundation-spike v0.1.0 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.2 (*)
+    ├ windows_x86_64_gnullvm v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.2
+                  │   ├── cap-fs-ext v4.0.2
+                  │   │   └── repin-foundation-spike v0.1.0
+                  │   └── cap-std v4.0.2
+                  │       ├── cap-fs-ext v4.0.2 (*)
+                  │       └── repin-foundation-spike v0.1.0 (*)
+                  └── cap-std v4.0.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_x86_64_msvc'
+    ┌─ /home/seer/Projects/repin/docs/experiments/foundation_spike/Cargo.lock:105:1
+    │  
+105 │ ╭ windows_x86_64_msvc 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+106 │ │ windows_x86_64_msvc 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_x86_64_msvc v0.52.6
+      └── windows-targets v0.52.6
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.2
+              │       ├── cap-fs-ext v4.0.2
+              │       │   └── repin-foundation-spike v0.1.0
+              │       └── cap-std v4.0.2
+              │           ├── cap-fs-ext v4.0.2 (*)
+              │           └── repin-foundation-spike v0.1.0 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.2 (*)
+    ├ windows_x86_64_msvc v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.2
+                  │   ├── cap-fs-ext v4.0.2
+                  │   │   └── repin-foundation-spike v0.1.0
+                  │   └── cap-std v4.0.2
+                  │       ├── cap-fs-ext v4.0.2 (*)
+                  │       └── repin-foundation-spike v0.1.0 (*)
+                  └── cap-std v4.0.2 (*)
+

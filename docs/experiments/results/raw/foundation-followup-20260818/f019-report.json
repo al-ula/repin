@@ -1,0 +1,410 @@
+{
+  "experiment": "F-019",
+  "run_id": "foundation-followup-20260818",
+  "status": "complete",
+  "overall_outcome": "pass",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F019-REPREPARE",
+      "expected": "two_retries_then_conflict",
+      "observed": "two_retries_then_conflict",
+      "outcome": "pass",
+      "details": {
+        "automatic_reprepare_attempts": 2,
+        "committed": false,
+        "conflict": true,
+        "prepared_digests": [
+          "0ec098cf0e8eb2b53c03051c3b9ad7faa1f7235c49fc88b1a48d636e2f0a5d1c",
+          "1636a9d646c20e01360ba62add3147daf7a8075ecdb8996b23319a526d95c46f",
+          "173a036f08c73156bfd40d5f62590f04675ffc89614ee754f7a7a804da72ebbc"
+        ],
+        "reconciliation_retained": true,
+        "stale_observations": 3
+      }
+    },
+    {
+      "id": "F019-SEQUENCE",
+      "expected": "incremental_equals_fresh",
+      "observed": "incremental_equals_fresh",
+      "outcome": "pass",
+      "details": {
+        "actions": [
+          "create:c.rs",
+          "modify:a.rs",
+          "rename:b.rs->moved.rs",
+          "delete:c.rs",
+          "recreate:c.rs",
+          "resubmit:a.rs"
+        ]
+      }
+    },
+    {
+      "id": "F019-ORIGIN-DEDUP",
+      "expected": "one_tagged_hash",
+      "observed": "one_tagged_hash",
+      "outcome": "pass",
+      "details": {
+        "origins": {
+          "host": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+          "scan": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+          "vcs": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca",
+          "watcher": "9b3a7844b08ff425691a46ae4bf0e5ac77c23329f0ea4a4a69349189ca4ef0ca"
+        }
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "name": "f019_Micro_0_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        0.5419999999999999,
+        0.14,
+        0.16
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 0,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Micro_0_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        5.36,
+        4.178,
+        4.0280000000000005
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 0,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Micro_0_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        4.97,
+        4.178,
+        4.168
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 0,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Micro_1024_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        1.1820000000000002,
+        0.9820000000000001,
+        0.9820000000000001
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 1024,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Micro_1024_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        5.691,
+        4.8500000000000005,
+        4.809
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 1024,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Micro_1024_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        5.861000000000001,
+        5.761,
+        5.731
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 1024,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Micro_4096_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        2.314,
+        1.222,
+        1.212
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 4096,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Micro_4096_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        5.601,
+        5.2,
+        4.94
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 4096,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Micro_4096_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        6.252,
+        6.102,
+        6.111
+      ],
+      "details": {
+        "band": "Micro",
+        "bytes": 4096,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Small_65536_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        13.185,
+        12.594,
+        11.612
+      ],
+      "details": {
+        "band": "Small",
+        "bytes": 65536,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Small_65536_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        13.395,
+        8.225,
+        8.125
+      ],
+      "details": {
+        "band": "Small",
+        "bytes": 65536,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Small_65536_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        19.688,
+        19.035999999999998,
+        19.177
+      ],
+      "details": {
+        "band": "Small",
+        "bytes": 65536,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Small_1048576_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        241.47799999999998,
+        220.15800000000002,
+        188.999
+      ],
+      "details": {
+        "band": "Small",
+        "bytes": 1048576,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Small_1048576_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        531.88,
+        138.75300000000001,
+        125.698
+      ],
+      "details": {
+        "band": "Small",
+        "bytes": 1048576,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Small_1048576_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        333.062,
+        321.96200000000005,
+        295.501
+      ],
+      "details": {
+        "band": "Small",
+        "bytes": 1048576,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Medium_16777216_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        4090.1349999999998,
+        4085.646,
+        4093.08
+      ],
+      "details": {
+        "band": "Medium",
+        "bytes": 16777216,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Medium_16777216_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        16705.263000000003,
+        4256.571,
+        4248.104
+      ],
+      "details": {
+        "band": "Medium",
+        "bytes": 16777216,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Medium_16777216_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        12776.055,
+        7395.119000000001,
+        7138.983
+      ],
+      "details": {
+        "band": "Medium",
+        "bytes": 16777216,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Large_33554432_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        8184.899,
+        7933.521000000001,
+        8108.8240000000005
+      ],
+      "details": {
+        "band": "Large",
+        "bytes": 33554432,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Large_33554432_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        27822.659,
+        27517.751,
+        30028.517
+      ],
+      "details": {
+        "band": "Large",
+        "bytes": 33554432,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Large_33554432_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        32486.292999999998,
+        36302.878,
+        35859.667
+      ],
+      "details": {
+        "band": "Large",
+        "bytes": 33554432,
+        "mode": "file_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Pathological_67108864_resident_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        16281.318,
+        15393.103,
+        17160.398
+      ],
+      "details": {
+        "band": "Pathological",
+        "bytes": 67108864,
+        "mode": "resident_read_plus_hash"
+      }
+    },
+    {
+      "name": "f019_Pathological_67108864_file_read_us",
+      "unit": "microseconds",
+      "samples": [
+        59121.398,
+        59069.239,
+        68832.042
+      ],
+      "details": {
+        "band": "Pathological",
+        "bytes": 67108864,
+        "cache_state": "filesystem_cache_not_forcibly_dropped",
+        "mode": "fresh_file_read"
+      }
+    },
+    {
+      "name": "f019_Pathological_67108864_read_hash_us",
+      "unit": "microseconds",
+      "samples": [
+        69378.039,
+        69336.97099999999,
+        70599.137
+      ],
+      "details": {
+        "band": "Pathological",
+        "bytes": 67108864,
+        "mode": "file_read_plus_hash"
+      }
+    }
+  ],
+  "notes": [
+    "File-read timings distinguish resident, file-read, and read-plus-hash modes; cache eviction is not forced."
+  ],
+  "artifacts": [
+    "artifacts/f019/state-and-sequences.json"
+  ]
+}

@@ -1,0 +1,9 @@
+[package]
+name = "q008-usearch-inventory"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[dependencies]
+usearch = { version = "=2.26.0", default-features = false }

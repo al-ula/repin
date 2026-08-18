@@ -1,0 +1,45 @@
+{
+  "affinity_mode": "pinned",
+  "architecture": "x86_64",
+  "captured_at_utc": "2026-08-18T08:30:32.554522+00:00",
+  "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+  "cpu_governors": [
+    "performance"
+  ],
+  "cpu_model": "AMD Ryzen 7 5825U with Radeon Graphics",
+  "kernel": "7.1.4-204.fc44.x86_64",
+  "load_average": {
+    "fifteen_minutes": 2.65869140625,
+    "five_minutes": 2.84326171875,
+    "one_minute": 2.490234375
+  },
+  "logical_cpu_count": 16,
+  "online_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "process_affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "schema": "f4-confirmatory-host-v1",
+  "system": "Linux",
+  "taskset_version": "taskset from util-linux 2.42.2"
+}

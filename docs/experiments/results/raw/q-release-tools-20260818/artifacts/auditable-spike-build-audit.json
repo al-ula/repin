@@ -1,0 +1,7 @@
+{
+  "binary": "/home/seer/Projects/repin/docs/experiments/foundation_spike/target/release/repin-foundation-spike",
+  "dependency_report_nonempty": true,
+  "exit_code": 0,
+  "report": "artifacts/auditable-spike-build-audit.txt",
+  "sha256": "da77973b3738c6fa2a577d45df248c147f2310a9ca9f4b5cbe48b00e88585001"
+}

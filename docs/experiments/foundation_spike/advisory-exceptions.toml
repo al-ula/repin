@@ -1,0 +1,13 @@
+# Q-007 intentionally starts with no exceptions.
+#
+# A temporary exception must be a complete entry of this form:
+# [[exceptions]]
+# id = "RUSTSEC-YYYY-NNNN"
+# package = "crate-name"
+# version = "=x.y.z"
+# owner = "team-or-person"
+# rationale = "why the exposure is accepted temporarily"
+# remediation_issue = "issue-or-ticket"
+# compensating_control = "bounded mitigation"
+# created = "YYYY-MM-DD"
+# expires = "YYYY-MM-DD"

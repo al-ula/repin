@@ -1,0 +1,141 @@
+{
+  "experiment": "F7",
+  "run_id": "foundation-tier1-20260818",
+  "status": "complete_with_gaps",
+  "overall_outcome": "inconclusive",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F7-SNAPSHOT-NORMALIZATION",
+      "expected": "equal",
+      "observed": "equal",
+      "outcome": "pass",
+      "details": {
+        "normalized": {
+          "nodes": [
+            {
+              "id": "n1",
+              "name": "alpha"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "F7-FUZZ-SMOKE",
+      "expected": "no_panics",
+      "observed": "no_panics",
+      "outcome": "pass",
+      "details": {
+        "inputs": 4,
+        "panics": 0
+      }
+    },
+    {
+      "id": "F7-BENCHMARK-PROBE",
+      "expected": "recorded",
+      "observed": "recorded",
+      "outcome": "pass",
+      "details": {
+        "criterion": "not installed in spike",
+        "fixed_loop": "recorded",
+        "iai_callgrind": "not installed in spike"
+      }
+    },
+    {
+      "id": "F7-DEPENDENCY-METADATA",
+      "expected": "recorded",
+      "observed": "recorded",
+      "outcome": "pass",
+      "details": {
+        "command": "cargo metadata --locked --offline --format-version 1",
+        "success": true
+      }
+    },
+    {
+      "id": "F7-TOOL-cargo-deny",
+      "expected": "available",
+      "observed": "unavailable",
+      "outcome": "fail",
+      "details": {
+        "available": false,
+        "version": null
+      }
+    },
+    {
+      "id": "F7-TOOL-cargo-audit",
+      "expected": "available",
+      "observed": "unavailable",
+      "outcome": "fail",
+      "details": {
+        "available": false,
+        "version": null
+      }
+    },
+    {
+      "id": "F7-TOOL-cargo-sbom",
+      "expected": "available",
+      "observed": "unavailable",
+      "outcome": "fail",
+      "details": {
+        "available": false,
+        "version": null
+      }
+    },
+    {
+      "id": "F7-TOOL-cargo-auditable",
+      "expected": "available",
+      "observed": "unavailable",
+      "outcome": "fail",
+      "details": {
+        "available": false,
+        "version": null
+      }
+    },
+    {
+      "id": "F7-POLICY-NEGATIVE-FIXTURE",
+      "expected": "retained",
+      "observed": "retained",
+      "outcome": "pass",
+      "details": {
+        "intentionally_advisory": "synthetic-fixture",
+        "intentionally_disallowed_license": "GPL-3.0-only",
+        "intentionally_disallowed_source": "unapproved-git",
+        "required_behavior": "policy must fail closed"
+      }
+    }
+  ],
+  "case_ids": [
+    "F7-SNAPSHOT-NORMALIZATION",
+    "F7-FUZZ-SMOKE",
+    "F7-BENCHMARK-PROBE",
+    "F7-DEPENDENCY-METADATA",
+    "F7-TOOL-cargo-deny",
+    "F7-TOOL-cargo-audit",
+    "F7-TOOL-cargo-sbom",
+    "F7-TOOL-cargo-auditable",
+    "F7-POLICY-NEGATIVE-FIXTURE"
+  ],
+  "measurements": [
+    {
+      "name": "identity_instruction_probe_us",
+      "unit": "microseconds",
+      "samples": [
+        2118.505
+      ],
+      "details": {
+        "iterations": 10000,
+        "tool": "fixed-loop"
+      }
+    }
+  ],
+  "notes": [
+    "This is a toolchain smoke probe, not a release qualification run.",
+    "External policy tools are reported as available or missing; missing tools are evidence gaps, not passes."
+  ],
+  "artifacts": [
+    "report.json",
+    "manifest.json"
+  ]
+}

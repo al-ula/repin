@@ -1,0 +1,12 @@
+# mdBook build output
+/book/
+
+# Rust build output
+target/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Run-generated fixture repositories (canonical sources live in foundation_spike/fixtures)
+docs/experiments/results/raw/**/generated-fixtures/

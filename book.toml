@@ -1,0 +1,9 @@
+[book]
+title = "Repin"
+authors = ["Repin contributors"]
+description = "Portable architecture, contracts, and planning documents for Repin."
+language = "en"
+src = "docs"
+
+[build]
+build-dir = "book"

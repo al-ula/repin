@@ -1,0 +1,587 @@
+{
+  "experiment": "F8",
+  "run_id": "foundation-f8-runtime-20260819",
+  "status": "complete",
+  "overall_outcome": "pass",
+  "decision_status": "deferred",
+  "hard_blocker": false,
+  "cases": [
+    {
+      "id": "F8-COLD-START-RACE",
+      "expected": "exactly one winner and all candidates use one socket",
+      "observed": "1 winner(s), 8 candidate events",
+      "outcome": "pass",
+      "details": {
+        "events": [
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506716
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506715
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506714
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506712
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506713
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506711
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506710
+          },
+          {
+            "details": {
+              "socket": "/tmp/.tmpCaNLCp/runtime/daemon.sock"
+            },
+            "outcome": "winner",
+            "pid": 506709
+          }
+        ],
+        "winner_count": 1
+      }
+    },
+    {
+      "id": "F8-LIVE-SOCKET",
+      "expected": "candidate exits without disturbing a live daemon",
+      "observed": "lease_unavailable",
+      "outcome": "pass",
+      "details": {
+        "events": [
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506722
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506716
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506715
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506714
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506712
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506713
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506711
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506710
+          },
+          {
+            "details": {
+              "socket": "/tmp/.tmpCaNLCp/runtime/daemon.sock"
+            },
+            "outcome": "winner",
+            "pid": 506709
+          }
+        ]
+      }
+    },
+    {
+      "id": "F8-INITIALIZATION",
+      "expected": "private creation, incomplete marker repair, and no overwrite",
+      "observed": "mode=700",
+      "outcome": "pass",
+      "details": {
+        "existing": {
+          "error": "PROJECT_ALREADY_INITIALIZED",
+          "ok": false
+        },
+        "first": {
+          "database": "/tmp/.tmpCaNLCp/projects/init-empty/.repin/graph.redb",
+          "ok": true,
+          "root": "/tmp/.tmpCaNLCp/projects/init-empty"
+        },
+        "mode": 448,
+        "partial": {
+          "database": "/tmp/.tmpCaNLCp/projects/init-partial/.repin/graph.redb",
+          "ok": true,
+          "root": "/tmp/.tmpCaNLCp/projects/init-partial"
+        },
+        "repeat": {
+          "error": "PROJECT_ALREADY_INITIALIZED",
+          "ok": false
+        }
+      }
+    },
+    {
+      "id": "F8-DISCOVERY",
+      "expected": "nearest initialized ancestor, explicit override, and canonical parent",
+      "observed": "incomplete=/tmp/.tmpCaNLCp/projects/discovery-outer, nested=/tmp/.tmpCaNLCp/projects/discovery-outer/nested",
+      "outcome": "pass",
+      "details": {
+        "explicit_root": "/tmp/.tmpCaNLCp/projects/discovery-outer",
+        "graph_without_dir": "/tmp/.tmpCaNLCp/projects/discovery-outer/graph-without-repin/graph.redb",
+        "graphless_root": "/tmp/.tmpCaNLCp/projects/discovery-outer",
+        "incomplete_root": "/tmp/.tmpCaNLCp/projects/discovery-outer",
+        "missing": {
+          "error": "PROJECT_NOT_INITIALIZED",
+          "ok": false
+        },
+        "nested_root": "/tmp/.tmpCaNLCp/projects/discovery-outer/nested",
+        "symlink_parent_root": "/tmp/.tmpCaNLCp/projects/physical-parent/physical-project"
+      }
+    },
+    {
+      "id": "F8-CONTEXT-REGISTRY",
+      "expected": "same canonical database shares one context; copied path is isolated",
+      "observed": "shared_context=true, copied_context=true",
+      "outcome": "pass",
+      "details": {
+        "copied": "context-5",
+        "copied_commit": {
+          "ok": true,
+          "request_id": 3,
+          "revision": 2
+        },
+        "original_after_copy": {
+          "context_id": "context-4",
+          "ok": true,
+          "request_id": 4,
+          "revision": 1
+        },
+        "shared_a": "context-4",
+        "shared_b": "context-4",
+        "shared_commit": {
+          "ok": true,
+          "request_id": 1,
+          "revision": 1
+        },
+        "shared_database": "/tmp/.tmpCaNLCp/projects/shared/.repin/graph.redb",
+        "shared_revision": {
+          "context_id": "context-4",
+          "ok": true,
+          "request_id": 2,
+          "revision": 1
+        }
+      }
+    },
+    {
+      "id": "F8-ALIAS-GUARD",
+      "expected": "active physical aliases reject and replacement fails closed",
+      "observed": "hard=Object {\"error\": String(\"PROJECT_STATE_ALIAS\"), \"ok\": Bool(false)}, symlink=Object {\"error\": String(\"PROJECT_STATE_ALIAS\"), \"ok\": Bool(false)}",
+      "outcome": "pass",
+      "details": {
+        "hard": {
+          "error": "PROJECT_STATE_ALIAS",
+          "ok": false
+        },
+        "replaced": {
+          "error": "PROJECT_STATE_ALIAS",
+          "ok": false,
+          "request_id": 5
+        },
+        "symlink": {
+          "error": "PROJECT_STATE_ALIAS",
+          "ok": false
+        }
+      }
+    },
+    {
+      "id": "F8-STATE-DEGRADATION",
+      "expected": "invalid/newer graph attaches with direct retrieval and precise graph errors",
+      "observed": "invalid=\"PROJECT_STATE_INVALID\", newer=\"PROJECT_STATE_NEWER\"",
+      "outcome": "pass",
+      "details": {
+        "invalid_frames": [
+          {
+            "completed": 1,
+            "event": "progress",
+            "request_id": "invalid-retrieve",
+            "total": 1
+          },
+          {
+            "bytes": "invalid-working\n",
+            "graph_status": "PROJECT_STATE_INVALID",
+            "ok": true,
+            "request_id": "invalid-retrieve"
+          }
+        ],
+        "invalid_graph": {
+          "error": "PROJECT_STATE_INVALID",
+          "ok": false,
+          "request_id": "invalid-graph"
+        },
+        "invalid_handshake": {
+          "authoritative": true,
+          "context_id": "context-6",
+          "database": "/tmp/.tmpCaNLCp/projects/invalid/.repin/graph.redb",
+          "graph_status": "PROJECT_STATE_INVALID",
+          "ok": true,
+          "revision": 0,
+          "root": "/tmp/.tmpCaNLCp/projects/invalid",
+          "shared": false
+        },
+        "newer_frames": [
+          {
+            "completed": 1,
+            "event": "progress",
+            "request_id": "newer-retrieve",
+            "total": 1
+          },
+          {
+            "bytes": "newer-working\n",
+            "graph_status": "PROJECT_STATE_NEWER",
+            "ok": true,
+            "request_id": "newer-retrieve"
+          }
+        ],
+        "newer_graph": {
+          "error": "PROJECT_STATE_NEWER",
+          "ok": false,
+          "request_id": "newer-graph"
+        },
+        "newer_handshake": {
+          "authoritative": true,
+          "context_id": "context-7",
+          "database": "/tmp/.tmpCaNLCp/projects/newer/.repin/graph.redb",
+          "graph_status": "PROJECT_STATE_NEWER",
+          "ok": true,
+          "revision": 12,
+          "root": "/tmp/.tmpCaNLCp/projects/newer",
+          "shared": false
+        }
+      }
+    },
+    {
+      "id": "F8-OBSERVER-ATTACHMENT",
+      "expected": "external writer lock produces observer attachment",
+      "observed": "authoritative=false",
+      "outcome": "pass",
+      "details": {
+        "commit": {
+          "error": "PROJECT_LEASE_UNAVAILABLE",
+          "ok": false,
+          "request_id": "observer-commit"
+        },
+        "handshake": {
+          "authoritative": false,
+          "context_id": "context-8",
+          "database": "/tmp/.tmpCaNLCp/projects/observer/.repin/graph.redb",
+          "graph_status": "VALID",
+          "ok": true,
+          "revision": 0,
+          "root": "/tmp/.tmpCaNLCp/projects/observer",
+          "shared": false
+        },
+        "retrieve": [
+          {
+            "completed": 1,
+            "event": "progress",
+            "request_id": "observer-retrieve",
+            "total": 1
+          },
+          {
+            "bytes": "working-observer\n",
+            "graph_status": "VALID",
+            "ok": true,
+            "request_id": "observer-retrieve"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F8-PROTOCOL-BOUNDS",
+      "expected": "protocol mismatch, bounded frames, binding, progress, deadlines, cancellation",
+      "observed": "mismatch=Object {\"error\": String(\"PROTOCOL_MISMATCH\"), \"ok\": Bool(false)}, oversized=Object {\"error\": String(\"FRAME_TOO_LARGE\"), \"ok\": Bool(false)}",
+      "outcome": "pass",
+      "details": {
+        "bound": {
+          "error": "PROJECT_BOUND",
+          "ok": false,
+          "request_id": "bound"
+        },
+        "cancelled": {
+          "error": "CANCELLED",
+          "ok": false,
+          "request_id": "cancel"
+        },
+        "deadline": {
+          "error": "DEADLINE_EXCEEDED",
+          "ok": false,
+          "request_id": "deadline"
+        },
+        "mismatch": {
+          "error": "PROTOCOL_MISMATCH",
+          "ok": false
+        },
+        "oversized": {
+          "error": "FRAME_TOO_LARGE",
+          "ok": false
+        },
+        "progress": [
+          {
+            "completed": 1,
+            "event": "progress",
+            "request_id": "progress",
+            "total": 1
+          },
+          {
+            "bytes": "working-protocol\n",
+            "graph_status": "VALID",
+            "ok": true,
+            "request_id": "progress"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F8-CLIENT-DETACH",
+      "expected": "one client termination does not cancel another bound client",
+      "observed": "context-9",
+      "outcome": "pass",
+      "details": {
+        "remaining": {
+          "context_id": "context-9",
+          "ok": true,
+          "request_id": "remaining",
+          "revision": 0
+        }
+      }
+    },
+    {
+      "id": "F8-CRASH-RESTART",
+      "expected": "daemon death releases project lock and repairs stale socket",
+      "observed": "recovered=Object {\"context_id\": String(\"context-1\"), \"ok\": Bool(true), \"request_id\": String(\"recovered\"), \"revision\": Number(1)}",
+      "outcome": "pass",
+      "details": {
+        "commit": {
+          "ok": true,
+          "request_id": "crash-commit",
+          "revision": 1
+        },
+        "events": [
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506722
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506716
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506715
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506714
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506712
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506713
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506711
+          },
+          {
+            "details": {},
+            "outcome": "lease_unavailable",
+            "pid": 506710
+          },
+          {
+            "details": {},
+            "outcome": "stale_socket_repaired",
+            "pid": 506751
+          },
+          {
+            "details": {
+              "socket": "/tmp/.tmpCaNLCp/runtime/daemon.sock"
+            },
+            "outcome": "winner",
+            "pid": 506751
+          },
+          {
+            "details": {
+              "socket": "/tmp/.tmpCaNLCp/runtime/daemon.sock"
+            },
+            "outcome": "winner",
+            "pid": 506709
+          }
+        ],
+        "recovered": {
+          "context_id": "context-1",
+          "ok": true,
+          "request_id": "recovered",
+          "revision": 1
+        }
+      }
+    },
+    {
+      "id": "F8-STARTUP-REPAIR",
+      "expected": "malformed readiness and pre-readiness death are recoverable",
+      "observed": "malformed=true, die=true",
+      "outcome": "pass",
+      "details": {
+        "died_before_ready": [
+          {
+            "details": {},
+            "outcome": "died_before_ready",
+            "pid": 506759
+          },
+          {
+            "details": {},
+            "outcome": "stale_socket_repaired",
+            "pid": 506760
+          },
+          {
+            "details": {
+              "socket": "/tmp/.tmpCaNLCp/die-runtime/daemon.sock"
+            },
+            "outcome": "winner",
+            "pid": 506760
+          }
+        ],
+        "malformed": [
+          {
+            "details": {},
+            "outcome": "malformed_socket_repaired",
+            "pid": 506755
+          },
+          {
+            "details": {
+              "socket": "/tmp/.tmpCaNLCp/malformed-runtime/daemon.sock"
+            },
+            "outcome": "winner",
+            "pid": 506755
+          }
+        ]
+      }
+    },
+    {
+      "id": "F8-IDLE-EVICTION",
+      "expected": "exact ten-minute idle eviction leaves active sibling untouched",
+      "observed": "target_unloaded=true, sibling_alive=true",
+      "outcome": "pass",
+      "details": {
+        "first_advance": {
+          "now_ms": 600000,
+          "ok": true,
+          "snapshot": {
+            "active_connections": 2,
+            "contexts": [
+              {
+                "authoritative": true,
+                "clients": 1,
+                "closed": false,
+                "context_id": "context-3",
+                "database": "/tmp/.tmpCaNLCp/projects/idle-b/.repin/graph.redb",
+                "graph_status": "VALID",
+                "idle_since": null,
+                "revision": 0,
+                "root": "/tmp/.tmpCaNLCp/projects/idle-b",
+                "state_dir": "/tmp/.tmpCaNLCp/projects/idle-b/.repin",
+                "watcher_registered": true
+              }
+            ],
+            "now_ms": 600000
+          },
+          "unloaded": [
+            "context-2",
+            "context-1"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F8-DAEMON-LIFECYCLE",
+      "expected": "final context unload closes socket and daemon exits",
+      "observed": "final_empty=true, daemon_exit=true",
+      "outcome": "pass",
+      "details": {
+        "final_advance": {
+          "now_ms": 1200000,
+          "ok": true,
+          "snapshot": {
+            "active_connections": 1,
+            "contexts": [],
+            "now_ms": 1200000
+          },
+          "unloaded": [
+            "context-3"
+          ]
+        },
+        "socket_exists": false
+      }
+    }
+  ],
+  "case_ids": [
+    "F8-COLD-START-RACE",
+    "F8-LIVE-SOCKET",
+    "F8-INITIALIZATION",
+    "F8-DISCOVERY",
+    "F8-CONTEXT-REGISTRY",
+    "F8-ALIAS-GUARD",
+    "F8-STATE-DEGRADATION",
+    "F8-OBSERVER-ATTACHMENT",
+    "F8-PROTOCOL-BOUNDS",
+    "F8-CLIENT-DETACH",
+    "F8-CRASH-RESTART",
+    "F8-STARTUP-REPAIR",
+    "F8-IDLE-EVICTION",
+    "F8-DAEMON-LIFECYCLE"
+  ],
+  "measurements": [],
+  "notes": [
+    "Linux x86_64/glibc runtime experiment; project and daemon state are disposable fixtures.",
+    "The idle threshold uses a virtual clock but retains the normative 600,000 ms duration.",
+    "The protocol includes an experiment-only admin channel for clock advancement and snapshots; it is not a public cross-project API.",
+    "This harness is evidence code and does not implement the production Repin daemon."
+  ],
+  "artifacts": [
+    "manifest.json",
+    "F8.json",
+    "F8-report.json"
+  ]
+}
