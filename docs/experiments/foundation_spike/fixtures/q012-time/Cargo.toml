@@ -1,9 +1,0 @@
-[package]
-name = "q012-time-advisory"
-version = "0.1.0"
-edition = "2024"
-publish = false
-license = "MIT"
-
-[dependencies]
-time = "=0.1.45"

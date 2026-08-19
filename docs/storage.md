@@ -5,7 +5,7 @@ The persistence ports and the rules that govern them. Three separate ports, beca
 ```text
 Store     transactional graph facts        required for graph capabilities
 Lexical   text search index                optional; degrades to direct scan
-Vector    approximate nearest neighbour    optional; semantic retrieval only
+Vector    nearest-neighbour retrieval      optional; semantic retrieval only
 ```
 
 Nothing above L0 names a storage product, a query language, or a schema. A rule that cannot be expressed against these ports does not belong in core logic.
@@ -237,8 +237,8 @@ state and coverage; it never presents a stale snippet as current.
 An implementation MAY use an index-derived region as a fast path, but the
 conformance fixture includes a re-read-and-verify path and a deliberate stale
 index case. This keeps the evidence source explicit while allowing the S2
-experiment to measure whether verification can be safely elided for any
-bounded internal operation.
+future adapter work to measure whether verification can be safely elided for
+any bounded internal operation.
 
 ## 6. Vector port
 
@@ -270,6 +270,12 @@ Rules:
 - Dimension and metric are fixed at index creation. Changing either invalidates the index, which is why they participate in the embedding cache key ([Optional Intelligence](intelligence.md)).
 - Absence disables semantic retrieval and nothing else. Deterministic retrieval is unaffected.
 
+The accepted I5 baseline in
+[ADR-012](decisions/ADR-012-exact-rust-vector-baseline.md) stores derived
+embedding rows and metadata in SQLite, filters them in SQL, and streams vectors
+through Rust distance computation with a bounded top-k heap. This physical
+co-location does not make semantic updates synchronous with graph commits.
+
 ## 7. Consistency between indexes
 
 Three stores that can disagree, and defined behavior when they do.
@@ -290,7 +296,10 @@ Rules:
 - Every index reports its own revision and state. Status exposes graph, lexical, and vector revisions plus pending counts where known, so a caller sees lag rather than inferring it from surprising results.
 - Unknown lag is handled defensively: any index hit resolving to a graph entity that no longer exists is **dropped**, not returned. Known stale lexical content is never presented as current evidence.
 
-The exact pending-work and acknowledgement protocol is an implementation-profile decision, but crash observability, idempotent recovery, and graph authority are portable requirements.
+ADR-012 selects reconstructable pending work plus a later vector-table commit
+and semantic-revision acknowledgement for the initial vector profile. Crash
+observability, idempotent recovery, and graph authority remain portable
+requirements.
 
 ## 8. Migration
 
@@ -335,10 +344,8 @@ deletion is treated as an identity change and fails that context closed.
 
   ```text
   project/.repin/
-    graph.redb
+    graph.sqlite3
     writer.lock
-    lexical/
-    vector/
   ```
 
 - **Deleting `.repin` is safe and sufficient only after its context has

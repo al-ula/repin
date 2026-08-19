@@ -1,6 +1,0 @@
-[package]
-name = "q012-git-source"
-version = "0.1.0"
-edition = "2024"
-publish = false
-license = "MIT"

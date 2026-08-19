@@ -4,7 +4,7 @@
 
 ## Status
 
-Planning. No implementation yet. This directory holds design documents only.
+**Authoritative Architecture & Design Specification.** Research has concluded and all 16 Architectural Decision Records (ADRs) are finalized and accepted. This repository contains the complete normative design, port contracts, data models, and implementation profile ready for production implementation.
 
 ## What it is
 
@@ -26,9 +26,7 @@ Optional intelligence (embeddings, reranking, semantic enrichment) is a layer *a
 - Not a language server, and not a substitute for one.
 - Not a compiler or type checker. It records structure and references, not full semantics.
 - Not an AI product. Intelligence is optional and additive.
-- Not a hosted or remote service. It uses an on-demand local daemon for shared
-  user-level runtime state; remote operation is a later deployment choice, not
-  an assumption.
+- Not a hosted or remote service. It uses an on-demand local daemon for shared user-level runtime state; remote operation is a later deployment choice, not an assumption.
 
 ## Agnosticism
 
@@ -40,32 +38,50 @@ Two independent axes, both required:
 
 **Driver and provider agnostic.** Storage, search indexes, file watching, and optional model capabilities are all *ports*. The core depends on the port, never on a product. No SQL, no vendor SDK, and no filesystem-notification API appears in core logic.
 
-## Documents
+## Documentation Structure
 
-| File | Contents |
-|---|---|
-| [Introduction](docs/introduction.md) | Product scope, status, agnosticism, and reading guidance |
-| [Architecture](docs/architecture.md) | Layers, ports and adapters, dependency rules, deployment topologies |
-| [Results and Evidence](docs/results.md) | Result envelope, evidence, entities, error taxonomy, output shaping |
-| [Safety and Data Handling](docs/safety.md) | Path containment, exclusions, redaction, bounds, data egress |
-| [Graph Model](docs/graph-model.md) | Nodes, edges, provenance, identity, kind and attribute registries, positions |
-| [Extraction](docs/extraction.md) | Language packs, extractor contract, resolution, versioning |
-| [Incremental Updates](docs/incremental.md) | Change model, transactions, revisions, invalidation, convergence |
-| [Storage](docs/storage.md) | Storage, lexical, and vector ports; capability negotiation; migration |
-| [Retrieval](docs/retrieval.md) | Retrieval channels, deterministic ranking, context construction |
-| [Public API](docs/api.md) | Project-bound client surface, daemon-internal engine construction, errors, cancellation, stability policy |
-| [Runtime and IPC](docs/runtime.md) | User daemon, local rendezvous, project discovery, bound connections, isolated contexts, and lifecycle |
-| [Host Integration](docs/host-integration.md) | Adapter seam, capability negotiation, lifecycle, provider contract |
-| [Optional Intelligence](docs/intelligence.md) | Optional capability ports and their asynchrony rules |
-| [Conformance](docs/conformance.md) | Invariants, fixtures, conformance suites, benchmark method |
-| [Roadmap](docs/roadmap.md) | Project lifecycle stages, implementation milestones, and exit criteria |
-| [Technology Candidates](docs/technology-candidates.md) | Proposed Rust/CLI implementation direction and adapter candidates |
-| [Planning Task Backlog](docs/tasks.md) | Byte-sized planning and experiment-preparation backlog |
-| [Storage Adapter Experiments](docs/experiments/storage.md) | Planned storage-adapter and cross-index recovery experiments |
-| [Rust Foundation Experiments](docs/experiments/rust-foundation.md) | Planned parser, filesystem, runtime, watch, and engineering-tool experiments |
-| [Experiment Results](docs/experiments/results/index.md) | Result and recommendation ledger for every experiment family; pending runs are explicit |
-| [Initial Fixture and Corpus Manifest](docs/experiments/fixtures.md) | Initial Rust/Markdown/TS/JS fixture families and workstation corpus bands |
-| [Experiment Result Template](docs/experiments/template.md) | Reproducible experiment-result and evidence template |
+The complete specification is organized into six parts:
+
+### Part I: Architecture Foundations
+
+- [Introduction](docs/introduction.md) — Product scope, status, agnosticism, and reading guidance
+- [Architecture & Layers](docs/architecture.md) — Six-layer model, ports and adapters, dependency rules, deployment topologies
+- [Safety & Security Boundary](docs/safety.md) — Path containment, exclusions, redaction, bounds, and data egress
+- [Results & Evidence Model](docs/results.md) — Result envelope, evidence, entities, error taxonomy, output shaping
+
+### Part II: Core Domain & Data Model
+
+- [Graph Model & Invariants](docs/graph-model.md) — Nodes, edges, provenance, identity, kind/attribute registries, positions
+- [Extraction & Language Packs](docs/extraction.md) — Language packs, extractor contract, resolution, versioning
+- [Incremental Updates & Convergence](docs/incremental.md) — Change model, transactions, revisions, invalidation, convergence
+- [Storage, Transactions & Persistence](docs/storage.md) — Storage, lexical, and vector ports; capability negotiation; migration
+
+### Part III: Query & Integration Surfaces
+
+- [Retrieval, Ranking & Context](docs/retrieval.md) — Retrieval channels, deterministic ranking, context construction
+- [Public API Specification](docs/api.md) — Project-bound client surface, daemon-internal engine construction, errors, cancellation
+- [Runtime, IPC & Daemon Architecture](docs/runtime.md) — User daemon, local rendezvous, project discovery, bound connections, isolated contexts, lifecycle
+- [Host Integration Seam](docs/host-integration.md) — Adapter seam, capability negotiation, lifecycle, provider contract
+- [Optional Intelligence](docs/intelligence.md) — Optional capability ports and their asynchrony rules
+
+### Part IV: Quality, Conformance & Implementation
+
+- [Conformance & Verification](docs/conformance.md) — Invariants, fixtures, conformance suites, benchmark method
+- [Technology Selections & Implementation Profile](docs/technology-candidates.md) — Finalized Rust/CLI implementation profile and adapter selections
+- [Implementation Roadmap & Milestones](docs/roadmap.md) — Implementation milestones I0–I8 and exit criteria
+
+### Part V: Architectural Decision Records
+
+- [Decision Ledger](docs/decisions/index.md) — All 16 accepted ADRs (ADR-001 through ADR-016)
+
+### Part VI: Technical Annexes & Concluded Research
+
+- [Specification — Sparse-checkpoint line index](docs/proposals/sparse-line-index.md)
+- [Specification — Language-native parsers with Tree-sitter fallback](docs/proposals/native-parsers-tree-sitter-fallback.md)
+- [Specification — Exact Rust vector search baseline](docs/proposals/vector-search-rust-friendly.md)
+- [Specification — Agent inspection and review context](docs/proposals/agent-inspection-and-review-context.md)
+- [Research Record — redb + Tantivy versus SQLite + FTS5](docs/research/redb-tantivy-vs-sqlite.md)
+- [Research Record — libSQL embedded-local](docs/research/libsql-embedded-local.md)
 
 Read [Architecture](docs/architecture.md) first. Every other document assumes its vocabulary. [Graph Model](docs/graph-model.md) and [Incremental Updates](docs/incremental.md) carry the load-bearing invariants; if you read only three documents, read those two after the architecture.
 

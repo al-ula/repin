@@ -217,7 +217,7 @@ Expected outcomes are statuses. Only genuine execution faults raise.
 | `CAPABILITY_UNAVAILABLE` | set up, unreachable now | retry later |
 | `CAPABILITY_UNSUPPORTED` | reachable, cannot do this | do not retry |
 | `STATE_PERMISSIONS` | engine state is too broad, unverifiable, or owned by another user | repair permissions or choose a private state directory |
-| `PROJECT_NOT_INITIALIZED` | no complete `.repin/graph.redb` marker was found for the selector | initialize the project or choose another root |
+| `PROJECT_NOT_INITIALIZED` | no complete `.repin/graph.sqlite3` marker was found for the selector | initialize the project or choose another root |
 | `PROJECT_STATE_INVALID` | a project database exists but is invalid, corrupt, or unsupported | repair or rebuild explicitly; direct retrieval may remain available |
 | `PROJECT_STATE_NEWER` | a project database schema is newer than this engine | use a compatible engine or rebuild explicitly; direct retrieval may remain available |
 | `PROJECT_STATE_ALIAS` | an active database was addressed through another physical alias | use the existing context or stop it before reopening the alias |

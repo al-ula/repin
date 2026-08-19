@@ -1,45 +1,58 @@
 # Summary
 
+# Part I: Architecture Foundations
+
 - [Introduction](introduction.md)
-- [Architecture](architecture.md)
-- [Results and Evidence](results.md)
-- [Safety and Data Handling](safety.md)
-- [Graph Model](graph-model.md)
-- [Extraction](extraction.md)
-- [Incremental Updates](incremental.md)
-- [Storage](storage.md)
-- [Retrieval](retrieval.md)
-- [Public API](api.md)
-- [Runtime and IPC](runtime.md)
-- [Host Integration](host-integration.md)
+- [Architecture & Layers](architecture.md)
+- [Safety & Security Boundary](safety.md)
+- [Results & Evidence Model](results.md)
+
+# Part II: Core Domain & Data Model
+
+- [Graph Model & Invariants](graph-model.md)
+- [Extraction & Language Packs](extraction.md)
+- [Incremental Updates & Convergence](incremental.md)
+- [Storage, Transactions & Persistence](storage.md)
+
+# Part III: Query & Integration Surfaces
+
+- [Retrieval, Ranking & Context](retrieval.md)
+- [Public API Specification](api.md)
+- [Runtime, IPC & Daemon Architecture](runtime.md)
+- [Host Integration Seam](host-integration.md)
 - [Optional Intelligence](intelligence.md)
-- [Conformance](conformance.md)
-- [Planning](roadmap.md)
-  - [Technology Candidates](technology-candidates.md)
-  - [Planning Task Backlog](tasks.md)
-- [Experiments](experiments/storage.md)
-  - [Rust Foundation Experiments](experiments/rust-foundation.md)
-  - [Q-007 Advisory Response Policy](experiments/advisory-policy.md)
-  - [Initial Fixture and Corpus Manifest](experiments/fixtures.md)
-  - [Experiment Result Template](experiments/template.md)
-  - [Experiment Results](experiments/results/index.md)
-    - [F1 — Tree-sitter extraction](experiments/results/f1-tree-sitter.md)
-    - [F2 — Filesystem discovery](experiments/results/f2-filesystem.md)
-    - [F-008 — Root-capability opens](experiments/results/f008-root-capability.md)
-    - [F3 — Hash and update](experiments/results/f3-hash-update.md)
-    - [F4 — Cancellation and concurrency](experiments/results/f4-cancellation.md)
-    - [F5 — Watch adapter](experiments/results/f5-watch.md)
-    - [F6 — Regex and VCS](experiments/results/f6-regex-vcs.md)
-    - [F-017 — F1 evidence follow-up](experiments/results/f017-f1-followup.md)
-    - [F-018 — F2 adversarial filesystem follow-up](experiments/results/f018-f2-followup.md)
-    - [F-009 — Content-sniffing comparison](experiments/results/f009-content-sniff.md)
-    - [F-019 — F3 hash/update follow-up](experiments/results/f019-f3-followup.md)
-    - [F-014 — Regex comparison](experiments/results/f014-regex.md)
-    - [F-015 — VCS comparison](experiments/results/f015-vcs.md)
-    - [F-020 — F6 aggregate follow-up](experiments/results/f020-f6-followup.md)
-    - [F7 — Quality and toolchain](experiments/results/f7-toolchain.md)
-    - [F-004 — Byte-to-character line index](experiments/results/f004-line-index.md)
-    - [S1 — redb store](experiments/results/s1-redb.md)
-    - [S2 — Tantivy lexical](experiments/results/s2-tantivy.md)
-    - [S3 — Vector adapter](experiments/results/s3-vector.md)
-    - [S4 — Revision and recovery](experiments/results/s4-recovery.md)
+
+# Part IV: Quality, Conformance & Implementation
+
+- [Conformance & Verification](conformance.md)
+- [Technology Selections & Implementation Profile](technology-candidates.md)
+- [Implementation Roadmap & Milestones](roadmap.md)
+
+# Part V: Architectural Decision Records
+
+- [Decision Ledger](decisions/index.md)
+  - [ADR-001 — Linux PoC scope](decisions/ADR-001-linux-poc-scope.md)
+  - [ADR-002 — Synchronous core](decisions/ADR-002-synchronous-core.md)
+  - [ADR-003 — Capability-relative filesystem](decisions/ADR-003-capability-relative-filesystem.md)
+  - [ADR-004 — Update and hash protocol](decisions/ADR-004-update-hash-protocol.md)
+  - [ADR-005 — Deterministic search contracts](decisions/ADR-005-deterministic-search-contracts.md)
+  - [ADR-006 — Extraction and ranges](decisions/ADR-006-extraction-and-ranges.md)
+  - [ADR-007 — Optional capability sequencing](decisions/ADR-007-optional-capability-sequencing.md)
+  - [ADR-008 — Provisional quality and content policy](decisions/ADR-008-provisional-quality-and-content-policy.md)
+  - [ADR-009 — SQLite + FTS5 initial profile](decisions/ADR-009-sqlite-fts5-initial-profile.md)
+  - [ADR-010 — `regex` direct-search adapter](decisions/ADR-010-regex-direct-search.md)
+  - [ADR-011 — Bounded Git subprocess](decisions/ADR-011-bounded-git-subprocess.md)
+  - [ADR-012 — Exact Rust vector baseline](decisions/ADR-012-exact-rust-vector-baseline.md)
+  - [ADR-013 — Native parsers with Tree-sitter fallback](decisions/ADR-013-native-parser-tree-sitter-fallback.md)
+  - [ADR-014 — Sparse-checkpoint line index](decisions/ADR-014-sparse-checkpoint-line-index.md)
+  - [ADR-015 — Per-user daemon with in-process engine](decisions/ADR-015-hybrid-per-user-daemon-runtime.md)
+  - [ADR-016 — Agent inspection and review context](decisions/ADR-016-agent-inspection-and-review-context.md)
+
+# Part VI: Technical Annexes & Concluded Research
+
+- [Specification — Sparse-checkpoint line index](proposals/sparse-line-index.md)
+- [Specification — Language-native parsers with Tree-sitter fallback](proposals/native-parsers-tree-sitter-fallback.md)
+- [Specification — Exact Rust vector search baseline](proposals/vector-search-rust-friendly.md)
+- [Specification — Agent inspection and review context](proposals/agent-inspection-and-review-context.md)
+- [Research Record — redb + Tantivy versus SQLite + FTS5](research/redb-tantivy-vs-sqlite.md)
+- [Research Record — libSQL embedded-local](research/libsql-embedded-local.md)

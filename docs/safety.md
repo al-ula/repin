@@ -100,10 +100,8 @@ The deterministic engine is fully offline. Optional capabilities may not be.
 
   ```text
   project/.repin/
-    graph.redb
+    graph.sqlite3
     writer.lock
-    lexical/
-    vector/
   ```
 
 - State is not world-readable by default. It contains structural information

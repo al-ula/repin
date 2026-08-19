@@ -117,7 +117,7 @@ file. For host-supplied content, the supplied bytes and tagged hash are the
 input for that call; root and selection checks still run, and optional host
 identity metadata is an additional guard. The snapshot is bound to the
 prepared graph revision and is revalidated before commit. This is the
-prepare/revalidate contract exercised by [Rust Foundation F3](experiments/rust-foundation.md#f3-preparation-snapshot-and-revalidation-state-machine).
+prepare/revalidate contract recorded in [ADR-004](decisions/ADR-004-update-hash-protocol.md).
 
 Rules:
 

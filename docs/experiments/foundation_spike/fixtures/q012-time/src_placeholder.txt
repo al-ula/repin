@@ -1,2 +1,0 @@
-This fixture is metadata-only. The Cargo.lock is generated for cargo-audit and the
-fixture is never compiled or executed.

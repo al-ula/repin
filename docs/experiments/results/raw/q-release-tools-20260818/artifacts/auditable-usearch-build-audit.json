@@ -1,7 +1,0 @@
-{
-  "binary": "/home/seer/Projects/repin/docs/experiments/foundation_spike/fixtures/q008-usearch/target/release/q008-usearch-inventory",
-  "dependency_report_nonempty": true,
-  "exit_code": 0,
-  "report": "artifacts/auditable-usearch-build-audit.txt",
-  "sha256": "ddba4527646e64cf90a472d1fea233c5be978d63604c7dfe1cc7c445542542f0"
-}

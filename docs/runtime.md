@@ -4,10 +4,11 @@ This chapter is normative for process lifetime, local IPC, project discovery,
 and project-context ownership. Repin runs as one on-demand daemon per
 unprivileged OS user. The daemon is reached through one local socket and hosts
 zero or more isolated project contexts in its process. Durable project state
-remains in each project's `.repin` directory.
+remains in each project's `.repin` directory. This topology is accepted by
+[ADR-015](decisions/ADR-015-hybrid-per-user-daemon-runtime.md).
 
 There is no separate `ProjectId`. A project is addressed at runtime by the
-canonical path to its `graph.redb` file. The path is the registry key, not a
+canonical path to its `graph.sqlite3` file. The path is the registry key, not a
 portable identifier that clients may persist or compare across machines.
 
 ## 1. Durable and runtime state
@@ -16,14 +17,12 @@ An initialized project has this minimum layout:
 
 ```text
 project/.repin/
-  graph.redb
+  graph.sqlite3
   writer.lock
-  lexical/
-  vector/
 ```
 
 The initialization marker is the pair of a `.repin` directory and a regular
-`.repin/graph.redb` file. The database's contents are validated after the
+`.repin/graph.sqlite3` file. The database's contents are validated after the
 marker is found; validation determines graph capability and does not create a
 second project identity. All project paths are subject to the permissions,
 root-containment, and symlink/reparse checks in [Safety and Data Handling](safety.md).
@@ -97,15 +96,15 @@ ProjectSelector
 
 `DiscoverFrom` starts at the supplied working directory and walks toward the
 filesystem root. The nearest ancestor containing both a `.repin` directory and
-a regular `.repin/graph.redb` file wins. If the supplied path is a file, its
+ a regular `.repin/graph.sqlite3` file wins. If the supplied path is a file, its
 parent directory is the starting directory. The walk is finite, does not cross
 the filesystem root, and reports `PROJECT_NOT_INITIALIZED` when no pair is
 found.
 
 An incomplete pair is not a project marker:
 
-- `.repin/` without `graph.redb` is incomplete; discovery continues upward.
-- `graph.redb` without its `.repin/` directory is incomplete; discovery
+- `.repin/` without `graph.sqlite3` is incomplete; discovery continues upward.
+- `graph.sqlite3` without its `.repin/` directory is incomplete; discovery
   continues upward.
 - A non-regular, symlinked, or reparse-point state entry is not silently
   followed. Unsafe state is rejected or treated as incomplete according to
@@ -114,18 +113,18 @@ An incomplete pair is not a project marker:
 
 `AtRoot` bypasses ancestor selection and addresses exactly the supplied root.
 It still canonicalizes and validates the state directory and still requires
-the `.repin/graph.redb` pair. Explicit selection therefore overrides which
+the `.repin/graph.sqlite3` pair. Explicit selection therefore overrides which
 ancestor is chosen, not the safety or initialization rules.
 
 Before checking ancestors, the daemon canonicalizes the starting parent
 directory, resolving parent-directory symlinks/reparse points. It then walks
 the canonical physical parents, not the spelling supplied by the client. The
-final `.repin` and `graph.redb` components are opened with no-follow or an
+final `.repin` and `graph.sqlite3` components are opened with no-follow or an
 equivalent revalidation guard. All selected paths are checked again before
 activation so a directory replacement between discovery and open fails closed.
 
 The canonical database path is computed as the canonical project root joined
-to `.repin/graph.redb` and then validated as a regular file. The active context
+to `.repin/graph.sqlite3` and then validated as a regular file. The active context
 registry is keyed by this canonical path. Two clients selecting the same path
 share one context; copying the database to another canonical path creates an
 independent context, even when the copied contents are byte-for-byte equal.
@@ -141,7 +140,7 @@ is never exposed as a stable logical project identifier.
 ## 4. Initialization and graph capability
 
 `repin init` is a daemon-mediated operation. It creates `.repin` with private
-permissions, acquires that project's writer lock, and creates `graph.redb`.
+permissions, acquires that project's writer lock, and creates `graph.sqlite3`.
 It MUST NOT overwrite an existing database. Creation and activation recheck
 the canonical paths and filesystem identity before publishing the initialized
 context.
@@ -150,7 +149,7 @@ Project membership and graph capability are separate outcomes:
 
 | State | Connection outcome |
 |---|---|
-| No `.repin/graph.redb` pair | `PROJECT_NOT_INITIALIZED`; choose another root or initialize |
+| No `.repin/graph.sqlite3` pair | `PROJECT_NOT_INITIALIZED`; choose another root or initialize |
 | Pair exists and store validates | Attach normally; graph and available indexes may be used |
 | Pair exists but is invalid, corrupt, or unsupported | Attach in degraded mode with `PROJECT_STATE_INVALID`; preserve bounded direct working-tree retrieval |
 | Pair exists with a newer schema | Refuse graph access with `PROJECT_STATE_NEWER`; preserve safe direct retrieval |
@@ -205,10 +204,16 @@ other connections. Requests belonging to the closed connection may be
 canceled according to the transport contract; unrelated project and daemon
 work continues.
 
-`open(EngineOptions) -> Engine` remains a daemon-internal and test composition
-API. It is useful for assembling ports and testing the deterministic engine,
-but it is not the normal client entrypoint and does not grant a client direct
-ownership of project locks.
+`open(EngineOptions) -> Engine` remains an in-process composition API for the
+daemon, deterministic tests, and explicit library embedding. It is not the
+normal project-client entrypoint and does not by itself grant ownership of a
+project lock or the daemon's sharing guarantees.
+
+Implementation establishes this in-process engine and its port conformance
+first, then adds the daemon composition root, context registry, and bounded
+protocol. Multi-client sharing, watcher ownership, and the normal project-bound
+CLI are conforming only through the completed daemon path; the sequencing does
+not create a second public runtime topology.
 
 ## 6. Lock ownership and observer mode
 
@@ -264,7 +269,7 @@ general taxonomy in [Results and Evidence](results.md):
 
 | Code | Meaning |
 |---|---|
-| `PROJECT_NOT_INITIALIZED` | No valid `.repin/graph.redb` pair was found for the selector. |
+| `PROJECT_NOT_INITIALIZED` | No valid `.repin/graph.sqlite3` pair was found for the selector. |
 | `PROJECT_STATE_INVALID` | A database exists but is invalid, corrupt, or unsupported. |
 | `PROJECT_STATE_NEWER` | The database schema is newer than this engine can read. |
 | `PROJECT_STATE_ALIAS` | An active database was addressed through another physical alias. |
@@ -300,5 +305,6 @@ The runtime implementation is conforming only if all of the following hold:
 9. Deadlines, cancellation, progress, and protocol negotiation work across a
    bound connection without reintroducing project paths into domain requests.
 
-The planned runtime experiment and its evidence matrix are listed in
-[Rust Foundation Experiments — F8 runtime](experiments/rust-foundation.md#f8-runtime-daemon-and-project-contexts).
+ADR-015 accepts the runtime topology. The invariants above and its named fault
+cases remain required implementation validation and may reopen the decision if
+the implementation evidence reaches an ADR-015 trigger.

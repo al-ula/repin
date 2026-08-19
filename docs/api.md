@@ -32,7 +32,7 @@ ProjectSpec
 ```
 
 `ProjectSpec` has no `ProjectId`. The initialized project is addressed by the
-canonical path to `.repin/graph.redb`; `root` and any logical roots are
+canonical path to `.repin/graph.sqlite3`; `root` and any logical roots are
 configuration, not a second runtime identity. `initializeProject` creates the
 state directory and database only when no database already exists. It acquires
 the project writer lease through the daemon and returns a bound client.
@@ -55,11 +55,12 @@ The remaining operations in this document are methods on `ProjectClient`.
 or cancel requests belonging to other connections. A client must establish a
 new bound connection to work with another project.
 
-### Daemon-internal engine construction
+### In-process engine construction
 
-The following composition surface is retained for the daemon and deterministic
-engine tests. It is not the normal client entrypoint and does not transfer
-project-lock ownership to the caller.
+The following composition surface is retained for the daemon, deterministic
+engine tests, and explicit library embedding. It is not the normal
+project-client entrypoint and does not by itself transfer project-lock
+ownership or the daemon's sharing guarantees to the caller.
 
 ```text
 open(options: EngineOptions) -> Engine
@@ -302,8 +303,33 @@ ImpactRequest
 `maxDepth` is required rather than defaulted on `trace` and `impact`. An unbounded traversal on a large graph is a denial-of-service against the caller, and a default that is safe for one repository is not safe for all of them. Forcing the choice makes the cost visible.
 
 ```text
-EntityRef = ById { id: EntityId } | ByName { name: Text, kind?: NodeKind, pathHint?: Path }
+EntityRef
+  = ById       { id: EntityId }
+  | ByName     { name: Text, kind?: NodeKind, pathHint?: Path }
+  | AtPosition { path: Path, position: Position,
+                 preference?: exact | smallest_enclosing }
 ```
+
+```text
+inspectFile(request: InspectFileRequest, call?: CallOptions) -> Result<FileInspection>
+
+InspectFileRequest
+  path:          Path
+  budget?:       OutputBudget
+
+FileInspection
+  path:          Path
+  language?:     LanguageId
+  artifactClass: ArtifactClass
+  symbols:       SymbolSummary[]
+  imports?:      RelationshipSummary[]
+  exports?:      RelationshipSummary[]
+  recommended?:  EntityRef[]
+  coverage:      Coverage
+  provenance:    ProvenanceSummary
+```
+
+`inspectFile` returns a structured file outline without embedding full source bodies. `AtPosition` resolves a 1-based source position or byte offset against selected facts and current file bytes, returning explicit outcomes for no enclosing entity or ambiguous boundaries.
 
 ## 6. Context
 
@@ -343,6 +369,29 @@ BudgetEstimator
 ```
 
 The estimator exists because a budget expressed in model tokens cannot be computed without a specified encoding. Guessing an encoding is how a budget gets exceeded. In-process callers may supply a callback; service protocols use a negotiated, registered estimator available on the engine side. A transport that supports neither MUST reject `maxUnits` as unsupported and still accepts byte/line budgets—it MUST NOT silently substitute an approximate tokenizer.
+
+### Review context
+
+```text
+reviewContext(request: ReviewContextRequest, call?: CallOptions) -> Result<ReviewContext>
+
+ReviewContextRequest
+  changesSince?: Revision       // omitted: uncommitted working-tree changes
+  paths?:        PathPattern[]
+  maxDepth:      Count
+  include?:      { callers?, tests?, docs?, config?, dependencies? }
+  budget:        OutputBudget
+
+ReviewContext
+  changed:       Entity[]
+  impact:        ImpactGroup[]
+  fragments:     ContextFragment[]
+  recommended:   EntityRef[]
+  omitted:       OmissionReport
+  coverage:      Coverage
+```
+
+`reviewContext` composes `changesSince`, `impact`, and `context` over changed files or revisions, follows reverse dependencies up to `maxDepth`, and returns a budgeted context bundle with explicit omission and coverage reporting.
 
 ## 7. Diagnostics
 

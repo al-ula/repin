@@ -50,9 +50,9 @@ Canonical comparison ignores:
 
 Everything not listed as ignored is compared. In particular, a single-occurrence fact's `range` is compared exactly, so this rule cannot hide range defects. Comparison is symmetric and must fail on both missing and extra elements; a comparison that only checks containment is not a graph-equality check.
 
-Occurrence counts are deliberately **not** part of portable equality. The canonical graph exposes one fact per identity, and no port operation reports how many occurrences produced it. A suite that wants occurrence-level evidence must obtain it from an adapter's own test-only inspection surface — as the S1 sidecars in [Storage Adapter Experiments](experiments/storage.md#s1-experimental-key-encoding-s-002) do — and must record the absence of that surface as a coverage limitation rather than a failure.
+Occurrence counts are deliberately **not** part of portable equality. The canonical graph exposes one fact per identity, and no port operation reports how many occurrences produced it. A suite that wants occurrence-level evidence may obtain it from an adapter's own test-only inspection surface, and must record the absence of that surface as a coverage limitation rather than a failure.
 
-The same canonicalization applies to the fixture oracles in [Initial Fixture and Corpus Manifest §6](experiments/fixtures.md#6-deterministic-graph-shape-generators), so a generator oracle and a rebuild comparison cannot disagree about what equality means.
+The same canonicalization applies to any future fixture oracle, so a generator oracle and a rebuild comparison cannot disagree about what equality means.
 
 ### Identity stability
 
@@ -107,8 +107,9 @@ Enumerated in [Safety and Data Handling](safety.md); verified adversarially in [
 
 ### Runtime and IPC
 
-The runtime suite verifies the process and context invariants in
-[Runtime and IPC](runtime.md) and uses the detailed workload in [F8 runtime](experiments/rust-foundation.md#f8-runtime-daemon-and-project-contexts):
+The runtime suite must verify the process and context invariants in
+[Runtime and IPC](runtime.md). ADR-015 accepts the topology while leaving these
+checks as required implementation validation:
 
 - concurrent cold-start clients elect exactly one daemon and losing candidates
   reconnect;
@@ -202,7 +203,7 @@ Replaces the unmeasurable claim "useful without a model."
 
 Numbers without method are not evidence.
 
-**Corpus.** Use the fixed, versioned Micro, Small, Medium, Large normal, and Pathological bands in [Initial Fixture and Corpus Manifest](experiments/fixtures.md). The initial largest normal target is 10,000 selected files and 250 MiB of selected content; generated, dependency, and vendor trees are excluded normally and measured in bounded pathological cases. Composition is documented, because corpus composition dominates results—a corpus heavy in declaration-only files measures something quite different from real implementation code. A corpus is classified by its highest file, byte, node, or edge band, and reported measurements use actual counts.
+**Corpus.** Future evidence runs should use versioned Micro, Small, Medium, Large normal, and Pathological bands. The prior target was 10,000 selected files and 250 MiB of selected content; generated, dependency, and vendor trees are excluded normally and measured in bounded pathological cases. Composition is documented, because corpus composition dominates results—a corpus heavy in declaration-only files measures something quite different from real implementation code. A corpus is classified by its highest file, byte, node, or edge band, and reported measurements use actual counts.
 
 **Phases measured separately.** Crawl, read, hash, detect, parse, extract, resolve, store write, lexical index, vector index. Aggregate-only numbers hide which phase actually costs.
 

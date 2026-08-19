@@ -1,9 +1,0 @@
-[package]
-name = "q012-gpl-root"
-version = "0.1.0"
-edition = "2024"
-publish = false
-license = "MIT"
-
-[dependencies]
-q012-bad-gpl = { path = "bad-gpl" }

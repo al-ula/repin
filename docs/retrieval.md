@@ -25,12 +25,14 @@ query
 Each channel is independently available or absent. A query uses whichever exist, and the result reports which contributed ([Results and Evidence §1](results.md#1-envelope)). Absence of a channel narrows recall; it never fails a query.
 
 | Channel | Requires | Absent |
-|---|---|---|
+| --- | --- | --- |
 | lexical | lexical port, or direct scan | never absent |
 | symbol | a pack with `symbols`, or graph | falls back to text |
 | structural | file nodes, or filesystem | never absent |
 | graph | a usable graph | omitted |
 | semantic | vector port and embeddings | omitted |
+
+The **symbol channel** employs identifier-aware lexical tokenization: identifiers are normalized into their complete spelling as well as constituent parts across camelCase, PascalCase, snake_case, kebab-case, dotted names, and digit boundaries. This expands recall for partial identifier queries while retaining exact-match priority.
 
 **Semantic retrieval complements deterministic retrieval; it does not replace it.** A semantic channel that returns plausible-looking but wrong entities is worse than no semantic channel, because deterministic channels' precision gets diluted. Semantic hits enter the same merge as everything else and must earn their position.
 
@@ -193,7 +195,7 @@ context(nodes, budget)   -> assembled, ordered, deduplicated material
 ### Strategies
 
 | Strategy | Assembles |
-|---|---|
+| --- | --- |
 | `exact` | only the requested entities |
 | `neighborhood` | entities plus immediate relationships |
 | `dependency` | entities plus what they depend on |
@@ -216,6 +218,16 @@ Strategies compose. Available strategies are reported in capabilities so a calle
 7. **Apply redaction** ([Safety and Data Handling §3](safety.md#3-redaction)). Context is output.
 
 Where a budget is expressed in units the engine cannot compute exactly—model tokens, for instance—it uses an explicit estimator rather than assuming an encoding. An in-process binding may accept a callback; a service uses a negotiated estimator registered on the engine side. If neither exists, that unit budget is unsupported. Guessing a tokenization is how a budget gets exceeded.
+
+### Agent inspection and review context
+
+To support bounded navigation for automated coding agents without forcing full-file dumps or ad-hoc graph traversals, Repin provides high-level inspection and review primitives:
+
+- **`inspectFile`**: Delivers a structured module outline (`SymbolSummary[]`, imports, exports, and ranked recommended entities) without source bodies. When graph data is absent, it degrades to syntax-only or text-only metadata with explicit coverage tracking.
+- **Position resolution (`AtPosition`)**: Resolves 1-based source positions or byte offsets to the exact or smallest enclosing entity in the working tree.
+- **`reviewContext`**: Composes changed files (or revision diffs), reverse dependency impact, and budgeted context assembly into a single structured evidence bundle with honest omission reporting.
+
+All evidence bodies returned through this funnel are reread directly from current working tree bytes, preserving the rule that the working tree wins.
 
 ## 9. Direct retrieval
 

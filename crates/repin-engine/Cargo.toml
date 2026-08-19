@@ -1,0 +1,23 @@
+[package]
+name = "repin-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+repin-core.workspace = true
+repin-protocol.workspace = true
+repin-fs.workspace = true
+repin-store-sqlite.workspace = true
+repin-direct-search.workspace = true
+repin-packs.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

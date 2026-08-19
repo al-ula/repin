@@ -4,7 +4,7 @@ Repin is a standalone, deterministic knowledge-graph engine for repositories. It
 
 ## Status
 
-Planning. No implementation yet. This book holds design documents only.
+**Authoritative Architecture & Design Specification.** Research has concluded, all 16 Architectural Decision Records (ADRs) are finalized and accepted, and the implementation profile is established. This book is the normative design and contract blueprint for Repin.
 
 ## What Repin is
 
@@ -24,9 +24,7 @@ Optional intelligence (embeddings, reranking, semantic enrichment) is a layer *a
 - Not a language server, and not a substitute for one.
 - Not a compiler or type checker. It records structure and references, not full semantics.
 - Not an AI product. Intelligence is optional and additive.
-- Not a hosted or remote service. It uses an on-demand local daemon for shared
-  user-level runtime state; remote operation is a later deployment choice, not
-  an assumption.
+- Not a hosted or remote service. It uses an on-demand local daemon for shared user-level runtime state; remote operation is a later deployment choice, not an assumption.
 
 ## Agnosticism
 
@@ -40,9 +38,16 @@ Two independent axes, both required:
 
 ## How to read this book
 
-Start with [Architecture](architecture.md). It defines the vocabulary and the boundaries that the remaining documents assume. Then read [Results and Evidence](results.md), [Safety and Data Handling](safety.md), [Graph Model](graph-model.md), and [Extraction](extraction.md) to understand what the engine stores, returns, and refuses to do. [Incremental Updates](incremental.md) and [Storage](storage.md) specify how those facts remain current and durable.
+The specification is organized into six logical parts:
 
-The later chapters cover [Retrieval](retrieval.md), the [Public API](api.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md), and [Conformance](conformance.md). [Planning](roadmap.md), [Technology Candidates](technology-candidates.md), and the experiment plans follow the normative design.
+- **Part I: Architecture Foundations** ([Architecture](architecture.md), [Safety & Security Boundary](safety.md), [Results & Evidence Model](results.md)) defines the system layers, trust boundary, and output contract.
+- **Part II: Core Domain & Data Model** ([Graph Model](graph-model.md), [Extraction](extraction.md), [Incremental Updates](incremental.md), [Storage](storage.md)) specifies what the engine stores, how facts are extracted and resolved, and how transactions and revisions guarantee convergence.
+- **Part III: Query & Integration Surfaces** ([Retrieval](retrieval.md), [Public API](api.md), [Runtime & IPC](runtime.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md)) covers search channels, client contracts, daemon rendezvous, and host seams.
+- **Part IV: Quality, Conformance & Implementation** ([Conformance](conformance.md), [Technology Selections & Implementation Profile](technology-candidates.md), [Roadmap](roadmap.md)) defines mechanical invariants, the accepted Rust/SQLite profile, and milestone delivery criteria.
+- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 16 accepted ADRs documenting the design rationale and constraints.
+- **Part VI: Technical Annexes & Concluded Research** provides detailed subsystem specifications and concluded research records.
+
+Start with [Architecture](architecture.md). It defines the vocabulary and the boundaries that the remaining documents assume. Then read [Results and Evidence](results.md), [Safety and Data Handling](safety.md), [Graph Model](graph-model.md), and [Extraction](extraction.md) to understand what the engine stores, returns, and refuses to do. [Incremental Updates](incremental.md) and [Storage](storage.md) specify how those facts remain current and durable.
 
 ## Reading conventions
 

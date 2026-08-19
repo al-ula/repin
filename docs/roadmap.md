@@ -3,96 +3,58 @@
 Repin moves through four project lifecycle stages:
 
 ```text
-planning → experimentation → plan finalization → implementation
+planning → research and analysis → plan finalization → implementation
 ```
 
-The lifecycle stages are sequential decision gates, not calendar estimates. Capability milestones within implementation are also ordered by dependency and risk, not by schedule.
+The lifecycle stages are sequential decision gates, not calendar estimates. Capability milestones within implementation are ordered by dependency and risk, not by schedule.
 
-## Stage 1 — Planning *(current)*
+## Stage 1 — Planning *(concluded)*
 
-Planning defines the product and selects hypotheses to test. It does not commit to production technologies or produce implementation code.
+Planning defined the product, vocabulary, and architectural boundaries without committing prematurely to unverified technologies.
 
-Work:
+Delivered:
 
-- Define requirements, non-goals, vocabulary, and architectural boundaries.
-- Specify the graph model, identity, provenance, revisions, and consistency invariants.
-- Specify public APIs, result normalization, degradation, safety, and budgeting.
-- Specify port contracts without binding core logic to products.
-- Identify implementation candidates and the reasons they might fit.
-- Turn uncertainties into reproducible experiments with explicit pass conditions.
-- Separate required deterministic capabilities from optional intelligence.
+- Defined requirements, non-goals, vocabulary, and architectural boundaries.
+- Specified the graph model, identity, provenance, revisions, and consistency invariants.
+- Specified public APIs, result normalization, degradation, safety, and budgeting.
+- Specified port contracts without binding core logic to concrete products.
+- Identified implementation candidates and evaluated architectural fit.
+- Formulated research questions with explicit evaluation criteria and validation tasks.
+- Established strict separation of required deterministic capabilities from optional intelligence.
 
-Current technology candidates are recorded in [Technology Candidates](technology-candidates.md). Planned storage experiments are specified in [Storage Adapter Experiments](experiments/storage.md); extraction, filesystem, runtime, watch, and engineering-tool experiments are specified in [Rust Foundation Experiments](experiments/rust-foundation.md).
+All architecture documents are internally consistent, and required and optional capabilities are strictly separated.
 
-Exit:
+## Stage 2 — Research and analysis *(concluded)*
 
-```text
-architecture documents are internally consistent
-required and optional capabilities are clearly separated
-candidate choices are labeled proposed rather than accepted
-blocking uncertainties have experiments and pass conditions
-no unresolved architecture issue prevents experimentation
-```
+Research and analysis compared implementation candidates against the contracts and constraints selected during planning.
 
-## Stage 2 — Experimentation
+Delivered:
 
-Experimentation tests the hypotheses selected during planning. Spikes are disposable and MUST NOT silently become production foundations.
+- Mapped each candidate to the applicable port contract and decision criteria.
+- Conducted primary documentation, source, release history, and issue reviews for storage, search, runtime, and parsing candidates.
+- Produced detailed comparative analyses: [redb + Tantivy versus SQLite + FTS5](research/redb-tantivy-vs-sqlite.md) and [libSQL embedded-local](research/libsql-embedded-local.md).
+- Formulated subsystem proposals: [sparse line index](proposals/sparse-line-index.md), [native parsers with Tree-sitter fallback](proposals/native-parsers-tree-sitter-fallback.md), [Rust-friendly vector baseline](proposals/vector-search-rust-friendly.md), and [agent inspection & review context](proposals/agent-inspection-and-review-context.md).
+- Classified candidates, established confidence levels, and identified required implementation-validation tasks.
 
-Work:
+## Stage 3 — Plan finalization *(finalized and accepted)*
 
-- Run candidate adapters against the applicable port conformance behaviors.
-- Exercise failure, interruption, deletion, reopen, repair, and rebuild paths.
-- Benchmark representative repository and graph shapes using the method in [Conformance](conformance.md).
-- Run full qualification on Linux x86_64/glibc, the sole current PoC target.
-- Build and smoke-test the Linux PoC artifact. Defer non-Linux artifacts, minimum-version work, and distribution expansion until the fully featured PoC is complete.
-- Retain methods, raw results, failing seeds, and reproducible fixtures.
-- Classify each candidate as supportable, unsuitable, or still uncertain.
+Plan finalization converted research findings into 16 accepted Architectural Decision Records (ADRs). It serves as the bridge between architectural research and production implementation.
 
-The initial experiment matrix covers redb, Tantivy, optional USearch, and their combined revision/recovery protocol ([Storage Adapter Experiments](experiments/storage.md)), plus Rust extraction, filesystem, hashing, runtime, watching, testing, benchmarking, and dependency-policy foundations ([Rust Foundation Experiments](experiments/rust-foundation.md)). Further experiments may be added when planning exposes another decision that cannot be settled from documentation or existing evidence.
+Delivered:
 
-Exit:
+- Accepted 16 definitive ADRs recorded in the [Decision Ledger](decisions/index.md) (ADR-001 through ADR-016).
+- Finalized the implementation profile: Rust 2024, bundled SQLite 3.53.2 via rusqlite 0.40.1 with FTS5, Linux pathname Unix sockets per-user daemon, native parsers with Tree-sitter fallback, `regex` direct search, bounded Git subprocess VCS, and sparse-checkpoint line index.
+- Established the exact Rust vector search baseline for I5 (ADR-012).
+- Defined the agent inspection and review context API profile (ADR-016).
+- Finalized crate/module boundaries, the composition root, and the daemon rendezvous model (ADR-015).
+- Finalized on-disk revision, transaction isolation, migration, and rebuild protocols.
+- Mapped port conformance suites and invariants to concrete implementation milestones.
 
-```text
-experiments are reproducible and results are recorded
-failure and recovery behavior has been demonstrated
-candidate limitations are mapped to capability or degradation behavior
-each blocking candidate has enough evidence for a final decision
-no benchmark claim lacks corpus and environment context
-Linux PoC qualification and release-artifact smoke checks pass; post-PoC platform expansion is explicitly separated from this stage
-```
+All decisions blocking deterministic implementation are resolved. The implementation plan is actionable without further architectural discovery.
 
-## Stage 3 — Plan finalization
+## Stage 4 — Implementation *(ready)*
 
-Plan finalization converts experimental evidence into committed implementation decisions. It is the boundary between exploring an architecture and authorizing production work.
-
-Work:
-
-- Accept, reject, replace, or defer each technology candidate.
-- Record accepted decisions as ADRs under `docs/decisions/`.
-- Finalize the implementation profile, platform-tier details and release-artifact policy, and dependency policy.
-- Finalize crate/module boundaries and the composition root.
-- Finalize the on-disk revision, pending-work, recovery, migration, and rebuild protocols.
-- Resolve every choice that blocks the first deterministic implementation milestone.
-- Map conformance tests and exit criteria to implementation work items.
-- Revisit milestone scope and estimates using measured evidence.
-
-Rust, the authoritative store, and the lexical adapter are expected to be resolved before implementation begins if they remain part of the proposed profile. A vector adapter may be explicitly deferred until the embeddings milestone.
-
-Exit:
-
-```text
-an accepted implementation profile exists
-all decisions blocking deterministic implementation are resolved
-accepted products satisfy rather than reshape their port contracts
-conformance and acceptance criteria map to implementation milestones
-the implementation plan is actionable without architectural discovery
-```
-
-## Stage 4 — Implementation
-
-Implementation builds and validates the product according to the finalized plan. The milestones below describe capability, not schedule. Each leaves the engine in a coherent state and has explicit exit criteria.
-
-Experiment code is not promoted by default. Production adapters must independently satisfy their port conformance suites and the finalized support policy.
+Implementation builds and validates the product according to the finalized plan. The milestones below describe capability, not schedule. Each leaves the engine in a coherent state and has explicit exit criteria. Implementation-validation tasks confirm behavior against the accepted contracts.
 
 ## Implementation capability milestones
 
@@ -103,21 +65,15 @@ Decisions and foundations that are structurally expensive to change later. Every
 - Node and edge **identity scheme** ([Graph Model §4](graph-model.md#4-identity)), with stability tests before anything depends on it.
 - **Kind and attribute registries**, and their version records.
 - **Port contracts** and their conformance suites ([Conformance §2](conformance.md#2-port-conformance-suites)), with at least one implementation of each required port.
-- Accepted Rust dependency policy: pinned lockfile, minimum supported Rust version, allowed licenses/sources, advisory handling, and native-component inventory.
+- Recorded Rust build inputs: pinned lockfile, stable compiler, dependency versions/sources/features, advisory state, and native-component inventory.
 - **Unresolved-reference table** and its reverse index ([Incremental Updates §8](incremental.md#8-unresolved-references)).
 - **Result envelope**, evidence rules, and error taxonomy ([Results and Evidence](results.md)).
 - **Selection and exclusion rules** ([Safety and Data Handling §2](safety.md#2-exclusions)), including the secret-bearing defaults.
 - Fixture repositories, golden-snapshot mechanism, and the **replay harness** ([Conformance §1](conformance.md#1-invariants)).
 - Version records and the migration/rebuild decision table ([Storage §3](storage.md#3-version-records)).
-- **Runtime identity and rendezvous contracts**: one daemon lease per OS user,
-  private runtime directory, pathname Unix-domain socket, bounded startup
-  race, and protocol negotiation ([Runtime and IPC](runtime.md)).
-- **Project discovery and state safety**: `.repin/graph.redb` membership,
-  canonical parent-directory resolution, explicit-root selection, active
-  filesystem-identity alias guards, and the runtime error taxonomy.
-- **Context registry and lock ownership** keyed by the canonical database path,
-  with the daemon holding each active project's writer lock and clients never
-  acquiring it.
+- **Runtime identity and rendezvous contracts**: one daemon lease per OS user, private runtime directory, pathname Unix-domain socket, bounded startup race, and protocol negotiation ([Runtime and IPC](runtime.md), [ADR-015](decisions/ADR-015-hybrid-per-user-daemon-runtime.md)). Build the deterministic engine and port conformance in process first, then complete the daemon wrapper before normal CLI and multi-client behavior.
+- **Project discovery and state safety**: `.repin/graph.sqlite3` membership, canonical parent-directory resolution, explicit-root selection, active filesystem-identity alias guards, and the runtime error taxonomy.
+- **Context registry and lock ownership** keyed by the canonical database path, with the daemon holding each active project's writer lock and clients never acquiring it.
 
 Exit:
 
@@ -137,18 +93,17 @@ A working, useful, index-once engine.
 - Graph model, store, transactions, revisions.
 - File discovery with ignore, binary, size, symlink, and multi-root rules.
 - Language detection; one or two language packs plus a prose pack.
-- Extraction via batch-shaped queries; local fact extraction.
+- Extraction via batch-shaped queries; local fact extraction using native primary parsers with Tree-sitter fallback ([ADR-013](decisions/ADR-013-native-parser-tree-sitter-fallback.md)).
+- Sparse-checkpoint line index for bounded byte-offset to line/scalar coordinate conversion ([ADR-014](decisions/ADR-014-sparse-checkpoint-line-index.md)).
 - Cross-file resolution with unresolved-reference recording.
-- Lexical index and text search.
+- Lexical index and text search via SQLite FTS5 in the same transaction domain ([ADR-009](decisions/ADR-009-sqlite-fts5-initial-profile.md)).
 - Graph traversal: entity, neighbors.
-- Direct retrieval: files, text, regex.
+- Direct retrieval: files, text, regex via `regex` crate ([ADR-010](decisions/ADR-010-regex-direct-search.md)).
+- Deterministic inspection primitives: `inspectFile` (syntax-only outline), `AtPosition` position resolution, and `context(strategy: exact)` reads ([ADR-016](decisions/ADR-016-agent-inspection-and-review-context.md)).
 - Skips and diagnostics, queryable.
 - CLI covering initialize, update, search, entity, neighbors, status, stats.
-- Project-bound CLI client and daemon round trip: initialization, nearest
-  ancestor discovery, explicit root selection, context sharing, observer
-  attachment, degraded direct retrieval, and protocol error reporting.
-- Context lifecycle: watcher/update coordinator ownership, bounded connection
-  handling, ten-minute idle eviction, daemon restart, and clean final shutdown.
+- Project-bound CLI client and daemon round trip: initialization, nearest ancestor discovery, explicit root selection, context sharing, observer attachment, degraded direct retrieval, and protocol error reporting.
+- Context lifecycle: watcher/update coordinator ownership, bounded connection handling, ten-minute idle eviction, daemon restart, and clean final shutdown.
 
 Exit:
 
@@ -168,7 +123,7 @@ The milestone that makes the engine practical rather than a demonstration.
 - Invalidation with blast-radius classification.
 - Unresolved-reference promotion and demotion.
 - Transactional updates with reader isolation.
-- VCS-based startup change detection.
+- VCS-based startup change detection via bounded Git subprocess ([ADR-011](decisions/ADR-011-bounded-git-subprocess.md)).
 - Backpressure, bulk escalation, pause/resume.
 - Revisions with bounded retention, `changesSince`, and `TooOld`.
 - Single-writer enforcement with reader mode.
@@ -211,6 +166,7 @@ Where the engine becomes genuinely useful rather than merely correct.
 - Filters, including `derivation`.
 - Trace and impact, bounded, with coverage.
 - Context construction with strategies and budgets.
+- Agent inspection & review context: graph-enriched `inspectFile`, `reviewContext` composition over change diffs and impact, and identifier-aware lexical tokenization ([ADR-016](decisions/ADR-016-agent-inspection-and-review-context.md)).
 - Labeled query set and precision-at-N measurement.
 
 Exit:
@@ -228,7 +184,7 @@ This is the milestone where the engine should be evaluated on real repositories,
 ### I5 — Embeddings
 
 - `EmbeddingModel` port; local and remote providers.
-- Vector port and semantic channel.
+- Exact Rust Vector-port baseline from ADR-012 and semantic channel.
 - Entity rendering, deterministic chunking, normalization.
 - Embedding cache with the full key.
 - Semantic revision tracking and status reporting.
@@ -261,31 +217,7 @@ deterministic explanations survive reranking
 precision at N measured with and without
 ```
 
-### I7 — Remote and federated deployment
-
-The local user daemon and its IPC contract are completed in I0/I1. This later
-milestone is reserved for deployment beyond the local user boundary:
-
-- Remote transport for the already project-bound protocol.
-- Authentication, authorization, trust consent, and data-egress reporting.
-- Federation or cross-host project coordination, if a later product decision
-  requires it.
-- Remote lifecycle, health, reconnect, and revision synchronization.
-
-Exit:
-
-```text
-remote transport does not change local project or graph semantics
-trust and data-egress decisions are explicit and auditable
-reconnecting remote clients resync correctly via revisions
-compacted revisions produce TooOld and a clean resync
-```
-
-Remote and federated operation remains deliberately later than the local
-daemon: it adds authority and egress concerns without being required for a
-useful offline workstation runtime.
-
-### I8 — Host integration
+### I7 — Host integration
 
 - Provider-contract adapter for hosts with their own vocabulary.
 - Direct change notification from a host.
@@ -304,7 +236,7 @@ the engine core contains no host-specific vocabulary
 
 Integration is late by design. Every earlier phase is a capability a host can use; building the adapter first would shape the engine around one consumer.
 
-### I9 — Enrichment
+### I8 — Enrichment
 
 Only after deterministic retrieval is mature and measured.
 
@@ -376,15 +308,11 @@ Standalone v1 is complete when the engine can:
 
 **Integrate cleanly**
 
-- work with direct retrieval when no graph exists or graph activation is
-  unavailable
-- start one user daemon on demand and bind each client connection to one
-  project context
-- enforce per-project writer safety through daemon-owned locks across all
-  clients
+- work with direct retrieval when no graph exists or graph activation is unavailable
+- start one user daemon on demand and bind each client connection to one project context
+- enforce per-project writer safety through daemon-owned locks across all clients
 - run entirely offline
 - expose a stable public API with opaque identifiers
-- support a host provider contract and the local daemon protocol without core
-  changes
+- support a host provider contract and the local daemon protocol without core changes
 
 AI capabilities are then additive layers, each independently absent.

@@ -78,7 +78,7 @@ Rule 5 is the one most easily violated in practice. The test is mechanical: if r
 | `Watch` | normalized change events for roots | polling or explicit notification only |
 | `Store` | transactional persistence of graph facts | required for graph capabilities; direct retrieval unaffected |
 | `Lexical` | text index build and query | fall back to direct scan, with reduced ranking |
-| `Vector` | approximate nearest-neighbour over embeddings | semantic retrieval reports unavailable |
+| `Vector` | nearest-neighbour retrieval over embeddings | semantic retrieval reports unavailable |
 | `LanguagePack` | detection, parse, extract, resolve for a language family | that language degrades to text-only |
 | `EmbeddingModel` | text to vector | semantic indexing disabled |
 | `Reranker` | reorder candidates | deterministic order stands |
@@ -242,8 +242,10 @@ The initial runtime has one normal topology: a global local daemon per
 unprivileged OS user. It is on demand, reached through a private local socket,
 and shuts down after its final project context becomes idle and unloads. The
 daemon hosts isolated in-process contexts, one for each canonical
-`.repin/graph.redb` path. See [Runtime and IPC](runtime.md) for the complete
-rendezvous and lifecycle contract.
+`.repin/graph.sqlite3` path. See [Runtime and IPC](runtime.md) for the complete
+rendezvous and lifecycle contract and
+[ADR-015](decisions/ADR-015-hybrid-per-user-daemon-runtime.md) for the topology
+decision.
 
 **User daemon.** A client connects to the central socket or starts a detached
 daemon candidate. The daemon owns one context's graph store, watcher, indexes,
@@ -251,10 +253,10 @@ configuration, and project writer-lock handle. Multiple bound connections may
 share a warm context and observe the same revision. Different canonical
 database paths remain isolated even if their contents were copied.
 
-**Internal engine.** `open(EngineOptions) -> Engine` remains a composition
-surface for the daemon and deterministic tests. It is not a second public
-deployment topology: ordinary clients do not open stores, acquire writer
-locks, or terminate the daemon directly.
+**In-process engine.** `open(EngineOptions) -> Engine` remains a composition
+surface for the daemon, deterministic tests, and explicit library embedding.
+It is not a second normal project-client topology: ordinary clients do not
+open stores, acquire writer locks, or terminate the daemon directly.
 
 **Remote service.** A future remote or federated deployment may reuse the
 project-bound protocol with a different transport. It is not part of the

@@ -1,0 +1,19 @@
+[package]
+name = "repin-fs"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+repin-core.workspace = true
+cap-std.workspace = true
+ignore.workspace = true
+globset.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
