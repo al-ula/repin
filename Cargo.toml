@@ -7,6 +7,11 @@ members = [
     "crates/repin-store-sqlite",
     "crates/repin-direct-search",
     "crates/repin-packs",
+    "crates/repin-context",
+    "crates/repin-retrieval",
+    "crates/repin-indexing",
+    "crates/repin-intelligence",
+    "crates/repin-runtime",
     "crates/repin-engine",
     "crates/repin-daemon",
     "crates/repin-cli",
@@ -29,6 +34,11 @@ repin-fs = { path = "crates/repin-fs", version = "0.1.0" }
 repin-store-sqlite = { path = "crates/repin-store-sqlite", version = "0.1.0" }
 repin-direct-search = { path = "crates/repin-direct-search", version = "0.1.0" }
 repin-packs = { path = "crates/repin-packs", version = "0.1.0" }
+repin-context = { path = "crates/repin-context", version = "0.1.0" }
+repin-retrieval = { path = "crates/repin-retrieval", version = "0.1.0" }
+repin-indexing = { path = "crates/repin-indexing", version = "0.1.0" }
+repin-intelligence = { path = "crates/repin-intelligence", version = "0.1.0" }
+repin-runtime = { path = "crates/repin-runtime", version = "0.1.0" }
 repin-engine = { path = "crates/repin-engine", version = "0.1.0" }
 repin-daemon = { path = "crates/repin-daemon", version = "0.1.0" }
 repin-conformance = { path = "crates/repin-conformance", version = "0.1.0" }

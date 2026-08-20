@@ -171,9 +171,11 @@ mod tests {
 
     #[test]
     fn test_custom_config_exclusions() {
-        let mut config = IndexingConfig::default();
-        config.exclude_paths = vec!["**/build/**".to_string(), "vendor/**".to_string()];
-        config.exclude_extensions = vec!["min.js".to_string(), "snap".to_string()];
+        let config = IndexingConfig {
+            exclude_paths: vec!["**/build/**".to_string(), "vendor/**".to_string()],
+            exclude_extensions: vec!["min.js".to_string(), "snap".to_string()],
+            ..Default::default()
+        };
 
         let filter = ExclusionFilter::with_config(&config);
 

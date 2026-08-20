@@ -21,10 +21,12 @@
 - [Runtime, IPC & Daemon Architecture](runtime.md)
 - [Host Integration Seam](host-integration.md)
 - [Optional Intelligence](intelligence.md)
+- [Embedded RAG Proof](embedded-rag.md)
 
 # Part IV: Quality, Conformance & Implementation
 
 - [Conformance & Verification](conformance.md)
+- [Reusable-library extraction baseline](benchmarks/library-extraction-baseline.md)
 - [Technology Selections & Implementation Profile](technology-candidates.md)
 - [Implementation Roadmap & Milestones](roadmap.md)
 
@@ -53,6 +55,7 @@
   - [ADR-020 — Schema string interning & JSON compression](decisions/ADR-020-schema-string-interning-and-compression.md)
   - [ADR-021 — Per-project configuration & merge protocol](decisions/ADR-021-per-project-configuration.md)
   - [ADR-022 — Multi-tier model provider architecture](decisions/ADR-022-multi-tier-model-providers.md)
+  - [ADR-023 — Reusable capability crates and runtime facade](decisions/ADR-023-reusable-library-crates.md)
 
 # Part VI: Subsystem Specifications
 

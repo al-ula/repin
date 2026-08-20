@@ -4,6 +4,15 @@ How an application embeds Repin. This is L4 in [Architecture](architecture.md).
 
 The design goal is that an adapter is **thin and unprivileged**: it translates vocabulary and renders results, and does nothing that requires reaching past the public API. If an adapter needs internal access to work well, that is a defect in this seam, not in the adapter.
 
+An embedded RAG host may also use the reusable library crates directly. In
+that topology the host owns the process, inference model, conversation state,
+and cancellation source; Repin owns repository safety, indexing/retrieval
+semantics, provenance, and deterministic context packing. The host does not
+need `repin-daemon` or `repin-cli`, and provider failures remain explicit
+capability degradation rather than hidden prompt or answer behavior. The
+crate ownership and runtime/facade rule are defined in
+[ADR-023](decisions/ADR-023-reusable-library-crates.md).
+
 ## 1. Adapter responsibilities
 
 An adapter owns:

@@ -18,6 +18,6 @@ pub use model::{
 pub use ports::{
     ChangeOrigin, DerivedIndexIntent, DerivedIndexState, Diagnostic, EdgeFilters, ExtractedFacts,
     ExtractionError, FileChange, FileSnapshot, IndexKind, LanguagePack, NodeFilters, ReadView,
-    Skip, Store, StoreCapabilities, StoreError, Transaction, UpdateSummary, Vcs, VcsChangeSet,
-    VcsError, VersionRecords,
+    Skip, SourceError, SourceFs, Store, StoreCapabilities, StoreError, Transaction, UpdateSummary,
+    Vcs, VcsChangeSet, VcsError, VersionRecords,
 };

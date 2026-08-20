@@ -38,11 +38,11 @@ Delivered:
 
 ## Stage 3 — Plan finalization *(finalized and accepted)*
 
-Plan finalization converted research findings into 16 accepted Architectural Decision Records (ADRs). It serves as the bridge between architectural research and production implementation.
+Plan finalization converted research findings into 23 accepted Architectural Decision Records (ADRs). It serves as the bridge between architectural research and production implementation.
 
 Delivered:
 
-- Accepted 16 definitive ADRs recorded in the [Decision Ledger](decisions/index.md) (ADR-001 through ADR-016).
+- Accepted 23 definitive ADRs recorded in the [Decision Ledger](decisions/index.md) (ADR-001 through ADR-023).
 - Finalized the implementation profile: Rust 2024, bundled SQLite 3.53.2 via rusqlite 0.40.1 with FTS5, Linux pathname Unix sockets per-user daemon, native parsers with Tree-sitter fallback, `regex` direct search, bounded Git subprocess VCS, and sparse-checkpoint line index.
 - Established the exact Rust vector search baseline for I5 (ADR-012).
 - Defined the agent inspection and review context API profile (ADR-016).
@@ -54,7 +54,34 @@ All decisions blocking deterministic implementation are resolved. The implementa
 
 ## Stage 4 — Implementation *(delivered core profile)*
 
-Implementation builds and validates the product according to the finalized plan. The core implementation profile spanning milestones I0 through I6 is implemented across 10 workspace crates with conformance suites, replay convergence testing, and CLI frontend. Capability milestones below describe capability and exit criteria.
+Implementation builds and validates the product according to the finalized plan. The core implementation profile is validated with conformance suites, replay convergence testing, and the CLI frontend. Capability milestones below describe the product capability profile; the reusable-library extraction is governed by the M0–M10 sequence below.
+
+## Stage 5 — Reusable library extraction *(ADR-023 accepted)*
+
+The extraction preserves the existing product and protocol while making
+indexing, retrieval, context construction, and optional intelligence usable by
+embedded Rust applications. It follows the required Plan → Evaluate →
+Implement → Review cycle for every milestone.
+
+| Milestone | Deliverable | Exit evidence |
+| --- | --- | --- |
+| M0 | Stabilized ADR-022 provider contracts and failure taxonomy | offline tests plus recorded tier smoke results |
+| M1 | Correctness, ordering, I/O, allocation, and latency baselines | reproducible fixtures, commands, and snapshots |
+| M2 | Accepted [ADR-023](decisions/ADR-023-reusable-library-crates.md) and cross-referenced docs | `mdbook build` and link checks |
+| M3 | Reusable source/snapshot filesystem contract | source conformance and graph-free direct retrieval |
+| M4 | `repin-context` | graph-free/enriched golden context and exact budgets |
+| M5 | `repin-retrieval` | SQLite/test-store retrieval and unchanged canonical ordering |
+| M6 | `repin-indexing` | clean/incremental replay convergence and atomic updates |
+| M7 | `repin-intelligence` | provider contract tests and explicit offline absence |
+| M8 | `repin-runtime` plus `repin-engine` compatibility facade | no Cargo cycle and unchanged daemon/CLI behavior |
+| M9 | embedded RAG proof with caller-owned inference | offline fake-model test and opt-in local smoke |
+| M10 | publication readiness | workspace, conformance, docs, feature, and benchmark gates |
+
+New crates remain unpublished until their public APIs and feature sets are
+stable. The default build remains offline and deterministic. The extraction
+acceptance budget is at most 5% median and p95 regression after variance
+analysis, with zero added in-process serialization, store round trips, or
+source reads.
 
 ## Implementation capability milestones
 

@@ -4,7 +4,7 @@ pub mod pack;
 pub mod store;
 pub mod vcs;
 
-pub use fs::{ChangeOrigin, Diagnostic, FileChange, FileSnapshot, Skip};
+pub use fs::{ChangeOrigin, Diagnostic, FileChange, FileSnapshot, Skip, SourceError, SourceFs};
 pub use model::{
     EmbeddingModel, GenerateRequest, GenerateResponse, ModelError, ModelIdentity, ModelLocation,
     RerankCandidate, RerankHit, Reranker, TextModel,

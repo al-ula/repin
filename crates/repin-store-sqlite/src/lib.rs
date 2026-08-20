@@ -138,8 +138,8 @@ mod tests {
                 path: "src/main.rs".to_string(),
                 range: Some(Range {
                     span: ByteSpan::new((i * 10) as usize, (i * 10 + 9) as usize),
-                    start: Position::new(i as u32, 0),
-                    end: Position::new(i as u32, 9),
+                    start: Position::new(i, 0),
+                    end: Position::new(i, 9),
                 }),
                 language: Some("rust".to_string()),
                 artifact_class: Some(ArtifactClass::Code),
@@ -148,8 +148,8 @@ mod tests {
                     path: "src/main.rs".to_string(),
                     range: Some(Range {
                         span: ByteSpan::new((i * 10) as usize, (i * 10 + 9) as usize),
-                        start: Position::new(i as u32, 0),
-                        end: Position::new(i as u32, 9),
+                        start: Position::new(i, 0),
+                        end: Position::new(i, 9),
                     }),
                     extractor: "rust_analyzer".to_string(),
                     extractor_version: "2026-08".to_string(),

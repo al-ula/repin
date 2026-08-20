@@ -2,7 +2,7 @@ use crate::exclusions::{ExclusionFilter, classify_artifact};
 use cap_std::fs::Dir;
 use repin_core::hash::ContentHash;
 use repin_core::ports::fs::FileSnapshot;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 #[derive(Debug, thiserror::Error)]
 pub enum FsError {
@@ -58,6 +58,9 @@ impl CapabilityFs {
     }
 
     pub fn read_snapshot(&self, relative_path: &str) -> Result<FileSnapshot, FsError> {
+        if !is_root_relative(relative_path) {
+            return Err(FsError::Escape(relative_path.to_string()));
+        }
         if self.filter.is_excluded(relative_path) {
             return Err(FsError::Excluded(relative_path.to_string()));
         }
@@ -103,4 +106,27 @@ impl CapabilityFs {
         }
         Ok(())
     }
+}
+
+fn is_root_relative(path: &str) -> bool {
+    if path.is_empty() {
+        return false;
+    }
+    let path = Path::new(path);
+    if path.is_absolute()
+        || path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return false;
+    }
+
+    let normalized = path.to_string_lossy().replace('\\', "/");
+    !normalized.starts_with('/')
+        && !normalized
+            .split('/')
+            .any(|component| component == ".." || component.ends_with(':'))
 }

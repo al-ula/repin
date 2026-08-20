@@ -915,6 +915,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "repin-context"
+version = "0.1.0"
+dependencies = [
+ "repin-core",
+ "repin-store-sqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "repin-core"
 version = "0.1.0"
 dependencies = [
@@ -957,20 +969,10 @@ dependencies = [
 name = "repin-engine"
 version = "0.1.0"
 dependencies = [
- "blake3",
- "hex",
  "repin-core",
- "repin-direct-search",
- "repin-fs",
- "repin-packs",
  "repin-protocol",
- "repin-store-sqlite",
- "serde",
- "serde_json",
+ "repin-runtime",
  "tempfile",
- "thiserror",
- "tracing",
- "ureq",
 ]
 
 [[package]]
@@ -984,6 +986,28 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "repin-indexing"
+version = "0.1.0"
+dependencies = [
+ "repin-core",
+ "repin-fs",
+ "repin-packs",
+ "repin-store-sqlite",
+ "tempfile",
+]
+
+[[package]]
+name = "repin-intelligence"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "repin-core",
+ "serde",
+ "serde_json",
+ "ureq",
 ]
 
 [[package]]
@@ -1010,6 +1034,38 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "repin-retrieval"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "hex",
+ "repin-core",
+ "repin-store-sqlite",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "repin-runtime"
+version = "0.1.0"
+dependencies = [
+ "repin-context",
+ "repin-core",
+ "repin-direct-search",
+ "repin-fs",
+ "repin-indexing",
+ "repin-intelligence",
+ "repin-packs",
+ "repin-protocol",
+ "repin-retrieval",
+ "repin-store-sqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
 ]
 
 [[package]]

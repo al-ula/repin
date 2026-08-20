@@ -69,6 +69,25 @@ Direct retrieval reaches L0 (filesystem, scope rules) without passing through L1
 
 Rule 5 is the one most easily violated in practice. The test is mechanical: if renaming a downstream consumer would require editing a file in L0–L4, that file is wrong.
 
+### Library crate topology
+
+The reusable capability implementation is split into cohesive Rust crates. The
+crate boundary follows the capability boundary; it does not change the layer
+rules above.
+
+```text
+repin-core
+  ├─ protocol, direct-search, fs, store-sqlite, packs
+  ├─ context, retrieval, indexing, intelligence
+  └─ runtime ──> engine facade ──> daemon / CLI
+```
+
+`repin-runtime` is the only default composition root. It selects concrete
+adapters and normalizes high-level results. `repin-engine` is a compatibility
+facade over that runtime, and the runtime MUST never depend on the facade.
+Capability crates remain usable without either daemon or CLI. The complete
+ownership and feature policy is normative in [ADR-023](decisions/ADR-023-reusable-library-crates.md).
+
 ## 4. Ports
 
 | Port | Responsibility | Absence behavior |
@@ -86,6 +105,14 @@ Rule 5 is the one most easily violated in practice. The test is mechanical: if r
 | `Clock`, `Logger`, `Metrics` | time, diagnostics, instrumentation | required, trivially satisfiable |
 
 Every port is small enough to implement in a test double, and each has a shared conformance suite ([Conformance](conformance.md)). A port with only one real implementation still exists as a port, because that is what keeps rule 2 enforceable.
+
+For reusable in-process algorithms, the filesystem port is exposed as the
+small `SourceFs` contract: read one root-relative `FileSnapshot`, and enumerate
+selected snapshots through a bounded callback. Implementations enforce root
+containment, immutable safety exclusions, artifact classification, binary and
+size policy, symlink handling, cancellation/error propagation, and
+root-relative paths before a snapshot reaches an algorithm. The reusable
+crates never require `CapabilityFs`; it is one conforming adapter.
 
 ## 5. Direct retrieval
 

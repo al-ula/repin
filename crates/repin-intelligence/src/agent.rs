@@ -61,21 +61,24 @@ impl Reranker for AgentRunnerReranker {
         }
     }
 
-    fn rerank(&self, query: &str, candidates: &[RerankCandidate]) -> Result<Vec<RerankHit>, ModelError> {
+    fn rerank(
+        &self,
+        query: &str,
+        candidates: &[RerankCandidate],
+    ) -> Result<Vec<RerankHit>, ModelError> {
         if candidates.is_empty() {
             return Ok(Vec::new());
         }
 
-        let rpc_req = JsonRpcRequest {
+        let rpc_request = JsonRpcRequest {
             jsonrpc: "2.0",
             method: "repin/rerank",
             params: RerankParams { query, candidates },
         };
-
-        let req_json = serde_json::to_string(&rpc_req)
-            .map_err(|e| ModelError::ProviderError {
+        let request_json =
+            serde_json::to_string(&rpc_request).map_err(|error| ModelError::ProviderError {
                 provider: "agent".to_string(),
-                message: format!("failed to serialize JSON-RPC request: {e}"),
+                message: format!("failed to serialize JSON-RPC request: {error}"),
             })?;
 
         let mut child = Command::new("sh")
@@ -85,85 +88,85 @@ impl Reranker for AgentRunnerReranker {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| ModelError::ProviderError {
+            .map_err(|error| ModelError::ProviderError {
                 provider: "agent".to_string(),
-                message: format!("failed to spawn agent command '{}': {e}", self.cmd),
+                message: format!("failed to spawn agent command '{}': {error}", self.cmd),
             })?;
 
         if let Some(mut stdin) = child.stdin.take() {
-            let _ = stdin.write_all(req_json.as_bytes());
+            let _ = stdin.write_all(request_json.as_bytes());
         }
 
-        // Bounded wait with deadline timeout
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (sender, receiver) = std::sync::mpsc::channel();
         let timeout_ms = self.deadline_ms;
-
         std::thread::spawn(move || {
-            let res = child.wait_with_output();
-            let _ = tx.send(res);
+            let result = child.wait_with_output();
+            let _ = sender.send(result);
         });
 
-        let output = rx
+        let output = receiver
             .recv_timeout(Duration::from_millis(timeout_ms))
             .map_err(|_| ModelError::Timeout { timeout_ms })?
-            .map_err(|e| ModelError::ProviderError {
+            .map_err(|error| ModelError::ProviderError {
                 provider: "agent".to_string(),
-                message: format!("error reading agent output: {e}"),
+                message: format!("error reading agent output: {error}"),
             })?;
 
         if !output.status.success() {
-            let stderr_msg = String::from_utf8_lossy(&output.stderr);
+            let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(ModelError::ProviderError {
                 provider: "agent".to_string(),
                 message: format!(
                     "agent exited with code {:?}: {}",
                     output.status.code(),
-                    stderr_msg.trim()
+                    stderr.trim()
                 ),
             });
         }
 
-        let stdout_str = String::from_utf8_lossy(&output.stdout);
-
-        // Try parsing standard JSON-RPC response
-        if let Ok(rpc_resp) = serde_json::from_str::<JsonRpcResponse>(&stdout_str) {
-            if let Some(err) = rpc_resp.error {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        if let Ok(response) = serde_json::from_str::<JsonRpcResponse>(&stdout) {
+            if let Some(error) = response.error {
                 return Err(ModelError::ProviderError {
                     provider: "agent".to_string(),
-                    message: format!("agent JSON-RPC returned error: {err}"),
+                    message: format!("agent JSON-RPC returned error: {error}"),
                 });
             }
-            if let Some(res) = rpc_resp.result {
-                let mut hits = Vec::new();
-                for (rank, hit) in res.ranked.into_iter().enumerate() {
-                    hits.push(RerankHit {
+            if let Some(result) = response.result {
+                let hits = result
+                    .ranked
+                    .into_iter()
+                    .enumerate()
+                    .map(|(rank, hit)| RerankHit {
                         id: hit.id,
-                        score: hit.score.unwrap_or(1.0 - (rank as f32 * 0.05).min(0.9)),
+                        score: hit
+                            .score
+                            .unwrap_or_else(|| 1.0 - (rank as f32 * 0.05).min(0.9)),
                         rank,
-                    });
-                }
+                    })
+                    .collect();
                 return Ok(hits);
             }
         }
 
-        // Fallback: parse array of indices or IDs directly if returned
-        if let Ok(indices) = serde_json::from_str::<Vec<usize>>(&stdout_str) {
-            let mut hits = Vec::new();
-            for (rank, &idx) in indices.iter().enumerate() {
-                if idx < candidates.len() {
-                    hits.push(RerankHit {
-                        id: candidates[idx].id.clone(),
+        if let Ok(indices) = serde_json::from_str::<Vec<usize>>(&stdout) {
+            let hits = indices
+                .iter()
+                .enumerate()
+                .filter_map(|(rank, &index)| {
+                    candidates.get(index).map(|candidate| RerankHit {
+                        id: candidate.id.clone(),
                         score: 1.0 - (rank as f32 * 0.05).min(0.9),
                         rank,
-                    });
-                }
-            }
+                    })
+                })
+                .collect();
             return Ok(hits);
         }
 
         Err(ModelError::ProviderError {
             provider: "agent".to_string(),
-            message: format!("unrecognized agent response format: {stdout_str}"),
+            message: format!("unrecognized agent response format: {stdout}"),
         })
     }
 }

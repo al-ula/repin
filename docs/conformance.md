@@ -238,3 +238,33 @@ each store implementation, parser binding, and host environment. A feature
 verified on Linux is verified for Linux only. Once the fully featured PoC is
 complete, the platform-expansion phase will add separate build, behavior, and
 artifact matrices rather than inferring them from Linux.
+
+## 8. Reusable library and extraction checks
+
+The crate extraction adds gates without weakening the existing product suites:
+
+- `SourceFs` implementations pass containment, exclusion, classification,
+  size/binary, symlink, cancellation, and error-semantics checks. A lightweight
+  test source is required in addition to `CapabilityFs`.
+- Context tests cover graph-free and graph-enriched packing, exact byte/line
+  and unit-budget behavior, deduplication, canonical order, redaction, and
+  explicit omission/truncation reporting.
+- Retrieval tests cover direct, graph, lexical, vector, and hybrid channels;
+  absence of a graph/store never disables direct retrieval, and canonical
+  result ordering matches the pre-extraction golden output.
+- Indexing tests compare clean and incremental replay convergence,
+  transaction atomicity, unresolved-reference promotion/demotion, and
+  revision checks through the reusable contracts.
+- Intelligence tests use deterministic fake models, malformed responses,
+  deadline timeouts, unavailable providers, and the recorded provider smoke
+  commands. No credentials or network access are required by default.
+- Cargo metadata must show the dependency direction
+  `capability crates -> repin-runtime -> repin-engine -> product frontends`;
+  `repin-runtime -> repin-engine` is a failure.
+- Existing facade compile fixtures, daemon protocol snapshots, CLI contract
+  tests, and serialized envelopes must remain unchanged.
+
+The extraction is accepted only when these checks pass with no added
+in-process serialization, store round trips, or source reads in an existing
+operation. Deterministic median and p95 regressions are compared with the
+baseline under the 5% ADR-023 budget after variance analysis.

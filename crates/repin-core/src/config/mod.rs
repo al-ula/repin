@@ -342,4 +342,3 @@ mod tests {
         assert!(RepinConfig::validate_project_toml_str(template).is_ok());
     }
 }
-
