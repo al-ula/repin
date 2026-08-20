@@ -21,7 +21,10 @@ pub use intelligence::{
 };
 pub use invalidation::{BlastRadius, InvalidationCoordinator};
 pub use ranking::{DeterministicRanker, RankExplanation, RankReason, RankedCandidate};
-pub use traversal::{GraphTraversal, NeighborItem, NeighborsData};
+pub use traversal::{
+    GraphTraversal, ImpactData, ImpactItem, NeighborItem, NeighborsData, PathSegment, PathTrace,
+    PathTraceData,
+};
 pub use vector::{ExactVectorIndex, VectorHit};
 
 #[cfg(test)]

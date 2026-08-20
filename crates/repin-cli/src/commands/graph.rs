@@ -1,7 +1,8 @@
 use crate::client::DaemonClient;
 use repin_core::model::node::Node;
-use repin_engine::traversal::NeighborsData;
+use repin_engine::traversal::{ImpactData, NeighborsData, PathTraceData};
 use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use std::collections::BTreeMap;
 
 pub fn execute_entity(client: &mut DaemonClient, name_or_id: &str) -> Result<(), String> {
     let resp = client.send_request(IpcRequest::Entity {
@@ -106,6 +107,149 @@ pub fn execute_neighbors(
         }
         IpcResponse::Error { code, message } => {
             Err(format!("Neighbors lookup failed: {:?}: {}", code, message))
+        }
+        _ => Err("Unexpected response".to_string()),
+    }
+}
+
+pub fn execute_impact(
+    client: &mut DaemonClient,
+    name_or_id: &str,
+    max_depth: usize,
+    json: bool,
+) -> Result<(), String> {
+    let resp = client.send_request(IpcRequest::Impact {
+        name_or_id: name_or_id.to_string(),
+        max_depth: Some(max_depth),
+    })?;
+
+    match resp {
+        IpcResponse::ImpactResult(env) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&env).map_err(|e| e.to_string())?
+                );
+                return Ok(());
+            }
+
+            let data_opt: Option<ImpactData> = serde_json::from_value(env.data).unwrap_or(None);
+            if let Some(data) = data_opt {
+                println!(
+                    "Blast Radius for '{}' ({} in {}) [Max Depth: {}]:",
+                    data.target.name,
+                    data.target.kind.as_str(),
+                    data.target.path,
+                    data.max_depth
+                );
+                println!("Total Impacted Symbols: {}", data.total_impacted);
+
+                // Group by depth
+                let mut by_depth: BTreeMap<usize, Vec<_>> = BTreeMap::new();
+                for item in data.items {
+                    by_depth.entry(item.depth).or_default().push(item);
+                }
+
+                for (depth, items) in by_depth {
+                    let label = if depth == 1 {
+                        "Direct Referrers / Callers".to_string()
+                    } else {
+                        format!("Transitive Level {}", depth)
+                    };
+                    println!("\n  Level {} ({}):", depth, label);
+                    for item in items {
+                        println!(
+                            "    <- [{}] {} ({}) in {}",
+                            item.via_edge_kind,
+                            item.node.name,
+                            item.node.kind.as_str(),
+                            item.node.path
+                        );
+                    }
+                }
+            } else {
+                println!("Entity not found for impact analysis: {}", name_or_id);
+            }
+            Ok(())
+        }
+        IpcResponse::Error { code, message } => {
+            Err(format!("Impact analysis failed: {:?}: {}", code, message))
+        }
+        _ => Err("Unexpected response".to_string()),
+    }
+}
+
+pub fn execute_path(
+    client: &mut DaemonClient,
+    from: &str,
+    to: &str,
+    max_depth: usize,
+    json: bool,
+) -> Result<(), String> {
+    let resp = client.send_request(IpcRequest::Path {
+        from: from.to_string(),
+        to: to.to_string(),
+        max_depth: Some(max_depth),
+    })?;
+
+    match resp {
+        IpcResponse::PathResult(env) => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&env).map_err(|e| e.to_string())?
+                );
+                return Ok(());
+            }
+
+            let data_opt: Option<PathTraceData> = serde_json::from_value(env.data).unwrap_or(None);
+            if let Some(data) = data_opt {
+                if data.paths.is_empty() {
+                    println!(
+                        "No dependency path found connecting '{}' -> '{}' within depth limit {}.",
+                        data.from.name, data.to.name, data.max_depth
+                    );
+                    return Ok(());
+                }
+
+                println!(
+                    "Found {} path(s) connecting '{}' -> '{}' [Max Depth: {}]:",
+                    data.paths.len(),
+                    data.from.name,
+                    data.to.name,
+                    data.max_depth
+                );
+
+                for (p_idx, path) in data.paths.iter().enumerate() {
+                    println!("\n--- Path [{}] ({} hops) ---", p_idx + 1, path.length - 1);
+                    for (s_idx, segment) in path.segments.iter().enumerate() {
+                        if let Some(ref edge) = segment.edge_to_next {
+                            println!(
+                                "  [{}] {} ({}) in {}",
+                                s_idx + 1,
+                                segment.node.name,
+                                segment.node.kind.as_str(),
+                                segment.node.path
+                            );
+                            println!("      └──[{}]──►", edge.kind.as_str());
+                        } else {
+                            println!(
+                                "  [{}] {} ({}) in {}",
+                                s_idx + 1,
+                                segment.node.name,
+                                segment.node.kind.as_str(),
+                                segment.node.path
+                            );
+                        }
+                    }
+                }
+            } else {
+                println!("One or both entities not found: '{}' -> '{}'", from, to);
+            }
+            Ok(())
+        }
+        IpcResponse::Error { code, message } => {
+            Err(format!("Path trace failed: {:?}: {}", code, message))
         }
         _ => Err("Unexpected response".to_string()),
     }

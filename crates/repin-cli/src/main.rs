@@ -8,7 +8,9 @@ use repin_cli::commands::daemon::{
     execute_daemon_restart, execute_daemon_run, execute_daemon_status, execute_daemon_stop,
 };
 use repin_cli::commands::eval::execute_eval;
-use repin_cli::commands::graph::{execute_entity, execute_neighbors};
+use repin_cli::commands::graph::{
+    execute_entity, execute_impact, execute_neighbors, execute_path,
+};
 use repin_cli::commands::index::{execute_index, execute_init, execute_uninit};
 use repin_cli::commands::inspect::{execute_at_position, execute_inspect};
 use repin_cli::commands::rebuild::execute_rebuild;
@@ -173,6 +175,29 @@ enum Commands {
         name_or_id: String,
         #[arg(short, long, default_value = "1", help = "Maximum traversal depth")]
         max_depth: usize,
+    },
+
+    #[command(
+        about = "Analyze downstream/upstream blast radius of modifying a symbol or file (ADR-025)"
+    )]
+    Impact {
+        name_or_id: String,
+        #[arg(short, long, default_value = "3", help = "Maximum traversal depth")]
+        max_depth: usize,
+        #[arg(long, help = "Emit structured JSON envelope")]
+        json: bool,
+    },
+
+    #[command(
+        about = "Trace shortest dependency or call path connecting two symbols (ADR-025)"
+    )]
+    Path {
+        from: String,
+        to: String,
+        #[arg(short, long, default_value = "5", help = "Maximum path search depth")]
+        max_depth: usize,
+        #[arg(long, help = "Emit structured JSON envelope")]
+        json: bool,
     },
 
     #[command(about = "Construct budgeted context packed for LLM consumption")]
@@ -546,6 +571,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             max_depth,
         } => execute_neighbors(&mut client, &name_or_id, max_depth)
             .map_err(|e| format!("Neighbors error: {e}").into()),
+        Commands::Impact {
+            name_or_id,
+            max_depth,
+            json,
+        } => execute_impact(&mut client, &name_or_id, max_depth, json)
+            .map_err(|e| format!("Impact error: {e}").into()),
+        Commands::Path {
+            from,
+            to,
+            max_depth,
+            json,
+        } => execute_path(&mut client, &from, &to, max_depth, json)
+            .map_err(|e| format!("Path error: {e}").into()),
         Commands::Context { query, budget } => {
             let eff_budget = budget.unwrap_or(effective_config.context.default_token_budget * 4);
             execute_context(&mut client, &query, eff_budget)

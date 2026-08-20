@@ -422,6 +422,27 @@ impl DaemonServer {
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::NeighborsResult(deserialized)
             }
+            IpcRequest::Impact {
+                name_or_id,
+                max_depth,
+            } => {
+                let depth = max_depth.unwrap_or(3);
+                let env = engine.lookup_impact(&name_or_id, depth);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::ImpactResult(deserialized)
+            }
+            IpcRequest::Path {
+                from,
+                to,
+                max_depth,
+            } => {
+                let depth = max_depth.unwrap_or(5);
+                let env = engine.trace_paths(&from, &to, depth);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::PathResult(deserialized)
+            }
             IpcRequest::Context {
                 query,
                 budget_bytes,

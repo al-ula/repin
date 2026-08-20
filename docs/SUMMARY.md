@@ -57,6 +57,7 @@
   - [ADR-022 — Multi-tier model provider architecture](decisions/ADR-022-multi-tier-model-providers.md)
   - [ADR-023 — Reusable capability crates and runtime facade](decisions/ADR-023-reusable-library-crates.md)
   - [ADR-024 — Compatibility versioning and conservative state replacement](decisions/ADR-024-compatibility-versioning.md)
+  - [ADR-025 — Graph impact analysis and dependency path traversal](decisions/ADR-025-graph-impact-and-path-traversal.md)
 
 # Part VI: Subsystem Specifications
 

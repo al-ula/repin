@@ -39,14 +39,32 @@ impl ExclusionFilter {
     }
 
     pub fn with_config(config: &IndexingConfig) -> Self {
+        let mut custom_extensions = config.exclude_extensions.clone();
+        if !config.index_docs {
+            custom_extensions.push("md".to_string());
+            custom_extensions.push("markdown".to_string());
+        }
+        if !config.index_config {
+            custom_extensions.push("toml".to_string());
+            custom_extensions.push("yaml".to_string());
+            custom_extensions.push("yml".to_string());
+            custom_extensions.push("json".to_string());
+        }
+
         let mut filter = Self {
-            custom_extensions: config.exclude_extensions.clone(),
+            custom_extensions,
             ..Default::default()
         };
 
-        if !config.exclude_paths.is_empty() {
+        let mut paths = config.exclude_paths.clone();
+        if !config.index_docs {
+            paths.push("docs/**".to_string());
+            paths.push("book/**".to_string());
+        }
+
+        if !paths.is_empty() {
             let mut builder = GlobSetBuilder::new();
-            for pat in &config.exclude_paths {
+            for pat in &paths {
                 if let Ok(glob) = Glob::new(pat) {
                     builder.add(glob);
                 } else if let Ok(glob) = Glob::new(&format!("**/{}/**", pat.trim_matches('/'))) {

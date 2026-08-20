@@ -4,7 +4,7 @@ use crate::eval::{BenchmarkHarness, EvalReport};
 use crate::inspect::{FileOutline, Inspector};
 use crate::invalidation::{IndexingCoordinator, InvalidationCoordinator, InvalidationScope};
 use crate::ranking::{DeterministicRanker, RankReason, RankedCandidate};
-use crate::traversal::{GraphTraversal, NeighborsData};
+use crate::traversal::{GraphTraversal, ImpactData, NeighborsData, PathTraceData};
 use repin_core::line_index::Position;
 use repin_core::model::node::Node;
 use repin_core::model::provenance::Revision;
@@ -49,7 +49,44 @@ struct VersionInvalidationResult {
 
 impl Runtime {
     pub fn open(options: RuntimeOptions) -> Result<Self, String> {
-        let fs = CapabilityFs::open(&options.root_id, &options.root_path)
+        let filter = if let Some(ref db_path) = options.db_path {
+            let mut config = repin_core::config::RepinConfig::default();
+            if let Some(parent) = db_path.parent() {
+                let meta_config = parent.join("config.toml");
+                let root_config = options.root_path.join("config.toml");
+                let repin_config = options.root_path.join("repin.toml");
+                if meta_config.is_file() {
+                    if let Ok(content) = std::fs::read_to_string(&meta_config) {
+                        let _ = config.merge_toml_str(&content);
+                    }
+                } else if repin_config.is_file() {
+                    if let Ok(content) = std::fs::read_to_string(&repin_config) {
+                        let _ = config.merge_toml_str(&content);
+                    }
+                } else if root_config.is_file() {
+                    if let Ok(content) = std::fs::read_to_string(&root_config) {
+                        let _ = config.merge_toml_str(&content);
+                    }
+                }
+            }
+            repin_fs::ExclusionFilter::with_config(&config.indexing)
+        } else {
+            let mut config = repin_core::config::RepinConfig::default();
+            let repin_config = options.root_path.join("repin.toml");
+            let root_config = options.root_path.join("config.toml");
+            if repin_config.is_file() {
+                if let Ok(content) = std::fs::read_to_string(&repin_config) {
+                    let _ = config.merge_toml_str(&content);
+                }
+            } else if root_config.is_file() {
+                if let Ok(content) = std::fs::read_to_string(&root_config) {
+                    let _ = config.merge_toml_str(&content);
+                }
+            }
+            repin_fs::ExclusionFilter::with_config(&config.indexing)
+        };
+
+        let fs = CapabilityFs::open_with_filter(&options.root_id, &options.root_path, filter)
             .map_err(|error| format!("failed to open root filesystem: {error}"))?;
         let (store, store_error) = if let Some(ref db_path) = options.db_path {
             if let Some(parent) = db_path.parent() {
@@ -477,6 +514,45 @@ impl Runtime {
             return ResultEnvelope::not_found(None);
         };
         let data = GraphTraversal::lookup_neighbors(&*view, name_or_id, max_depth);
+        let mut envelope = ResultEnvelope::ok(data);
+        envelope.provenance.sources.push(SourceKind::Graph);
+        envelope
+    }
+
+    pub fn lookup_impact(
+        &self,
+        name_or_id: &str,
+        max_depth: usize,
+    ) -> ResultEnvelope<Option<ImpactData>> {
+        let Some(store) = self.store.as_ref() else {
+            let mut envelope = ResultEnvelope::not_found(None);
+            envelope.status = repin_protocol::envelope::Status::Unavailable;
+            return envelope;
+        };
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(None);
+        };
+        let data = GraphTraversal::lookup_impact(&*view, name_or_id, max_depth);
+        let mut envelope = ResultEnvelope::ok(data);
+        envelope.provenance.sources.push(SourceKind::Graph);
+        envelope
+    }
+
+    pub fn trace_paths(
+        &self,
+        from: &str,
+        to: &str,
+        max_depth: usize,
+    ) -> ResultEnvelope<Option<PathTraceData>> {
+        let Some(store) = self.store.as_ref() else {
+            let mut envelope = ResultEnvelope::not_found(None);
+            envelope.status = repin_protocol::envelope::Status::Unavailable;
+            return envelope;
+        };
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(None);
+        };
+        let data = GraphTraversal::lookup_paths(&*view, from, to, max_depth);
         let mut envelope = ResultEnvelope::ok(data);
         envelope.provenance.sources.push(SourceKind::Graph);
         envelope

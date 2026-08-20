@@ -27,6 +27,14 @@ pub struct CapabilityFs {
 
 impl CapabilityFs {
     pub fn open(root_id: impl Into<String>, root_path: impl AsRef<Path>) -> Result<Self, FsError> {
+        Self::open_with_filter(root_id, root_path, ExclusionFilter::default())
+    }
+
+    pub fn open_with_filter(
+        root_id: impl Into<String>,
+        root_path: impl AsRef<Path>,
+        filter: ExclusionFilter,
+    ) -> Result<Self, FsError> {
         let root_path_buf = root_path.as_ref().to_path_buf();
         let canonical_root = root_path_buf.canonicalize().map_err(|e| FsError::Io {
             path: root_path_buf.display().to_string(),
@@ -45,7 +53,7 @@ impl CapabilityFs {
             root_id: root_id.into(),
             root_path: canonical_root,
             dir,
-            filter: ExclusionFilter::default(),
+            filter,
         })
     }
 

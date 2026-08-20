@@ -4,7 +4,7 @@
 
 ## Status
 
-**Implementation Complete & Authoritative Architecture Specification.** Research has concluded and all 16 Architectural Decision Records (ADRs) are finalized and accepted. This repository contains the complete normative design, port contracts, data models, and a full Rust workspace implementation (10 crates) ready for production and agent harness integration.
+**Implementation Complete & Authoritative Architecture Specification.** Research has concluded and all 24 Architectural Decision Records (ADRs) are finalized and accepted. This repository contains the complete normative design, port contracts, data models, and a full Rust workspace implementation (15 crates) ready for production and agent harness integration.
 
 ## What it is
 
@@ -40,17 +40,22 @@ Two independent axes, both required:
 
 ## Workspace Crates
 
-The codebase is organized into 10 focused Rust crates in a single workspace:
+The codebase is organized into 15 focused Rust crates in a single workspace:
 
 | Crate | Purpose | Key Responsibilities |
 |---|---|---|
 | [`repin-core`](crates/repin-core) | Core domain & ports | Domain models (`Node`, `Edge`, `Identity`, `Position`), `LineIndex`, hash protocols, port traits |
 | [`repin-protocol`](crates/repin-protocol) | Protocol & serialization | Result envelopes, status codes, IPC request/response framing |
 | [`repin-fs`](crates/repin-fs) | Filesystem & VCS | `cap-std` root-confined access, default exclusions, Git subprocess adapter |
-| [`repin-store-sqlite`](crates/repin-store-sqlite) | Storage & lexical engine | Bundled SQLite 3.53.2 in WAL mode, FTS5 lexical index, transactional read/write views |
+| [`repin-store-sqlite`](crates/repin-store-sqlite) | Storage & lexical engine | Bundled SQLite in WAL mode, FTS5 lexical index, string interning, transactional read/write views |
 | [`repin-direct-search`](crates/repin-direct-search) | Direct regex retrieval | Bounded working tree direct regex search engine (`regex` adapter) |
 | [`repin-packs`](crates/repin-packs) | Language extractors | Language packs (Rust, TypeScript/JavaScript, Markdown) with Tree-sitter & AST fallbacks |
-| [`repin-engine`](crates/repin-engine) | Engine composition | In-process engine, deterministic ranker, AST inspector, context builder, graph traversals, exact vector index, eval harness, agent reranker |
+| [`repin-context`](crates/repin-context) | Context assembly | Budgeted context packing, verbatim source extraction, blast-radius calculation |
+| [`repin-retrieval`](crates/repin-retrieval) | Retrieval & ranking | Exact vector index, degree centrality rank fusion, hybrid multi-channel fusion |
+| [`repin-indexing`](crates/repin-indexing) | Graph indexing pipeline | Batch/incremental pipeline coordinator, replay convergence, scope invalidation |
+| [`repin-intelligence`](crates/repin-intelligence) | Optional intelligence | Multi-tier model providers (embedded, agent callback, remote API) |
+| [`repin-runtime`](crates/repin-runtime) | Runtime orchestration | Reusable in-process orchestration layer for embedded applications |
+| [`repin-engine`](crates/repin-engine) | Compatibility engine facade | High-level engine API facade preserving backwards compatibility |
 | [`repin-daemon`](crates/repin-daemon) | User daemon server | Background daemon runtime, Unix domain socket rendezvous, per-project writer lease coordination |
 | [`repin-cli`](crates/repin-cli) | CLI frontend | Project discovery, daemon auto-connect, rich developer and agent commands (`repin`) |
 | [`repin-conformance`](crates/repin-conformance) | Conformance & verification | Automated port conformance tests, replay convergence harness, property test fixtures |

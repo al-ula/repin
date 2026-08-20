@@ -108,6 +108,15 @@ pub enum IpcRequest {
         name_or_id: String,
         max_depth: Option<usize>,
     },
+    Impact {
+        name_or_id: String,
+        max_depth: Option<usize>,
+    },
+    Path {
+        from: String,
+        to: String,
+        max_depth: Option<usize>,
+    },
     Context {
         query: String,
         budget_bytes: Option<usize>,
@@ -159,6 +168,8 @@ pub enum IpcResponse {
     PositionResult(ResultEnvelope<serde_json::Value>),
     EntityResult(ResultEnvelope<serde_json::Value>),
     NeighborsResult(ResultEnvelope<serde_json::Value>),
+    ImpactResult(ResultEnvelope<serde_json::Value>),
+    PathResult(ResultEnvelope<serde_json::Value>),
     ContextResult(ResultEnvelope<serde_json::Value>),
     ReviewResult(ResultEnvelope<serde_json::Value>),
     RerankResult(ResultEnvelope<serde_json::Value>),
