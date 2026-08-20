@@ -142,6 +142,8 @@ is never exposed as a stable logical project identifier.
 
 `repin init` is a daemon-mediated operation. It creates `.repin` with private
 permissions, acquires that project's writer lock, and creates `graph.sqlite3`.
+By default, `repin init` automatically triggers initial workspace indexing across
+all matching files unless explicitly skipped via `--no-index`.
 It MUST NOT overwrite an existing database. Creation and activation recheck
 the canonical paths and filesystem identity before publishing the initialized
 context.

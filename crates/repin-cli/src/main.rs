@@ -50,8 +50,11 @@ use repin_cli::commands::model::{
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(about = "Initialize .repin metadata in repository root")]
-    Init,
+    #[command(about = "Initialize .repin metadata and index repository root")]
+    Init {
+        #[arg(long, help = "Skip automatic initial repository indexing")]
+        no_index: bool,
+    },
 
     #[command(about = "Manage repository configuration (config.toml)")]
     Config {
@@ -332,8 +335,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {}
     }
 
-    if let Commands::Init = cli.command {
+    if let Commands::Init { no_index } = cli.command {
         execute_init(&start_path)?;
+        if !no_index {
+            let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
+                let default_repin = start_path.join(".repin");
+                let default_db = default_repin.join("graph.sqlite3");
+                repin_cli::discovery::DiscoveredProject {
+                    root_dir: start_path.clone(),
+                    db_path: default_db,
+                }
+            });
+            let mut client = DaemonClient::connect_or_start(&discovered.db_path)
+                .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
+            execute_index(&mut client).map_err(|e| format!("Index error: {e}"))?;
+        }
         return Ok(());
     }
 
@@ -353,7 +369,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
-        Commands::Init | Commands::Config { .. } | Commands::Model { .. } => unreachable!(),
+        Commands::Init { .. } | Commands::Config { .. } | Commands::Model { .. } => unreachable!(),
         Commands::Daemon { .. } | Commands::Stop { .. } | Commands::Restart { .. } => {
             unreachable!()
         }
