@@ -119,3 +119,29 @@ fn test_conformance_root_traversal_rejection() {
         err => panic!("unexpected error: {:?}", err),
     }
 }
+
+#[test]
+fn test_conformance_global_only_credential_safety_floor() {
+    let project_with_providers = r#"
+        [intelligence.providers.openai]
+        endpoint = "https://api.openai.com/v1"
+        api_key_env = "OPENAI_API_KEY"
+    "#;
+    assert!(RepinConfig::validate_project_toml_str(project_with_providers).is_err());
+
+    let project_with_api_key = r#"
+        [intelligence.embedding]
+        provider = "openai"
+        api_key_env = "OPENAI_API_KEY"
+    "#;
+    assert!(RepinConfig::validate_project_toml_str(project_with_api_key).is_err());
+
+    let clean_project = r#"
+        [intelligence.embedding]
+        provider = "openai"
+        model = "text-embedding-3-small"
+        dimension = 256
+    "#;
+    assert!(RepinConfig::validate_project_toml_str(clean_project).is_ok());
+}
+

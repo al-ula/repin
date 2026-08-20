@@ -44,6 +44,10 @@ struct Cli {
     command: Commands,
 }
 
+use repin_cli::commands::model::{
+    execute_model_download, execute_model_list, execute_model_remove,
+};
+
 #[derive(Subcommand)]
 enum Commands {
     #[command(about = "Initialize .repin metadata in repository root")]
@@ -53,6 +57,12 @@ enum Commands {
     Config {
         #[command(subcommand)]
         action: ConfigAction,
+    },
+
+    #[command(about = "Manage local and downloaded embedding/reranker models")]
+    Model {
+        #[command(subcommand)]
+        action: ModelAction,
     },
 
     #[command(about = "Index all repository files deterministically")]
@@ -182,8 +192,10 @@ enum Commands {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum ConfigAction {
-    #[command(about = "Initialize starter .repin/config.toml")]
+    #[command(about = "Initialize starter config.toml (project-level or user global)")]
     Init {
+        #[arg(short, long, help = "Initialize user global configuration (~/.config/repin/config.toml)")]
+        global: bool,
         #[arg(short, long, help = "Overwrite existing configuration if present")]
         force: bool,
     },
@@ -191,6 +203,22 @@ pub enum ConfigAction {
     Show,
     #[command(about = "Validate syntax and schema of configuration")]
     Validate,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum ModelAction {
+    #[command(about = "Download model weights from Hugging Face Hub into local cache")]
+    Download {
+        #[arg(help = "Hugging Face model ID (e.g. Alibaba-NLP/gte-modernbert-base)")]
+        model: String,
+    },
+    #[command(about = "List all models stored in local cache (~/.cache/repin/models/)")]
+    List,
+    #[command(about = "Remove a downloaded model from local cache")]
+    Remove {
+        #[arg(help = "Hugging Face model ID (e.g. Alibaba-NLP/gte-modernbert-base)")]
+        model: String,
+    },
 }
 
 #[derive(Subcommand, Debug, Clone)]
@@ -220,8 +248,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Config management commands
     if let Commands::Config { ref action } = cli.command {
         match action {
-            ConfigAction::Init { force } => {
-                execute_config_init(cli.project, *force)?;
+            ConfigAction::Init { global, force } => {
+                execute_config_init(cli.project, *global, *force)?;
                 return Ok(());
             }
             ConfigAction::Show => {
@@ -230,6 +258,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             ConfigAction::Validate => {
                 execute_config_validate(cli.project, cli.config)?;
+                return Ok(());
+            }
+        }
+    }
+
+    // Model management commands
+    if let Commands::Model { ref action } = cli.command {
+        match action {
+            ModelAction::Download { model } => {
+                execute_model_download(model)?;
+                return Ok(());
+            }
+            ModelAction::List => {
+                execute_model_list()?;
+                return Ok(());
+            }
+            ModelAction::Remove { model } => {
+                execute_model_remove(model)?;
                 return Ok(());
             }
         }
@@ -307,7 +353,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
-        Commands::Init | Commands::Config { .. } => unreachable!(),
+        Commands::Init | Commands::Config { .. } | Commands::Model { .. } => unreachable!(),
         Commands::Daemon { .. } | Commands::Stop { .. } | Commands::Restart { .. } => {
             unreachable!()
         }

@@ -3,6 +3,7 @@ pub mod context;
 pub mod engine;
 pub mod eval;
 pub mod inspect;
+pub mod intelligence;
 pub mod invalidation;
 pub mod ranking;
 pub mod traversal;
@@ -13,6 +14,11 @@ pub use context::{AssembledContext, ContextBuilder, ContextSnippet};
 pub use engine::{Engine, EngineOptions};
 pub use eval::{BenchmarkHarness, EvalReport};
 pub use inspect::{FileOutline, Inspector, SymbolSummary};
+pub use intelligence::{
+    ensure_hf_model_assets, list_cached_models, normalize_l2, AgentRunnerReranker,
+    EmbeddedOnnxModel, EmbeddedOnnxReranker, GoogleGeminiProvider, IntelligenceRegistry,
+    OllamaProvider, OpenAiProvider,
+};
 pub use invalidation::{BlastRadius, InvalidationCoordinator};
 pub use ranking::{DeterministicRanker, RankExplanation, RankReason, RankedCandidate};
 pub use traversal::{GraphTraversal, NeighborItem, NeighborsData};

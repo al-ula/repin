@@ -5,8 +5,10 @@ pub mod eval;
 pub mod graph;
 pub mod index;
 pub mod inspect;
+pub mod model;
 pub mod rerank;
 pub mod search;
 pub mod status;
 pub mod update;
 pub mod watch;
+

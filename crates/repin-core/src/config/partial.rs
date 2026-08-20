@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use crate::config::types::{
-    ContextConfig, DaemonConfig, ExtractionConfig, IndexingConfig, IntelligenceConfig,
-    ProjectConfig, RepinConfig, RetrievalConfig, RerankCapabilityConfig, SemanticCapabilityConfig,
-    SimpleCapabilityConfig, StorageConfig,
+    ContextConfig, DaemonConfig, EmbeddingConfig, EnrichmentConfig, ExtractionConfig,
+    IndexingConfig, IntelligenceConfig, ProjectConfig, ProviderProfile, RepinConfig,
+    RerankConfig, RetrievalConfig, SimpleCapabilityConfig, StorageConfig,
 };
 use serde::{Deserialize, Serialize};
 
@@ -178,35 +179,113 @@ impl PartialSimpleCapabilityConfig {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PartialSemanticCapabilityConfig {
-    pub enabled: Option<bool>,
-    pub provider: Option<String>,
+pub struct PartialProviderProfile {
+    pub endpoint: Option<String>,
+    pub api_key_env: Option<String>,
 }
 
-impl PartialSemanticCapabilityConfig {
-    pub fn apply_to(&self, target: &mut SemanticCapabilityConfig) {
-        if let Some(enabled) = self.enabled {
-            target.enabled = enabled;
+impl PartialProviderProfile {
+    pub fn apply_to(&self, target: &mut ProviderProfile) {
+        if let Some(endpoint) = &self.endpoint {
+            target.endpoint = Some(endpoint.clone());
         }
-        if let Some(provider) = &self.provider {
-            target.provider = provider.clone();
+        if let Some(api_key_env) = &self.api_key_env {
+            target.api_key_env = Some(api_key_env.clone());
         }
     }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PartialRerankCapabilityConfig {
-    pub enabled: Option<bool>,
-    pub agent_cmd: Option<String>,
+pub struct PartialEmbeddingConfig {
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    pub dimension: Option<usize>,
+    pub auto_download: Option<bool>,
+    pub endpoint: Option<String>,
+    pub api_key_env: Option<String>,
 }
 
-impl PartialRerankCapabilityConfig {
-    pub fn apply_to(&self, target: &mut RerankCapabilityConfig) {
-        if let Some(enabled) = self.enabled {
-            target.enabled = enabled;
+impl PartialEmbeddingConfig {
+    pub fn apply_to(&self, target: &mut EmbeddingConfig) {
+        if let Some(provider) = &self.provider {
+            target.provider = provider.clone();
         }
-        if let Some(cmd) = &self.agent_cmd {
-            target.agent_cmd = cmd.clone();
+        if let Some(model) = &self.model {
+            target.model = model.clone();
+        }
+        if let Some(dimension) = self.dimension {
+            target.dimension = Some(dimension);
+        }
+        if let Some(auto_download) = self.auto_download {
+            target.auto_download = auto_download;
+        }
+        if let Some(endpoint) = &self.endpoint {
+            target.endpoint = Some(endpoint.clone());
+        }
+        if let Some(api_key_env) = &self.api_key_env {
+            target.api_key_env = Some(api_key_env.clone());
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PartialRerankConfig {
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    pub top_n: Option<usize>,
+    pub deadline_ms: Option<u64>,
+    pub agent_cmd: Option<String>,
+    pub endpoint: Option<String>,
+    pub api_key_env: Option<String>,
+}
+
+impl PartialRerankConfig {
+    pub fn apply_to(&self, target: &mut RerankConfig) {
+        if let Some(provider) = &self.provider {
+            target.provider = provider.clone();
+        }
+        if let Some(model) = &self.model {
+            target.model = model.clone();
+        }
+        if let Some(top_n) = self.top_n {
+            target.top_n = top_n;
+        }
+        if let Some(deadline_ms) = self.deadline_ms {
+            target.deadline_ms = deadline_ms;
+        }
+        if let Some(agent_cmd) = &self.agent_cmd {
+            target.agent_cmd = agent_cmd.clone();
+        }
+        if let Some(endpoint) = &self.endpoint {
+            target.endpoint = Some(endpoint.clone());
+        }
+        if let Some(api_key_env) = &self.api_key_env {
+            target.api_key_env = Some(api_key_env.clone());
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PartialEnrichmentConfig {
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    pub endpoint: Option<String>,
+    pub api_key_env: Option<String>,
+}
+
+impl PartialEnrichmentConfig {
+    pub fn apply_to(&self, target: &mut EnrichmentConfig) {
+        if let Some(provider) = &self.provider {
+            target.provider = provider.clone();
+        }
+        if let Some(model) = &self.model {
+            target.model = model.clone();
+        }
+        if let Some(endpoint) = &self.endpoint {
+            target.endpoint = Some(endpoint.clone());
+        }
+        if let Some(api_key_env) = &self.api_key_env {
+            target.api_key_env = Some(api_key_env.clone());
         }
     }
 }
@@ -215,8 +294,10 @@ impl PartialRerankCapabilityConfig {
 pub struct PartialIntelligenceConfig {
     pub lexical: Option<PartialSimpleCapabilityConfig>,
     pub graph: Option<PartialSimpleCapabilityConfig>,
-    pub semantic: Option<PartialSemanticCapabilityConfig>,
-    pub rerank: Option<PartialRerankCapabilityConfig>,
+    pub providers: Option<HashMap<String, PartialProviderProfile>>,
+    pub embedding: Option<PartialEmbeddingConfig>,
+    pub rerank: Option<PartialRerankConfig>,
+    pub enrichment: Option<PartialEnrichmentConfig>,
 }
 
 impl PartialIntelligenceConfig {
@@ -227,11 +308,23 @@ impl PartialIntelligenceConfig {
         if let Some(graph) = &self.graph {
             graph.apply_to(&mut target.graph);
         }
-        if let Some(semantic) = &self.semantic {
-            semantic.apply_to(&mut target.semantic);
+        if let Some(providers) = &self.providers {
+            for (k, v) in providers {
+                let profile = target.providers.entry(k.clone()).or_insert_with(|| ProviderProfile {
+                    endpoint: None,
+                    api_key_env: None,
+                });
+                v.apply_to(profile);
+            }
+        }
+        if let Some(embedding) = &self.embedding {
+            embedding.apply_to(&mut target.embedding);
         }
         if let Some(rerank) = &self.rerank {
             rerank.apply_to(&mut target.rerank);
+        }
+        if let Some(enrichment) = &self.enrichment {
+            enrichment.apply_to(&mut target.enrichment);
         }
     }
 }

@@ -207,20 +207,144 @@ impl Default for SimpleCapabilityConfig {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SemanticCapabilityConfig {
-    #[serde(default)]
-    pub enabled: bool,
-    #[serde(default)]
-    pub provider: String,
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProviderProfile {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key_env: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RerankCapabilityConfig {
-    #[serde(default)]
-    pub enabled: bool,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EmbeddingConfig {
+    #[serde(default = "default_provider_none")]
+    pub provider: String,
+    #[serde(default = "default_embedding_model")]
+    pub model: String,
+    #[serde(default = "default_embedding_dimension")]
+    pub dimension: Option<usize>,
+    #[serde(default = "default_true")]
+    pub auto_download: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key_env: Option<String>,
+}
+
+fn default_provider_none() -> String {
+    "none".to_string()
+}
+
+fn default_embedding_model() -> String {
+    "Alibaba-NLP/gte-modernbert-base".to_string()
+}
+
+fn default_embedding_dimension() -> Option<usize> {
+    Some(256)
+}
+
+impl Default for EmbeddingConfig {
+    fn default() -> Self {
+        Self {
+            provider: default_provider_none(),
+            model: default_embedding_model(),
+            dimension: default_embedding_dimension(),
+            auto_download: true,
+            endpoint: None,
+            api_key_env: None,
+        }
+    }
+}
+
+impl EmbeddingConfig {
+    pub fn is_enabled(&self) -> bool {
+        !self.provider.is_empty() && self.provider != "none"
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RerankConfig {
+    #[serde(default = "default_provider_none")]
+    pub provider: String,
+    #[serde(default = "default_rerank_model")]
+    pub model: String,
+    #[serde(default = "default_rerank_top_n")]
+    pub top_n: usize,
+    #[serde(default = "default_rerank_deadline_ms")]
+    pub deadline_ms: u64,
     #[serde(default)]
     pub agent_cmd: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key_env: Option<String>,
+}
+
+fn default_rerank_model() -> String {
+    "Alibaba-NLP/gte-reranker-modernbert-base".to_string()
+}
+
+fn default_rerank_top_n() -> usize {
+    50
+}
+
+fn default_rerank_deadline_ms() -> u64 {
+    100
+}
+
+impl Default for RerankConfig {
+    fn default() -> Self {
+        Self {
+            provider: default_provider_none(),
+            model: default_rerank_model(),
+            top_n: default_rerank_top_n(),
+            deadline_ms: default_rerank_deadline_ms(),
+            agent_cmd: String::new(),
+            endpoint: None,
+            api_key_env: None,
+        }
+    }
+}
+
+impl RerankConfig {
+    pub fn is_enabled(&self) -> bool {
+        !self.provider.is_empty() && self.provider != "none"
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EnrichmentConfig {
+    #[serde(default = "default_provider_none")]
+    pub provider: String,
+    #[serde(default = "default_enrichment_model")]
+    pub model: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key_env: Option<String>,
+}
+
+fn default_enrichment_model() -> String {
+    "gemini-2.5-flash".to_string()
+}
+
+impl Default for EnrichmentConfig {
+    fn default() -> Self {
+        Self {
+            provider: default_provider_none(),
+            model: default_enrichment_model(),
+            endpoint: None,
+            api_key_env: None,
+        }
+    }
+}
+
+impl EnrichmentConfig {
+    pub fn is_enabled(&self) -> bool {
+        !self.provider.is_empty() && self.provider != "none"
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -230,9 +354,13 @@ pub struct IntelligenceConfig {
     #[serde(default)]
     pub graph: SimpleCapabilityConfig,
     #[serde(default)]
-    pub semantic: SemanticCapabilityConfig,
+    pub providers: HashMap<String, ProviderProfile>,
     #[serde(default)]
-    pub rerank: RerankCapabilityConfig,
+    pub embedding: EmbeddingConfig,
+    #[serde(default)]
+    pub rerank: RerankConfig,
+    #[serde(default)]
+    pub enrichment: EnrichmentConfig,
 }
 
 impl Default for IntelligenceConfig {
@@ -240,8 +368,10 @@ impl Default for IntelligenceConfig {
         Self {
             lexical: SimpleCapabilityConfig { enabled: true },
             graph: SimpleCapabilityConfig { enabled: true },
-            semantic: SemanticCapabilityConfig::default(),
-            rerank: RerankCapabilityConfig::default(),
+            providers: HashMap::new(),
+            embedding: EmbeddingConfig::default(),
+            rerank: RerankConfig::default(),
+            enrichment: EnrichmentConfig::default(),
         }
     }
 }

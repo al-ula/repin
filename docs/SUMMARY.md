@@ -52,6 +52,7 @@
   - [ADR-019 — SQLite WAL checkpoint & compaction](decisions/ADR-019-sqlite-wal-checkpoint-and-compaction.md)
   - [ADR-020 — Schema string interning & JSON compression](decisions/ADR-020-schema-string-interning-and-compression.md)
   - [ADR-021 — Per-project configuration & merge protocol](decisions/ADR-021-per-project-configuration.md)
+  - [ADR-022 — Multi-tier model provider architecture](decisions/ADR-022-multi-tier-model-providers.md)
 
 # Part VI: Subsystem Specifications
 
@@ -60,6 +61,7 @@
 - [Specification — Language-native parsers with Tree-sitter fallback](specifications/native-parsers-tree-sitter-fallback.md)
 - [Specification — Exact Rust vector search baseline](specifications/vector-search-rust-friendly.md)
 - [Specification — Agent inspection and review context](specifications/agent-inspection-and-review-context.md)
+- [Specification — Multi-Tier Model Provider Architecture](specifications/multi-tier-model-providers.md)
 
 # Part VII: Concluded Research & Trade Studies
 

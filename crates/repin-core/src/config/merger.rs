@@ -55,7 +55,11 @@ impl Merge for RepinConfig {
 
         self.intelligence.lexical = higher.intelligence.lexical;
         self.intelligence.graph = higher.intelligence.graph;
-        self.intelligence.semantic = higher.intelligence.semantic;
+        for (k, v) in higher.intelligence.providers {
+            self.intelligence.providers.insert(k, v);
+        }
+        self.intelligence.embedding = higher.intelligence.embedding;
         self.intelligence.rerank = higher.intelligence.rerank;
+        self.intelligence.enrichment = higher.intelligence.enrichment;
     }
 }

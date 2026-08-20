@@ -4,17 +4,29 @@ use repin_core::config::RepinConfig;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn execute_config_init(project_path: Option<PathBuf>, force: bool) -> Result<()> {
-    let root_dir = project_path
-        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+pub fn execute_config_init(project_path: Option<PathBuf>, global: bool, force: bool) -> Result<()> {
+    let target_file = if global {
+        let home_dir = std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .ok_or_else(|| anyhow::anyhow!("HOME environment variable not set"))?;
+        let repin_global_dir = home_dir.join(".config").join("repin");
+        if !repin_global_dir.exists() {
+            fs::create_dir_all(&repin_global_dir)
+                .with_context(|| format!("failed to create directory {:?}", repin_global_dir))?;
+        }
+        repin_global_dir.join("config.toml")
+    } else {
+        let root_dir = project_path
+            .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
-    let repin_dir = root_dir.join(".repin");
-    if !repin_dir.exists() {
-        fs::create_dir_all(&repin_dir)
-            .with_context(|| format!("failed to create directory {:?}", repin_dir))?;
-    }
+        let repin_dir = root_dir.join(".repin");
+        if !repin_dir.exists() {
+            fs::create_dir_all(&repin_dir)
+                .with_context(|| format!("failed to create directory {:?}", repin_dir))?;
+        }
+        repin_dir.join("config.toml")
+    };
 
-    let target_file = repin_dir.join("config.toml");
     if target_file.exists() && !force {
         eprintln!(
             "Configuration file already exists at {:?}. Use --force to overwrite.",
@@ -27,7 +39,11 @@ pub fn execute_config_init(project_path: Option<PathBuf>, force: bool) -> Result
     fs::write(&target_file, template)
         .with_context(|| format!("failed to write configuration to {:?}", target_file))?;
 
-    println!("Initialized Repin configuration at {:?}", target_file);
+    if global {
+        println!("Initialized User Global Repin configuration at {:?}", target_file);
+    } else {
+        println!("Initialized Project Repin configuration at {:?}", target_file);
+    }
     Ok(())
 }
 
@@ -85,7 +101,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path().to_path_buf();
 
-        execute_config_init(Some(path.clone()), false).expect("init should succeed");
+        execute_config_init(Some(path.clone()), false, false).expect("init should succeed");
         let config_file = path.join(".repin").join("config.toml");
         assert!(config_file.is_file());
 
@@ -99,7 +115,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path().to_path_buf();
 
-        execute_config_init(Some(path.clone()), false).expect("init should succeed");
+        execute_config_init(Some(path.clone()), false, false).expect("init should succeed");
         assert!(execute_config_validate(Some(path.clone()), None).is_ok());
 
         // Write invalid schema version

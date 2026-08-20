@@ -99,7 +99,43 @@ impl RepinConfig {
         Ok(())
     }
 
-    /// Return a well-commented starter configuration template.
+    /// Validate that a project-level configuration does not contain forbidden global-only API providers or keys.
+    pub fn validate_project_toml_str(content: &str) -> Result<(), ConfigError> {
+        let partial: PartialRepinConfig = toml::from_str(content)?;
+        if let Some(intelligence) = &partial.intelligence {
+            if let Some(providers) = &intelligence.providers
+                && !providers.is_empty()
+            {
+                return Err(ConfigError::ValidationError(
+                    "Safety violation: [intelligence.providers] cannot be declared in project configuration. Define API providers in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                ));
+            }
+            if let Some(embedding) = &intelligence.embedding
+                && embedding.api_key_env.is_some()
+            {
+                return Err(ConfigError::ValidationError(
+                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                ));
+            }
+            if let Some(rerank) = &intelligence.rerank
+                && rerank.api_key_env.is_some()
+            {
+                return Err(ConfigError::ValidationError(
+                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                ));
+            }
+            if let Some(enrichment) = &intelligence.enrichment
+                && enrichment.api_key_env.is_some()
+            {
+                return Err(ConfigError::ValidationError(
+                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Return a well-commented starter configuration template with examples for all 3 model provider tiers.
     pub fn starter_template() -> &'static str {
         r#"# Repin Repository Intelligence Configuration
 schema_version = 1
@@ -163,19 +199,39 @@ watch_debounce_ms = 150
 # Idle daemon context timeout in seconds (0 = persistent)
 idle_timeout_secs = 3600
 
-[intelligence.lexical]
-enabled = true
+# ==============================================================================
+# Optional Model-Powered Intelligence (Default: none / disabled)
+# ==============================================================================
 
-[intelligence.graph]
-enabled = true
+# --- Example Tier 1: Embedded Local ONNX (Zero external network / API keys) ---
+# [intelligence.embedding]
+# provider = "embedded"
+# model = "Alibaba-NLP/gte-modernbert-base"
+# dimension = 256
+# auto_download = true
+#
+# [intelligence.rerank]
+# provider = "embedded"
+# model = "Alibaba-NLP/gte-reranker-modernbert-base"
+# top_n = 50
+# deadline_ms = 100
 
-[intelligence.semantic]
-enabled = false
-provider = ""
+# --- Example Tier 2: Agent-Powered (IDE Agents & Shell Callbacks) ---
+# [intelligence.rerank]
+# provider = "agent"
+# agent_cmd = "my-agent-rerank --json"
+# deadline_ms = 5000
 
-[intelligence.rerank]
-enabled = false
-agent_cmd = ""
+# --- Example Tier 3: Standard APIs (OpenAI, Ollama, Google Gemini) ---
+# NOTE: [intelligence.providers] must be declared in ~/.config/repin/config.toml
+# [intelligence.embedding]
+# provider = "openai"
+# model = "text-embedding-3-small"
+# dimension = 256
+#
+# [intelligence.enrichment]
+# provider = "google"
+# model = "gemini-2.5-flash"
 "#
     }
 }
@@ -191,6 +247,9 @@ mod tests {
         assert_eq!(config.retrieval.default_mode, "hybrid");
         assert_eq!(config.context.default_token_budget, 8192);
         assert_eq!(config.storage.wal_checkpoint_mode, "truncate");
+        assert!(!config.intelligence.embedding.is_enabled());
+        assert!(!config.intelligence.rerank.is_enabled());
+        assert!(!config.intelligence.enrichment.is_enabled());
         assert!(config.validate().is_ok());
     }
 
@@ -203,12 +262,19 @@ mod tests {
 
             [retrieval]
             default_limit = 20
+
+            [intelligence.embedding]
+            provider = "embedded"
+            dimension = 128
         "#;
 
         let config = RepinConfig::from_toml_str(toml_str).expect("parse should succeed");
         assert_eq!(config.indexing.exclude_paths, vec!["custom/**"]);
         assert_eq!(config.indexing.max_file_size_bytes, 1048576);
         assert_eq!(config.retrieval.default_limit, 20);
+        assert_eq!(config.intelligence.embedding.provider, "embedded");
+        assert_eq!(config.intelligence.embedding.dimension, Some(128));
+        assert!(config.intelligence.embedding.is_enabled());
         // Defaults preserved
         assert_eq!(config.retrieval.default_mode, "hybrid");
         assert_eq!(config.context.default_token_budget, 8192);
@@ -244,10 +310,36 @@ mod tests {
     }
 
     #[test]
+    fn test_project_layer_credential_safety_floor() {
+        let invalid_providers = r#"
+            [intelligence.providers.openai]
+            endpoint = "https://api.openai.com/v1"
+            api_key_env = "OPENAI_API_KEY"
+        "#;
+        assert!(RepinConfig::validate_project_toml_str(invalid_providers).is_err());
+
+        let invalid_api_key_env = r#"
+            [intelligence.embedding]
+            provider = "openai"
+            api_key_env = "MY_SECRET_KEY"
+        "#;
+        assert!(RepinConfig::validate_project_toml_str(invalid_api_key_env).is_err());
+
+        let valid_project_config = r#"
+            [intelligence.embedding]
+            provider = "openai"
+            model = "text-embedding-3-small"
+        "#;
+        assert!(RepinConfig::validate_project_toml_str(valid_project_config).is_ok());
+    }
+
+    #[test]
     fn test_starter_template_is_valid() {
         let template = RepinConfig::starter_template();
         let config = RepinConfig::from_toml_str(template).expect("starter template should be valid");
         assert_eq!(config.schema_version, 1);
         assert_eq!(config.indexing.exclude_paths, vec!["**/build/**", "**/dist/**", "vendor/**"]);
+        assert!(RepinConfig::validate_project_toml_str(template).is_ok());
     }
 }
+

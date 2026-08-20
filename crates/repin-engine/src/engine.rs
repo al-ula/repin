@@ -3,7 +3,7 @@ use crate::context::{AssembledContext, ContextBuilder};
 use crate::eval::{BenchmarkHarness, EvalReport};
 use crate::inspect::{FileOutline, Inspector};
 use crate::invalidation::InvalidationCoordinator;
-use crate::ranking::{DeterministicRanker, RankedCandidate};
+use crate::ranking::{DeterministicRanker, RankReason, RankedCandidate};
 use crate::traversal::{GraphTraversal, NeighborsData};
 use repin_core::line_index::Position;
 use repin_core::model::node::Node;
@@ -413,6 +413,107 @@ impl Engine {
                     return env;
                 }
             };
+
+        let mut env = ResultEnvelope::ok(final_ranked);
+        env.provenance.sources.push(SourceKind::Graph);
+        env
+    }
+
+    pub fn rerank_with_model(
+        &self,
+        query: &str,
+        candidates: &[String],
+        reranker: &dyn repin_core::ports::model::Reranker,
+    ) -> ResultEnvelope<Vec<RankedCandidate>> {
+        let Some(ref store) = self.store else {
+            let mut env = ResultEnvelope::not_found(Vec::new());
+            env.status = repin_protocol::envelope::Status::Unavailable;
+            return env;
+        };
+
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(Vec::new());
+        };
+
+        let ranked = if candidates.is_empty() {
+            let hybrid_env = self.search_hybrid(query, 20);
+            hybrid_env.data
+        } else {
+            let mut nodes = Vec::new();
+            for item in candidates {
+                if let Some(node) = GraphTraversal::lookup_entity(&*view, item) {
+                    nodes.push(node);
+                }
+            }
+            DeterministicRanker::rank(query, nodes)
+        };
+
+        if ranked.is_empty() {
+            let mut env = ResultEnvelope::ok(Vec::new());
+            env.provenance.sources.push(SourceKind::Graph);
+            return env;
+        }
+
+        let model_candidates: Vec<repin_core::ports::model::RerankCandidate> = ranked
+            .iter()
+            .map(|r| {
+                let doc_summary = r
+                    .node
+                    .attributes
+                    .get("docSummary")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                repin_core::ports::model::RerankCandidate {
+                    id: r.node.id.to_string(),
+                    content: format!(
+                        "{} ({}) in {} {}",
+                        r.node.name,
+                        r.node.kind.as_str(),
+                        r.node.path,
+                        doc_summary
+                    ),
+                }
+            })
+            .collect();
+
+        let model_hits = match reranker.rerank(query, &model_candidates) {
+            Ok(hits) => hits,
+            Err(err) => {
+                let mut env = ResultEnvelope::ok(ranked);
+                env.provenance.sources.push(SourceKind::Graph);
+                env.warnings.push(repin_protocol::envelope::Warning {
+                    code: repin_protocol::errors::ErrorCode::CapabilityUnavailable,
+                    message: format!("Model reranker failed: {err}"),
+                    detail: None,
+                });
+                return env;
+            }
+        };
+
+        let mut hit_map: HashMap<String, (usize, f32)> = HashMap::new();
+        for hit in model_hits {
+            hit_map.insert(hit.id, (hit.rank, hit.score));
+        }
+
+        let mut final_ranked = ranked;
+        for c in &mut final_ranked {
+            let id_str = c.node.id.to_string();
+            if let Some((_rank, score)) = hit_map.get(&id_str) {
+                c.explanation.reasons.push(RankReason {
+                    signal: format!("model_rerank:{}", reranker.identity().provider),
+                    score: *score as f64,
+                    detail: Some(format!("model: {}", reranker.identity().model)),
+                });
+                c.explanation.total_score += *score as f64;
+            }
+        }
+
+        final_ranked.sort_by(|a, b| {
+            b.explanation
+                .total_score
+                .partial_cmp(&a.explanation.total_score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         let mut env = ResultEnvelope::ok(final_ranked);
         env.provenance.sources.push(SourceKind::Graph);
