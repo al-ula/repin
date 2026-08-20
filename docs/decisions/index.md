@@ -28,6 +28,7 @@ Research has concluded and all decisions are finalized and accepted. These ADRs 
 | [ADR-018](ADR-018-graph-degree-centrality-rank-fusion.md) | Graph degree centrality in deterministic rank fusion | accepted contract and capability decision | empirical benchmark & ranking quality analysis |
 | [ADR-019](ADR-019-sqlite-wal-checkpoint-and-compaction.md) | SQLite post-batch WAL checkpointing and storage compaction | accepted contract and capability decision | storage footprint audit & benchmark analysis |
 | [ADR-020](ADR-020-schema-string-interning-and-compression.md) | Schema string interning and JSON attribute compression | accepted contract and capability decision | storage normalization, footprint & index efficiency |
+| [ADR-021](ADR-021-per-project-configuration.md) | Per-project configuration file and precedence merge protocol | accepted contract and capability decision | system configuration, safety floor enforcement & ergonomics |
 
 ## Implementation Validation Scope
 

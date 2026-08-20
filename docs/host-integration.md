@@ -208,6 +208,7 @@ Rules:
   graph-store schema migration is owned by the store adapter. See [Storage —
   Migration ownership](storage.md#migration-ownership).
 - Capabilities are configured individually ([Optional Intelligence](intelligence.md)), never through one global on/off switch. A single flag cannot express "lexical yes, embeddings no, reranking via the host's model".
+- Project configuration is loaded from `.repin/config.toml` (or `./config.toml`) using the typed TOML schema defined in [ADR-021](decisions/ADR-021-per-project-configuration.md) and [Specification — Per-Project Configuration](specifications/project-configuration.md).
 
 ## 9. Multi-client behavior
 

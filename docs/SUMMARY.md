@@ -51,9 +51,11 @@
   - [ADR-018 — Graph degree centrality in ranking](decisions/ADR-018-graph-degree-centrality-rank-fusion.md)
   - [ADR-019 — SQLite WAL checkpoint & compaction](decisions/ADR-019-sqlite-wal-checkpoint-and-compaction.md)
   - [ADR-020 — Schema string interning & JSON compression](decisions/ADR-020-schema-string-interning-and-compression.md)
+  - [ADR-021 — Per-project configuration & merge protocol](decisions/ADR-021-per-project-configuration.md)
 
 # Part VI: Subsystem Specifications
 
+- [Specification — Per-Project Configuration (`config.toml`)](specifications/project-configuration.md)
 - [Specification — Sparse-checkpoint line index](specifications/sparse-line-index.md)
 - [Specification — Language-native parsers with Tree-sitter fallback](specifications/native-parsers-tree-sitter-fallback.md)
 - [Specification — Exact Rust vector search baseline](specifications/vector-search-rust-friendly.md)

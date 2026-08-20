@@ -17,6 +17,7 @@ An initialized project has this minimum layout:
 
 ```text
 project/.repin/
+  .gitignore
   graph.sqlite3
   writer.lock
 ```

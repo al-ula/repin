@@ -1,7 +1,13 @@
+pub mod config;
 pub mod hash;
 pub mod line_index;
 pub mod model;
 pub mod ports;
+
+pub use config::{
+    ConfigError, ContextConfig, DaemonConfig, ExtractionConfig, IndexingConfig, IntelligenceConfig,
+    Merge, PartialRepinConfig, ProjectConfig, RepinConfig, RetrievalConfig, StorageConfig,
+};
 
 pub use hash::{ContentHash, HashAlgorithm};
 pub use line_index::{ByteSpan, LineIndex, LineIndexError, Position, Range};

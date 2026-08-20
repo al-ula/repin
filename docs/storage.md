@@ -346,6 +346,7 @@ deletion is treated as an identity change and fails that context closed.
 
   ```text
   project/.repin/
+    .gitignore
     graph.sqlite3
     writer.lock
   ```

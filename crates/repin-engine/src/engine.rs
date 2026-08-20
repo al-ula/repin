@@ -44,6 +44,10 @@ impl Engine {
         let store = if let Some(ref db_p) = options.db_path {
             if let Some(parent) = db_p.parent() {
                 let _ = std::fs::create_dir_all(parent);
+                let gitignore = parent.join(".gitignore");
+                if !gitignore.exists() {
+                    let _ = std::fs::write(gitignore, "*\n");
+                }
             }
             Some(SqliteStore::open(db_p).map_err(|e| format!("failed to open sqlite store: {e}"))?)
         } else {

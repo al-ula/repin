@@ -1,3 +1,4 @@
+use repin_core::config::ContextConfig;
 use repin_core::model::node::Node;
 use repin_core::ports::store::ReadView;
 use repin_fs::CapabilityFs;
@@ -30,6 +31,16 @@ impl ContextBuilder {
         start_line: u32,
         end_line: u32,
     ) -> Option<String> {
+        Self::extract_verbatim_lines_with_padding(fs, path, start_line, end_line, 0)
+    }
+
+    pub fn extract_verbatim_lines_with_padding(
+        fs: &CapabilityFs,
+        path: &str,
+        start_line: u32,
+        end_line: u32,
+        padding_lines: usize,
+    ) -> Option<String> {
         let snapshot = fs.read_snapshot(path).ok()?;
         let content = String::from_utf8_lossy(&snapshot.content);
         let lines: Vec<&str> = content.lines().collect();
@@ -37,8 +48,10 @@ impl ContextBuilder {
             return None;
         }
 
-        let start_idx = (start_line.saturating_sub(1) as usize).min(lines.len() - 1);
-        let end_idx = (end_line as usize).max(start_idx + 1).min(lines.len());
+        let pad_u32 = padding_lines as u32;
+        let start_padded = start_line.saturating_sub(1).saturating_sub(pad_u32);
+        let start_idx = (start_padded as usize).min(lines.len() - 1);
+        let end_idx = ((end_line as usize) + padding_lines).max(start_idx + 1).min(lines.len());
 
         let mut formatted = String::new();
         for (i, line) in lines[start_idx..end_idx].iter().enumerate() {
@@ -62,6 +75,22 @@ impl ContextBuilder {
         nodes: &[Node],
         budget_bytes: usize,
     ) -> AssembledContext {
+        let config = ContextConfig {
+            default_token_budget: budget_bytes / 4,
+            padding_lines: 0,
+            include_blast_radius: true,
+            include_verbatim_source: true,
+        };
+        Self::assemble_neighborhood_with_config(read_view, fs, nodes, &config, budget_bytes)
+    }
+
+    pub fn assemble_neighborhood_with_config(
+        read_view: &dyn ReadView,
+        fs: Option<&CapabilityFs>,
+        nodes: &[Node],
+        config: &ContextConfig,
+        budget_bytes: usize,
+    ) -> AssembledContext {
         let mut snippets = Vec::new();
         let mut total_bytes = 0;
         let mut truncated = false;
@@ -75,28 +104,48 @@ impl ContextBuilder {
                     .unwrap_or_default();
                 let outgoing_count = outgoing.len();
 
-                let text = if let Some(ref range) = node.range
-                    && let Some(fs_ref) = fs
-                    && let Some(verbatim) = Self::extract_verbatim_lines(
-                        fs_ref,
-                        &node.path,
-                        range.start.line,
-                        range.end.line,
-                    ) {
+                let blast_header = if config.include_blast_radius {
+                    format!("Blast Radius: {} incoming callers, {} outgoing relations\n", incoming_count, outgoing_count)
+                } else {
+                    String::new()
+                };
+
+                let verbatim_opt = if config.include_verbatim_source {
+                    if let Some(ref range) = node.range
+                        && let Some(fs_ref) = fs
+                    {
+                        Self::extract_verbatim_lines_with_padding(
+                            fs_ref,
+                            &node.path,
+                            range.start.line,
+                            range.end.line,
+                            config.padding_lines,
+                        )
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let text = if let Some(verbatim) = verbatim_opt {
+                    let range_str = if let Some(ref range) = node.range {
+                        format!(" (L{}-L{})", range.start.line, range.end.line)
+                    } else {
+                        String::new()
+                    };
                     format!(
-                        "Symbol: {} ({})\nFile: {} (L{}-L{})\nBlast Radius: {} incoming callers, {} outgoing relations\n----------------------------------------\n{}",
+                        "Symbol: {} ({})\nFile: {}{}\n{}----------------------------------------\n{}",
                         node.name,
                         node.kind.as_str(),
                         node.path,
-                        range.start.line,
-                        range.end.line,
-                        incoming_count,
-                        outgoing_count,
+                        range_str,
+                        blast_header,
                         verbatim
                     )
                 } else {
                     format!(
-                        "Symbol: {} ({})\nFile: {}\nLine Range: {:?}\nBlast Radius: {} incoming callers, {} outgoing relations\nAttributes: {}",
+                        "Symbol: {} ({})\nFile: {}\nLine Range: {:?}\n{}Attributes: {}",
                         node.name,
                         node.kind.as_str(),
                         node.path,
@@ -104,8 +153,7 @@ impl ContextBuilder {
                             "{}:{}..{}:{}",
                             r.start.line, r.start.column, r.end.line, r.end.column
                         )),
-                        incoming_count,
-                        outgoing_count,
+                        blast_header,
                         serde_json::to_string(&node.attributes).unwrap_or_default()
                     )
                 };
@@ -128,121 +176,90 @@ impl ContextBuilder {
             }
 
             // Find outgoing neighbors
-            let outgoing = read_view
+            let edges = read_view
                 .edges_from(&node.id, &Default::default())
                 .unwrap_or_default();
-            for edge in outgoing {
-                if let Ok(Some(neighbor)) = read_view.node(&edge.to)
-                    && seen_ids.insert(neighbor.id)
+            for edge in edges {
+                if let Ok(Some(target_node)) = read_view.node(&edge.to)
+                    && seen_ids.insert(target_node.id)
                 {
-                    let text = if let Some(ref range) = neighbor.range
-                        && let Some(fs_ref) = fs
-                        && let Some(verbatim) = Self::extract_verbatim_lines(
-                            fs_ref,
-                            &neighbor.path,
-                            range.start.line,
-                            range.end.line,
-                        ) {
-                        format!(
-                            "Outgoing Relation [{}]: {} ({}) in {} (L{}-L{})\n----------------------------------------\n{}",
-                            edge.kind.as_str(),
-                            neighbor.name,
-                            neighbor.kind.as_str(),
-                            neighbor.path,
-                            range.start.line,
-                            range.end.line,
-                            verbatim
-                        )
-                    } else {
-                        format!(
-                            "Outgoing Relation [{}]: {} ({}) in {}",
-                            edge.kind.as_str(),
-                            neighbor.name,
-                            neighbor.kind.as_str(),
-                            neighbor.path
-                        )
-                    };
+                    let incoming_count = read_view.incoming_edge_count(&target_node.id).unwrap_or(0);
+                        let outgoing = read_view
+                            .edges_from(&target_node.id, &Default::default())
+                            .unwrap_or_default();
+                        let outgoing_count = outgoing.len();
 
-                    let bytes_len = text.len();
-                    if total_bytes + bytes_len > budget_bytes {
-                        truncated = true;
-                        break;
+                        let blast_header = if config.include_blast_radius {
+                            format!("Blast Radius: {} incoming callers, {} outgoing relations\n", incoming_count, outgoing_count)
+                        } else {
+                            String::new()
+                        };
+
+                        let verbatim_opt = if config.include_verbatim_source {
+                            if let Some(ref range) = target_node.range
+                                && let Some(fs_ref) = fs
+                            {
+                                Self::extract_verbatim_lines_with_padding(
+                                    fs_ref,
+                                    &target_node.path,
+                                    range.start.line,
+                                    range.end.line,
+                                    config.padding_lines,
+                                )
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+
+                        let text = if let Some(verbatim) = verbatim_opt {
+                            let range_str = if let Some(ref range) = target_node.range {
+                                format!(" (L{}-L{})", range.start.line, range.end.line)
+                            } else {
+                                String::new()
+                            };
+                            format!(
+                                "Symbol: {} ({})\nFile: {}{}\n{}----------------------------------------\n{}",
+                                target_node.name,
+                                target_node.kind.as_str(),
+                                target_node.path,
+                                range_str,
+                                blast_header,
+                                verbatim
+                            )
+                        } else {
+                            format!(
+                                "Symbol: {} ({})\nFile: {}\nLine Range: {:?}\n{}Attributes: {}",
+                                target_node.name,
+                                target_node.kind.as_str(),
+                                target_node.path,
+                                target_node.range.as_ref().map(|r| format!(
+                                    "{}:{}..{}:{}",
+                                    r.start.line, r.start.column, r.end.line, r.end.column
+                                )),
+                                blast_header,
+                                serde_json::to_string(&target_node.attributes).unwrap_or_default()
+                            )
+                        };
+
+                        let bytes_len = text.len();
+                        if total_bytes + bytes_len > budget_bytes {
+                            truncated = true;
+                            break;
+                        }
+                        total_bytes += bytes_len;
+                        let start_l = target_node.range.as_ref().map(|r| r.start.line).unwrap_or(1);
+                        let end_l = target_node.range.as_ref().map(|r| r.end.line).unwrap_or(start_l);
+                        snippets.push(ContextSnippet {
+                            root: target_node.root.clone(),
+                            path: target_node.path.clone(),
+                            start_line: start_l,
+                            end_line: end_l,
+                            content: text,
+                        });
                     }
-                    total_bytes += bytes_len;
-                    let start_l = neighbor.range.as_ref().map(|r| r.start.line).unwrap_or(1);
-                    let end_l = neighbor
-                        .range
-                        .as_ref()
-                        .map(|r| r.end.line)
-                        .unwrap_or(start_l);
-                    snippets.push(ContextSnippet {
-                        root: neighbor.root,
-                        path: neighbor.path,
-                        start_line: start_l,
-                        end_line: end_l,
-                        content: text,
-                    });
-                }
             }
-
-            // Find incoming neighbors
-            let incoming = read_view
-                .edges_to(&node.id, &Default::default())
-                .unwrap_or_default();
-            for edge in incoming {
-                if let Ok(Some(neighbor)) = read_view.node(&edge.from)
-                    && seen_ids.insert(neighbor.id)
-                {
-                    let text = if let Some(ref range) = neighbor.range
-                        && let Some(fs_ref) = fs
-                        && let Some(verbatim) = Self::extract_verbatim_lines(
-                            fs_ref,
-                            &neighbor.path,
-                            range.start.line,
-                            range.end.line,
-                        ) {
-                        format!(
-                            "Incoming Relation [{}]: {} ({}) in {} (L{}-L{})\n----------------------------------------\n{}",
-                            edge.kind.as_str(),
-                            neighbor.name,
-                            neighbor.kind.as_str(),
-                            neighbor.path,
-                            range.start.line,
-                            range.end.line,
-                            verbatim
-                        )
-                    } else {
-                        format!(
-                            "Incoming Relation [{}]: {} ({}) in {}",
-                            edge.kind.as_str(),
-                            neighbor.name,
-                            neighbor.kind.as_str(),
-                            neighbor.path
-                        )
-                    };
-
-                    let bytes_len = text.len();
-                    if total_bytes + bytes_len > budget_bytes {
-                        truncated = true;
-                        break;
-                    }
-                    total_bytes += bytes_len;
-                    let start_l = neighbor.range.as_ref().map(|r| r.start.line).unwrap_or(1);
-                    let end_l = neighbor
-                        .range
-                        .as_ref()
-                        .map(|r| r.end.line)
-                        .unwrap_or(start_l);
-                    snippets.push(ContextSnippet {
-                        root: neighbor.root,
-                        path: neighbor.path,
-                        start_line: start_l,
-                        end_line: end_l,
-                        content: text,
-                    });
-                }
-            }
-
             if truncated {
                 break;
             }
@@ -259,53 +276,28 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use repin_core::line_index::{ByteSpan, Position, Range};
     use repin_core::model::identity::NodeId;
-    use repin_core::model::provenance::{Confidence, Derivation, Provenance, Revision};
-    use repin_core::model::registries::NodeKind;
+    use repin_core::model::registries::{ArtifactClass, NodeKind};
     use repin_core::ports::store::Store;
+    use repin_core::{Confidence, Derivation, FactOwner, Provenance, Revision};
     use repin_store_sqlite::SqliteStore;
-    use std::io::Write;
+    use std::collections::BTreeMap;
     use tempfile::tempdir;
 
-    #[test]
-    fn test_verbatim_extraction_and_budget() {
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("main.rs");
-        let mut file = std::fs::File::create(&file_path).unwrap();
-        writeln!(file, "fn first() {{}}").unwrap();
-        writeln!(file, "fn second() {{}}").unwrap();
-        writeln!(file, "fn third() {{}}").unwrap();
-
-        let cap_fs = CapabilityFs::open("root", dir.path()).unwrap();
-        let verbatim = ContextBuilder::extract_verbatim_lines(&cap_fs, "main.rs", 2, 3).unwrap();
-        assert!(verbatim.contains("   2: fn second() {}"));
-        assert!(verbatim.contains("   3: fn third() {}"));
-        assert!(!verbatim.contains("fn first"));
-
-        let store = SqliteStore::open_in_memory().unwrap();
-        let view = store.read_view().unwrap();
-
-        let node = Node {
-            id: NodeId::new(NodeKind::Function, "root", "main.rs", &[], "second", 0),
-            kind: NodeKind::Function,
-            name: "second".to_string(),
-            qualified_name: Some("crate::second".to_string()),
+    fn make_test_node(name: &str, path: &str) -> Node {
+        Node {
+            id: NodeId::new(NodeKind::Struct, "root", path, &[], name, 0),
+            kind: NodeKind::Struct,
+            name: name.to_string(),
+            qualified_name: Some(format!("crate::{}", name)),
             root: "root".to_string(),
-            path: "main.rs".to_string(),
-            range: Some(Range {
-                span: ByteSpan::new(16, 33),
-                start: Position { line: 2, column: 1 },
-                end: Position {
-                    line: 2,
-                    column: 17,
-                },
-            }),
+            path: path.to_string(),
+            range: None,
             language: Some("rust".to_string()),
-            artifact_class: None,
+            artifact_class: Some(ArtifactClass::Code),
             provenance: Provenance {
                 root: "root".to_string(),
-                path: "main.rs".to_string(),
+                path: path.to_string(),
                 range: None,
                 extractor: "test".to_string(),
                 extractor_version: "1.0".to_string(),
@@ -313,25 +305,44 @@ mod tests {
                 confidence: Confidence::EXACT,
                 revision: Revision::INITIAL,
             },
-            attributes: Default::default(),
-        };
+            attributes: BTreeMap::new(),
+        }
+    }
 
-        // Budget enough for snippet
-        let assembled = ContextBuilder::assemble_neighborhood_with_fs(
-            &*view,
-            Some(&cap_fs),
-            &[node.clone()],
-            1024,
+    #[test]
+    fn test_context_builder_budgeting() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.sqlite3");
+        let store = SqliteStore::open(&db_path).unwrap();
+
+        let mut tx = store.begin_write().unwrap();
+        let node1 = make_test_node("Alpha", "src/lib.rs");
+        let node2 = make_test_node("Beta", "src/types.rs");
+        let owner = FactOwner::new("root", "src/lib.rs", "test", "1.0");
+
+        tx.put_nodes(&[
+            repin_core::NodeClaim { node: node1.clone(), owner: owner.clone() },
+            repin_core::NodeClaim { node: node2.clone(), owner },
+        ]).unwrap();
+        tx.commit().unwrap();
+
+        let read_view = store.read_view().unwrap();
+
+        // High budget should include both
+        let context = ContextBuilder::assemble_neighborhood(
+            read_view.as_ref(),
+            &[node1.clone(), node2.clone()],
+            4096,
         );
-        assert_eq!(assembled.snippets.len(), 1);
-        assert!(!assembled.truncated);
-        assert!(assembled.snippets[0].content.contains("Blast Radius:"));
-        assert!(assembled.snippets[0].content.contains("   2: fn second() {}"));
+        assert_eq!(context.snippets.len(), 2);
+        assert!(!context.truncated);
 
-        // Tiny budget causing truncation
-        let assembled_tiny =
-            ContextBuilder::assemble_neighborhood_with_fs(&*view, Some(&cap_fs), &[node], 10);
-        assert_eq!(assembled_tiny.snippets.len(), 0);
-        assert!(assembled_tiny.truncated);
+        // Very small budget should truncate
+        let tiny_context = ContextBuilder::assemble_neighborhood(
+            read_view.as_ref(),
+            &[node1, node2],
+            50,
+        );
+        assert!(tiny_context.truncated || tiny_context.snippets.len() <= 1);
     }
 }

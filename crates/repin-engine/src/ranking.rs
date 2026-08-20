@@ -37,6 +37,16 @@ impl DeterministicRanker {
         fts_ranks: &HashMap<NodeId, f64>,
         in_degrees: &HashMap<NodeId, usize>,
     ) -> Vec<RankedCandidate> {
+        Self::rank_fusion_with_boost(query, candidates, fts_ranks, in_degrees, 0.15)
+    }
+
+    pub fn rank_fusion_with_boost(
+        query: &str,
+        candidates: Vec<Node>,
+        fts_ranks: &HashMap<NodeId, f64>,
+        in_degrees: &HashMap<NodeId, usize>,
+        centrality_boost: f64,
+    ) -> Vec<RankedCandidate> {
         let query_lower = query.to_lowercase();
         let mut ranked = Vec::with_capacity(candidates.len());
         let max_degree = in_degrees.values().copied().max().unwrap_or(1).max(1);
@@ -96,8 +106,9 @@ impl DeterministicRanker {
             // Graph degree centrality signal (ADR-018)
             if let Some(&in_deg) = in_degrees.get(&node.id)
                 && in_deg > 0
+                && centrality_boost > 0.0
             {
-                let centrality_bonus = ((in_deg as f64) / (max_degree as f64)).min(1.0) * 0.15;
+                let centrality_bonus = ((in_deg as f64) / (max_degree as f64)).min(1.0) * centrality_boost;
                 score += centrality_bonus;
                 reasons.push(RankReason {
                     signal: "graph_degree_centrality".to_string(),

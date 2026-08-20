@@ -1,5 +1,7 @@
 use crate::lease::FileLease;
+use repin_core::config::RepinConfig;
 use repin_engine::{Engine, EngineOptions};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub struct ProjectContext {
@@ -7,6 +9,7 @@ pub struct ProjectContext {
     project_root: PathBuf,
     engine: Engine,
     writer_lease: Option<FileLease>,
+    config: RepinConfig,
 }
 
 impl ProjectContext {
@@ -20,6 +23,20 @@ impl ProjectContext {
         let lock_path = repin_dir.join("writer.lock");
         let writer_lease = FileLease::try_acquire(&lock_path).ok();
 
+        let mut config = RepinConfig::default();
+        let meta_config = repin_dir.join("config.toml");
+        let root_config = project_root.join("config.toml");
+
+        if meta_config.is_file() {
+            if let Ok(content) = fs::read_to_string(&meta_config) {
+                let _ = config.merge_toml_str(&content);
+            }
+        } else if root_config.is_file()
+            && let Ok(content) = fs::read_to_string(&root_config)
+        {
+            let _ = config.merge_toml_str(&content);
+        }
+
         let engine = Engine::open(EngineOptions {
             root_id: "root".to_string(),
             root_path: project_root.clone(),
@@ -31,6 +48,7 @@ impl ProjectContext {
             project_root,
             engine,
             writer_lease,
+            config,
         })
     }
 
@@ -48,5 +66,9 @@ impl ProjectContext {
 
     pub fn project_root(&self) -> &Path {
         &self.project_root
+    }
+
+    pub fn config(&self) -> &RepinConfig {
+        &self.config
     }
 }

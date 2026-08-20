@@ -1,5 +1,8 @@
 use clap::{Parser, Subcommand};
 use repin_cli::client::DaemonClient;
+use repin_cli::commands::config::{
+    execute_config_init, execute_config_show, execute_config_validate,
+};
 use repin_cli::commands::context::{execute_context, execute_review_context};
 use repin_cli::commands::daemon::{
     execute_daemon_restart, execute_daemon_run, execute_daemon_status, execute_daemon_stop,
@@ -13,7 +16,7 @@ use repin_cli::commands::search::execute_search;
 use repin_cli::commands::status::execute_status;
 use repin_cli::commands::update::execute_update;
 use repin_cli::commands::watch::execute_watch;
-use repin_cli::discovery::discover_project_from;
+use repin_cli::discovery::{discover_project_from, load_effective_config};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -30,6 +33,13 @@ struct Cli {
     )]
     project: Option<PathBuf>,
 
+    #[arg(
+        short = 'c',
+        long = "config",
+        help = "Explicit path to configuration file (repin.toml or config.toml)"
+    )]
+    config: Option<PathBuf>,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -38,6 +48,12 @@ struct Cli {
 enum Commands {
     #[command(about = "Initialize .repin metadata in repository root")]
     Init,
+
+    #[command(about = "Manage repository configuration (config.toml)")]
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
 
     #[command(about = "Index all repository files deterministically")]
     Index,
@@ -56,8 +72,8 @@ enum Commands {
         graph: bool,
         #[arg(long, help = "Hybrid multi-channel search (FTS + Symbol graph)")]
         hybrid: bool,
-        #[arg(short, long, default_value = "50", help = "Maximum matches to return")]
-        limit: usize,
+        #[arg(short, long, help = "Maximum matches to return (defaults to config limit)")]
+        limit: Option<usize>,
     },
 
     #[command(about = "Rerank candidate symbols using an agent shell callback command")]
@@ -67,9 +83,9 @@ enum Commands {
         #[arg(
             long = "agent-cmd",
             short = 'c',
-            help = "Shell callback command to invoke for AI reranking (e.g. 'agy -p \"$(cat)\"' or './my-reranker.sh')"
+            help = "Shell callback command to invoke for AI reranking (defaults to config agent_cmd)"
         )]
-        agent_cmd: String,
+        agent_cmd: Option<String>,
         #[arg(
             help = "Optional candidate symbol names or entity IDs. If omitted, top candidates are automatically retrieved from search"
         )]
@@ -102,10 +118,9 @@ enum Commands {
         #[arg(
             short,
             long,
-            default_value = "65536",
-            help = "Maximum context budget in bytes"
+            help = "Maximum context budget in bytes (defaults to config token budget)"
         )]
-        budget: usize,
+        budget: Option<usize>,
     },
 
     #[command(about = "Construct review context focused on changed files and impact (ADR-016)")]
@@ -126,10 +141,9 @@ enum Commands {
         #[arg(
             short,
             long,
-            default_value = "1000",
-            help = "Polling interval in milliseconds"
+            help = "Polling interval in milliseconds (defaults to config debounce)"
         )]
-        interval: u64,
+        interval: Option<u64>,
     },
 
     #[command(about = "Run Precision-at-N retrieval evaluation suite")]
@@ -167,6 +181,19 @@ enum Commands {
 }
 
 #[derive(Subcommand, Debug, Clone)]
+pub enum ConfigAction {
+    #[command(about = "Initialize starter .repin/config.toml")]
+    Init {
+        #[arg(short, long, help = "Overwrite existing configuration if present")]
+        force: bool,
+    },
+    #[command(about = "Display effective merged configuration in TOML format")]
+    Show,
+    #[command(about = "Validate syntax and schema of configuration")]
+    Validate,
+}
+
+#[derive(Subcommand, Debug, Clone)]
 enum DaemonAction {
     #[command(about = "Run daemon server in foreground")]
     Run,
@@ -187,7 +214,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let start_path = cli
         .project
+        .clone()
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+
+    // Config management commands
+    if let Commands::Config { ref action } = cli.command {
+        match action {
+            ConfigAction::Init { force } => {
+                execute_config_init(cli.project, *force)?;
+                return Ok(());
+            }
+            ConfigAction::Show => {
+                execute_config_show(cli.project, cli.config)?;
+                return Ok(());
+            }
+            ConfigAction::Validate => {
+                execute_config_validate(cli.project, cli.config)?;
+                return Ok(());
+            }
+        }
+    }
 
     // Daemon lifecycle commands
     match cli.command {
@@ -254,11 +300,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    let effective_config = load_effective_config(&discovered.root_dir, cli.config.as_deref())
+        .unwrap_or_default();
+
     let mut client = DaemonClient::connect_or_start(&discovered.db_path)
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
-        Commands::Init => unreachable!(),
+        Commands::Init | Commands::Config { .. } => unreachable!(),
         Commands::Daemon { .. } | Commands::Stop { .. } | Commands::Restart { .. } => {
             unreachable!()
         }
@@ -270,18 +319,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Search {
             pattern,
-            regex,
-            graph,
-            hybrid,
+            mut regex,
+            mut graph,
+            mut hybrid,
             limit,
-        } => execute_search(&mut client, &pattern, regex, graph, hybrid, limit)
-            .map_err(|e| format!("Search error: {e}").into()),
+        } => {
+            if !regex && !graph && !hybrid {
+                match effective_config.retrieval.default_mode.as_str() {
+                    "graph" => graph = true,
+                    "regex" | "direct" => regex = true,
+                    _ => hybrid = true,
+                }
+            }
+            let eff_limit = limit.unwrap_or(effective_config.retrieval.default_limit);
+            execute_search(&mut client, &pattern, regex, graph, hybrid, eff_limit)
+                .map_err(|e| format!("Search error: {e}").into())
+        }
         Commands::Rerank {
             query,
             candidates,
             agent_cmd,
-        } => execute_rerank(&mut client, &query, candidates, &agent_cmd)
-            .map_err(|e| format!("Rerank error: {e}").into()),
+        } => {
+            let eff_cmd = agent_cmd.unwrap_or_else(|| effective_config.intelligence.rerank.agent_cmd.clone());
+            if eff_cmd.is_empty() {
+                return Err("Missing agent callback command. Specify --agent-cmd or configure intelligence.rerank.agent_cmd in config.toml".into());
+            }
+            execute_rerank(&mut client, &query, candidates, &eff_cmd)
+                .map_err(|e| format!("Rerank error: {e}").into())
+        }
         Commands::Inspect { path } => {
             execute_inspect(&mut client, &path).map_err(|e| format!("Inspect error: {e}").into())
         }
@@ -296,14 +361,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             max_depth,
         } => execute_neighbors(&mut client, &name_or_id, max_depth)
             .map_err(|e| format!("Neighbors error: {e}").into()),
-        Commands::Context { query, budget } => execute_context(&mut client, &query, budget)
-            .map_err(|e| format!("Context error: {e}").into()),
+        Commands::Context { query, budget } => {
+            let eff_budget = budget.unwrap_or(effective_config.context.default_token_budget * 4);
+            execute_context(&mut client, &query, eff_budget)
+                .map_err(|e| format!("Context error: {e}").into())
+        }
         Commands::ReviewContext { since, budget } => {
             execute_review_context(&mut client, since, budget)
                 .map_err(|e| format!("ReviewContext error: {e}").into())
         }
         Commands::Watch { interval } => {
-            execute_watch(&mut client, interval).map_err(|e| format!("Watch error: {e}").into())
+            let eff_interval = interval.unwrap_or(effective_config.daemon.watch_debounce_ms.max(100));
+            execute_watch(&mut client, eff_interval).map_err(|e| format!("Watch error: {e}").into())
         }
         Commands::Eval => execute_eval(&mut client).map_err(|e| format!("Eval error: {e}").into()),
         Commands::Status => {

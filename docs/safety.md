@@ -100,6 +100,7 @@ The deterministic engine is fully offline. Optional capabilities may not be.
 
   ```text
   project/.repin/
+    .gitignore
     graph.sqlite3
     writer.lock
   ```

@@ -36,6 +36,7 @@ repin-conformance = { path = "crates/repin-conformance", version = "0.1.0" }
 # Serialization & encoding
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+toml = "0.8"
 bincode = "1.3"
 
 # Cryptography & hashing

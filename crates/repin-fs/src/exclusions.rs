@@ -1,14 +1,18 @@
+use globset::{Glob, GlobSet, GlobSetBuilder};
+use repin_core::config::IndexingConfig;
 use repin_core::model::registries::ArtifactClass;
 
 pub struct ExclusionFilter {
-    excluded_names: Vec<&'static str>,
-    excluded_extensions: Vec<&'static str>,
+    safety_names: Vec<&'static str>,
+    safety_extensions: Vec<&'static str>,
+    custom_extensions: Vec<String>,
+    custom_globs: Option<GlobSet>,
 }
 
 impl Default for ExclusionFilter {
     fn default() -> Self {
         Self {
-            excluded_names: vec![
+            safety_names: vec![
                 ".git",
                 ".repin",
                 ".env",
@@ -20,30 +24,79 @@ impl Default for ExclusionFilter {
                 "target",
                 ".DS_Store",
             ],
-            excluded_extensions: vec![
+            safety_extensions: vec![
                 "pem", "key", "pfx", "p12", "lock", "exe", "dll", "so", "dylib", "bin",
             ],
+            custom_extensions: Vec::new(),
+            custom_globs: None,
         }
     }
 }
 
 impl ExclusionFilter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_config(config: &IndexingConfig) -> Self {
+        let mut filter = Self {
+            custom_extensions: config.exclude_extensions.clone(),
+            ..Default::default()
+        };
+
+        if !config.exclude_paths.is_empty() {
+            let mut builder = GlobSetBuilder::new();
+            for pat in &config.exclude_paths {
+                if let Ok(glob) = Glob::new(pat) {
+                    builder.add(glob);
+                } else if let Ok(glob) = Glob::new(&format!("**/{}/**", pat.trim_matches('/'))) {
+                    builder.add(glob);
+                }
+            }
+            if let Ok(set) = builder.build() {
+                filter.custom_globs = Some(set);
+            }
+        }
+
+        filter
+    }
+
     pub fn is_excluded(&self, path: &str) -> bool {
         let normalized = path.replace('\\', "/");
         let segments: Vec<&str> = normalized.split('/').filter(|s| !s.is_empty()).collect();
 
+        // 1. Immutable safety floor names
         for seg in &segments {
-            if self.excluded_names.contains(seg) {
+            if self.safety_names.contains(seg) {
                 return true;
             }
         }
 
-        if let Some(file_name) = segments.last()
-            && let Some(dot_idx) = file_name.rfind('.')
-        {
-            let ext = &file_name[dot_idx + 1..];
-            if self.excluded_extensions.contains(&ext) {
+        // 2. Extensions check (safety floors + custom)
+        if let Some(file_name) = segments.last() {
+            if let Some(dot_idx) = file_name.rfind('.') {
+                let ext = &file_name[dot_idx + 1..];
+                if self.safety_extensions.contains(&ext) {
+                    return true;
+                }
+            }
+            for custom_ext in &self.custom_extensions {
+                let clean = custom_ext.trim_start_matches('.');
+                if file_name.ends_with(&format!(".{}", clean)) || file_name.ends_with(custom_ext) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Custom path globs
+        if let Some(ref globs) = self.custom_globs {
+            if globs.is_match(&normalized) {
                 return true;
+            }
+            for seg in &segments {
+                if globs.is_match(*seg) {
+                    return true;
+                }
             }
         }
 
@@ -107,13 +160,37 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_exclusions() {
+    fn test_default_exclusions_and_safety_floors() {
         let filter = ExclusionFilter::default();
         assert!(filter.is_excluded(".git/config"));
         assert!(filter.is_excluded("project/.env"));
         assert!(filter.is_excluded("keys/server.key"));
         assert!(filter.is_excluded("node_modules/pkg/index.js"));
         assert!(!filter.is_excluded("src/main.rs"));
+    }
+
+    #[test]
+    fn test_custom_config_exclusions() {
+        let mut config = IndexingConfig::default();
+        config.exclude_paths = vec!["**/build/**".to_string(), "vendor/**".to_string()];
+        config.exclude_extensions = vec!["min.js".to_string(), "snap".to_string()];
+
+        let filter = ExclusionFilter::with_config(&config);
+
+        // Safety floors still hold
+        assert!(filter.is_excluded(".git/HEAD"));
+        assert!(filter.is_excluded(".env"));
+
+        // Custom path exclusions match
+        assert!(filter.is_excluded("build/output.js"));
+        assert!(filter.is_excluded("vendor/lib/foo.rs"));
+
+        // Custom extension exclusions match
+        assert!(filter.is_excluded("static/bundle.min.js"));
+        assert!(filter.is_excluded("tests/snapshots/foo.snap"));
+
+        // Normal files remain included
+        assert!(!filter.is_excluded("src/lib.rs"));
     }
 
     #[test]
