@@ -336,9 +336,13 @@ mod tests {
     #[test]
     fn test_starter_template_is_valid() {
         let template = RepinConfig::starter_template();
-        let config = RepinConfig::from_toml_str(template).expect("starter template should be valid");
+        let config =
+            RepinConfig::from_toml_str(template).expect("starter template should be valid");
         assert_eq!(config.schema_version, 1);
-        assert_eq!(config.indexing.exclude_paths, vec!["**/build/**", "**/dist/**", "vendor/**"]);
+        assert_eq!(
+            config.indexing.exclude_paths,
+            vec!["**/build/**", "**/dist/**", "vendor/**"]
+        );
         assert!(RepinConfig::validate_project_toml_str(template).is_ok());
     }
 }

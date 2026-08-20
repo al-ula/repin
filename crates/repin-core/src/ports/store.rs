@@ -10,11 +10,27 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VersionRecords {
-    pub engine_version: String,
-    pub schema_version: u32,
+    #[serde(alias = "schema_version")]
+    pub store_schema_version: u32,
     pub kind_registry_version: u32,
     pub attribute_registry_version: u32,
-    pub producer_versions: BTreeMap<String, String>,
+    #[serde(default = "default_component_version")]
+    pub classification_version: u32,
+    #[serde(default = "default_component_version")]
+    pub resolution_version: u32,
+    #[serde(alias = "producer_versions")]
+    pub pack_versions: BTreeMap<String, String>,
+    #[serde(default)]
+    pub extractor_versions: BTreeMap<String, String>,
+    pub engine_version: String,
+    #[serde(default)]
+    pub vcs_revision: Option<String>,
+    #[serde(default)]
+    pub observed_dirty_set: Option<Vec<String>>,
+}
+
+fn default_component_version() -> u32 {
+    1
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -46,6 +62,13 @@ pub struct DerivedIndexState {
     pub kind: IndexKind,
     pub acknowledged_revision: Revision,
     pub is_current: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeClassificationUpdate {
+    pub node_id: NodeId,
+    pub owner: FactOwner,
+    pub artifact_class: Option<ArtifactClass>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -93,6 +116,8 @@ pub enum StoreError {
     LockFailure(String),
     #[error("corrupt database: {0}")]
     Corrupt(String),
+    #[error("schema version {found} is incompatible with supported version {supported}")]
+    SchemaVersionMismatch { found: u32, supported: u32 },
 }
 
 pub trait Transaction: Send {
@@ -102,6 +127,8 @@ pub trait Transaction: Send {
     fn remove_node_claims(&mut self, keys: &[FactClaimKey]) -> Result<(), StoreError>;
     fn remove_edge_claims(&mut self, keys: &[FactClaimKey]) -> Result<(), StoreError>;
     fn remove_claims(&mut self, owner: &FactOwner) -> Result<(), StoreError>;
+    /// Remove all authoritative graph claims inside the current transaction.
+    fn clear_graph(&mut self) -> Result<(), StoreError>;
     fn remove_by_file(&mut self, root: &str, path: &str) -> Result<(), StoreError>;
     fn put_unresolved(&mut self, refs: &[UnresolvedRef]) -> Result<(), StoreError>;
     fn remove_unresolved(&mut self, keys: &[UnresolvedKey]) -> Result<(), StoreError>;
@@ -109,6 +136,10 @@ pub trait Transaction: Send {
     fn put_diagnostics(&mut self, diagnostics: &[Diagnostic]) -> Result<(), StoreError>;
     fn put_update_summary(&mut self, summary: &UpdateSummary) -> Result<(), StoreError>;
     fn put_version_records(&mut self, records: &VersionRecords) -> Result<(), StoreError>;
+    fn update_node_classifications(
+        &mut self,
+        updates: &[NodeClassificationUpdate],
+    ) -> Result<(), StoreError>;
     fn put_index_intent(&mut self, intent: &DerivedIndexIntent) -> Result<(), StoreError>;
     fn acknowledge_index(&mut self, kind: IndexKind, revision: Revision) -> Result<(), StoreError>;
     fn set_revision(&mut self, revision: Revision) -> Result<(), StoreError>;
@@ -120,12 +151,27 @@ pub trait ReadView: Send + Sync {
     fn node(&self, id: &NodeId) -> Result<Option<Node>, StoreError>;
     fn nodes_by_name(&self, name: &str, filters: &NodeFilters) -> Result<Vec<Node>, StoreError>;
     fn nodes_by_file(&self, root: &str, path: &str) -> Result<Vec<Node>, StoreError>;
+    fn node_claims_by_file(&self, root: &str, path: &str) -> Result<Vec<NodeClaim>, StoreError>;
+    /// Enumerate every persisted producer owner before scoped invalidation.
+    fn owners_by_producer(
+        &self,
+        producer: &str,
+        producer_version: Option<&str>,
+    ) -> Result<Vec<FactOwner>, StoreError>;
+    /// Enumerate every owner of persisted resolution-derived edge claims.
+    /// Resolution invalidation must not assume one resolver name or version.
+    fn resolution_owners(&self) -> Result<Vec<FactOwner>, StoreError>;
+    /// Enumerate distinct persisted root/path pairs without reading source.
+    fn files(&self) -> Result<Vec<(String, String)>, StoreError>;
+    /// Enumerate every persisted fact owner for full registry invalidation.
+    fn all_owners(&self) -> Result<Vec<FactOwner>, StoreError>;
     fn edges_from(&self, id: &NodeId, filters: &EdgeFilters) -> Result<Vec<Edge>, StoreError>;
     fn edges_to(&self, id: &NodeId, filters: &EdgeFilters) -> Result<Vec<Edge>, StoreError>;
     fn incoming_edge_count(&self, id: &NodeId) -> Result<usize, StoreError> {
         self.edges_to(id, &Default::default()).map(|e| e.len())
     }
     fn unresolved_seeking(&self, name: &str) -> Result<Vec<UnresolvedRef>, StoreError>;
+    fn unresolved_refs(&self) -> Result<Vec<UnresolvedRef>, StoreError>;
     fn skips(&self, root: Option<&str>, path: Option<&str>) -> Result<Vec<Skip>, StoreError>;
     fn diagnostics(
         &self,

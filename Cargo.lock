@@ -891,6 +891,7 @@ dependencies = [
  "repin-daemon",
  "repin-engine",
  "repin-protocol",
+ "repin-store-sqlite",
  "serde",
  "serde_json",
  "tempfile",
@@ -909,6 +910,7 @@ dependencies = [
  "repin-fs",
  "repin-protocol",
  "repin-store-sqlite",
+ "serde_json",
  "tempfile",
  "thiserror",
  "tracing",
@@ -1074,6 +1076,7 @@ version = "0.1.0"
 dependencies = [
  "repin-core",
  "rusqlite",
+ "serde",
  "serde_json",
  "tempfile",
  "thiserror",

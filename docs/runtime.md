@@ -72,11 +72,28 @@ an unavailable endpoint. Stale socket cleanup is allowed only after the client
 has failed to connect and a candidate has established that it owns the
 singleton lease. A candidate MUST NOT unlink a live daemon's socket.
 
-The daemon accepts bounded connections and frames. Each connection has a
-bounded admission queue, negotiated protocol version, request identifiers,
-deadlines, cancellation, and progress events. The daemon does not expose a
-cross-project request surface; a domain connection is bound to one project in
-its first project handshake.
+The daemon accepts bounded connections and frames. Each connection first
+exchanges a stable bootstrap envelope containing a bootstrap version, a
+supported protocol range, and diagnostic package/build identity. Bootstrap
+has a bounded frame size and deadline, stable malformed/unsupported errors,
+and forward-compatible unknown-field handling. The client selects the highest
+common protocol version; project selection, context loading, writer-lock
+acquisition, and store access occur only after successful negotiation. The
+daemon does not expose a cross-project request surface; a domain connection is
+bound to one project in its first post-bootstrap project handshake.
+
+Package and build identity differences do not prevent a connection when the
+protocol ranges overlap. Unsupported or malformed bootstrap is treated as an
+incompatible endpoint, and a client never sends a shutdown command over an
+unknown protocol.
+
+The local profile limits ordinary frames to 1 MiB, bootstrap frames to 64 KiB,
+and requires bootstrap completion within 2,000 ms. Oversized or incomplete
+frames fail the connection before project binding or store access.
+
+An incompatible bootstrap response reports the daemon range and whether a
+replacement retry is eligible. A retry remains inside the bootstrap envelope;
+it is eligible only for a strictly newer client and a fully idle daemon.
 
 The daemon exits on demand after its final project context unloads and no
 bootstrap attempt or client connection remains. It closes the central socket
@@ -84,6 +101,18 @@ before releasing `daemon.lock`, and releases the lease last. A process crash
 closes both the lease and all project lock handles through normal OS handle
 release. A later client may repair stale socket state and recover projects
 independently.
+
+An incompatible client may request daemon replacement only when the daemon's
+full-idle predicate holds: no active contexts, no attached connection other
+than the requesting bootstrap connection, no in-flight request, recovery,
+background work, or authoritative commit. The daemon acknowledges the
+request, the client disconnects, and the daemon exits only after that final
+connection closes. A busy daemon remains available and returns
+`PROTOCOL_MISMATCH` with the bounded `repin daemon restart` recovery. An older
+client never replaces or downgrades a newer incompatible daemon. Concurrent
+replacement candidates are resolved by the singleton lease and successor
+readiness; losing candidates reconnect to the winner. Automatic draining of
+busy daemons is deferred.
 
 ## 3. Project selection and discovery
 

@@ -40,9 +40,15 @@ pub fn execute_config_init(project_path: Option<PathBuf>, global: bool, force: b
         .with_context(|| format!("failed to write configuration to {:?}", target_file))?;
 
     if global {
-        println!("Initialized User Global Repin configuration at {:?}", target_file);
+        println!(
+            "Initialized User Global Repin configuration at {:?}",
+            target_file
+        );
     } else {
-        println!("Initialized Project Repin configuration at {:?}", target_file);
+        println!(
+            "Initialized Project Repin configuration at {:?}",
+            target_file
+        );
     }
     Ok(())
 }
@@ -57,7 +63,8 @@ pub fn execute_config_show(
     let resolved_config = load_effective_config(&root_dir, explicit_config.as_deref())
         .map_err(|e| anyhow::anyhow!("Configuration error: {}", e))?;
 
-    let toml_str = resolved_config.to_toml_string()
+    let toml_str = resolved_config
+        .to_toml_string()
         .map_err(|e| anyhow::anyhow!("Serialization error: {}", e))?;
 
     println!("{}", toml_str);
@@ -78,9 +85,15 @@ pub fn execute_config_validate(
     match load_effective_config(&root_dir, explicit_config.as_deref()) {
         Ok(config) => {
             if let Some(path) = config_path {
-                println!("✓ Configuration at {:?} is valid (schema_version = {}).", path, config.schema_version);
+                println!(
+                    "✓ Configuration at {:?} is valid (schema_version = {}).",
+                    path, config.schema_version
+                );
             } else {
-                println!("✓ No project config.toml found; built-in defaults are valid (schema_version = {}).", config.schema_version);
+                println!(
+                    "✓ No project config.toml found; built-in defaults are valid (schema_version = {}).",
+                    config.schema_version
+                );
             }
             Ok(())
         }

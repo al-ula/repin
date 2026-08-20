@@ -19,8 +19,8 @@ pub fn execute_model_download(model_id: &str) -> Result<()> {
 }
 
 pub fn execute_model_list() -> Result<()> {
-    let models = list_cached_models()
-        .map_err(|e| anyhow::anyhow!("Failed to list cached models: {e}"))?;
+    let models =
+        list_cached_models().map_err(|e| anyhow::anyhow!("Failed to list cached models: {e}"))?;
 
     if models.is_empty() {
         println!("No models found in local cache (~/.cache/repin/models/).");
@@ -28,7 +28,10 @@ pub fn execute_model_list() -> Result<()> {
         return Ok(());
     }
 
-    println!("Cached Models ({}) in ~/.cache/repin/models/:", models.len());
+    println!(
+        "Cached Models ({}) in ~/.cache/repin/models/:",
+        models.len()
+    );
     for (name, path, size_bytes) in models {
         let size_mb = (size_bytes as f64) / (1024.0 * 1024.0);
         println!("  • {:<40} [{:>6.1} MB] ({:?})", name, size_mb, path);
@@ -42,13 +45,19 @@ pub fn execute_model_remove(model_id: &str) -> Result<()> {
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     if !cache_dir.exists() {
-        println!("Model '{}' is not present in local cache ({:?}).", model_id, cache_dir);
+        println!(
+            "Model '{}' is not present in local cache ({:?}).",
+            model_id, cache_dir
+        );
         return Ok(());
     }
 
     fs::remove_dir_all(&cache_dir)
         .with_context(|| format!("failed to remove cache directory {:?}", cache_dir))?;
 
-    println!("✓ Removed model '{}' from local cache ({:?}).", model_id, cache_dir);
+    println!(
+        "✓ Removed model '{}' from local cache ({:?}).",
+        model_id, cache_dir
+    );
     Ok(())
 }

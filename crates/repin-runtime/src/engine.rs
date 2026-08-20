@@ -2,7 +2,7 @@ use crate::agent::AgentReranker;
 use crate::context::{AssembledContext, ContextBuilder};
 use crate::eval::{BenchmarkHarness, EvalReport};
 use crate::inspect::{FileOutline, Inspector};
-use crate::invalidation::{IndexingCoordinator, InvalidationCoordinator};
+use crate::invalidation::{IndexingCoordinator, InvalidationCoordinator, InvalidationScope};
 use crate::ranking::{DeterministicRanker, RankReason, RankedCandidate};
 use crate::traversal::{GraphTraversal, NeighborsData};
 use repin_core::line_index::Position;
@@ -10,6 +10,7 @@ use repin_core::model::node::Node;
 use repin_core::model::provenance::Revision;
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
+use repin_core::ports::store::VersionRecords;
 use repin_core::ports::store::{Store, StoreError, UpdateSummary};
 use repin_core::ports::vcs::Vcs;
 use repin_direct_search::{DirectRegex, DirectScanner};
@@ -20,7 +21,7 @@ use repin_protocol::evidence::Evidence;
 use repin_protocol::freshness::{CoverageState, Freshness, GraphState, LexicalState};
 use repin_retrieval::{HybridRetriever, LexicalHit, LexicalSource};
 use repin_store_sqlite::SqliteStore;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -35,14 +36,22 @@ pub struct Runtime {
     options: RuntimeOptions,
     fs: CapabilityFs,
     store: Option<SqliteStore>,
+    store_error: Option<StoreError>,
     packs: Vec<Box<dyn LanguagePack>>,
+}
+
+#[derive(Default)]
+struct VersionInvalidationResult {
+    targeted_files: BTreeSet<(String, String)>,
+    full_rebuild: bool,
+    had_scopes: bool,
 }
 
 impl Runtime {
     pub fn open(options: RuntimeOptions) -> Result<Self, String> {
         let fs = CapabilityFs::open(&options.root_id, &options.root_path)
             .map_err(|error| format!("failed to open root filesystem: {error}"))?;
-        let store = if let Some(ref db_path) = options.db_path {
+        let (store, store_error) = if let Some(ref db_path) = options.db_path {
             if let Some(parent) = db_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
                 let gitignore = parent.join(".gitignore");
@@ -51,23 +60,24 @@ impl Runtime {
                 }
             }
             match SqliteStore::open(db_path) {
-                Ok(store) => Some(store),
+                Ok(store) => (Some(store), None),
                 Err(error) => {
                     tracing::warn!(
                         path = %db_path.display(),
                         error = %error,
                         "sqlite store unavailable; retaining direct retrieval"
                     );
-                    None
+                    (None, Some(error))
                 }
             }
         } else {
-            None
+            (None, None)
         };
         Ok(Self {
             options,
             fs,
             store,
+            store_error,
             packs: default_packs(),
         })
     }
@@ -86,6 +96,7 @@ impl Runtime {
             },
             fs,
             store: Some(store),
+            store_error: None,
             packs: default_packs(),
         })
     }
@@ -96,6 +107,24 @@ impl Runtime {
 
     pub fn store(&self) -> Option<&SqliteStore> {
         self.store.as_ref()
+    }
+
+    pub fn store_error(&self) -> Option<&StoreError> {
+        self.store_error.as_ref()
+    }
+
+    pub fn pending_version_invalidations(&self) -> Vec<InvalidationScope> {
+        let Some(store) = self.store.as_ref() else {
+            return Vec::new();
+        };
+        let Ok(view) = store.read_view() else {
+            return Vec::new();
+        };
+        let Some(stored) = view.version_records().ok().flatten() else {
+            return Vec::new();
+        };
+        let current = self.current_version_records();
+        IndexingCoordinator::plan_version_invalidation(&stored, &current)
     }
 
     pub fn search_direct(
@@ -157,7 +186,7 @@ impl Runtime {
         max_results: usize,
     ) -> ResultEnvelope<Vec<RankedCandidate>> {
         let Some(store) = self.store.as_ref() else {
-            return unavailable_graph();
+            return unavailable_graph(self.store_error.as_ref());
         };
         let Ok(fts_hits) = store.search_fts(query, max_results * 2) else {
             return ResultEnvelope::not_found(Vec::new());
@@ -251,7 +280,13 @@ impl Runtime {
         let Some(store) = self.store.as_ref() else {
             return Err(StoreError::Io("store not available".to_string()));
         };
-        InvalidationCoordinator::apply_snapshot_update(store, &self.packs, snapshot)
+        let records = self.current_version_records();
+        InvalidationCoordinator::apply_snapshot_update_with_records(
+            store,
+            &self.packs,
+            snapshot,
+            Some(&records),
+        )
     }
 
     pub fn search_hybrid(
@@ -260,7 +295,7 @@ impl Runtime {
         max_results: usize,
     ) -> ResultEnvelope<Vec<RankedCandidate>> {
         let Some(store) = self.store.as_ref() else {
-            return unavailable_graph();
+            return unavailable_graph(self.store_error.as_ref());
         };
         let Ok(view) = store.read_view() else {
             return ResultEnvelope::not_found(Vec::new());
@@ -524,12 +559,185 @@ impl Runtime {
             .store
             .as_ref()
             .ok_or_else(|| "indexing error: store not available".to_string())?;
-        let report = IndexingCoordinator::index_source(store, &self.fs, &self.packs)
-            .map_err(|error| format!("indexing error: {error}"))?;
+        let records = self.current_version_records();
+        let invalidation = self.apply_pending_version_invalidations(store, &records)?;
+        if invalidation.full_rebuild {
+            let report = IndexingCoordinator::rebuild_source_with_records(
+                store,
+                &self.fs,
+                &self.packs,
+                &records,
+            )
+            .map_err(|error| format!("rebuild error: {error}"))?;
+            IndexingCoordinator::resolve_existing(store, &records)
+                .map_err(|error| format!("resolution error: {error}"))?;
+            return Ok(report.files_indexed);
+        }
+        if invalidation.had_scopes {
+            let mut files_indexed = 0;
+            for (root, path) in invalidation.targeted_files {
+                if root == self.options.root_id
+                    && let Ok(snapshot) = self.fs.read_snapshot(&path)
+                {
+                    IndexingCoordinator::apply_snapshot_update_with_records(
+                        store,
+                        &self.packs,
+                        &snapshot,
+                        Some(&records),
+                    )
+                    .map_err(|error| format!("indexing error: {error}"))?;
+                    files_indexed += 1;
+                }
+            }
+            IndexingCoordinator::resolve_existing(store, &records)
+                .map_err(|error| format!("resolution error: {error}"))?;
+            let _ = store.checkpoint();
+            return Ok(files_indexed);
+        }
+        let report = IndexingCoordinator::index_source_with_records(
+            store,
+            &self.fs,
+            &self.packs,
+            Some(&records),
+        )
+        .map_err(|error| format!("indexing error: {error}"))?;
+        IndexingCoordinator::resolve_existing(store, &records)
+            .map_err(|error| format!("resolution error: {error}"))?;
         if let Some(store) = self.store.as_ref() {
             let _ = store.checkpoint();
         }
         Ok(report.files_indexed)
+    }
+
+    fn apply_pending_version_invalidations(
+        &self,
+        store: &SqliteStore,
+        current: &VersionRecords,
+    ) -> Result<VersionInvalidationResult, String> {
+        let view = store.read_view().map_err(|e| e.to_string())?;
+        let Some(stored) = view.version_records().map_err(|e| e.to_string())? else {
+            return Ok(VersionInvalidationResult::default());
+        };
+        let scopes = IndexingCoordinator::plan_version_invalidation(&stored, current);
+        let mut result = VersionInvalidationResult {
+            had_scopes: !scopes.is_empty(),
+            ..VersionInvalidationResult::default()
+        };
+        for scope in scopes {
+            match scope {
+                InvalidationScope::Classification => {
+                    let files = view.files().map_err(|e| e.to_string())?;
+                    IndexingCoordinator::reclassify_files(
+                        store,
+                        &files,
+                        |node| Some(repin_fs::classify_artifact(&node.path)),
+                        current,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+                InvalidationScope::Resolution => {
+                    IndexingCoordinator::invalidate_resolution(
+                        store,
+                        &stored.resolution_version.to_string(),
+                        current,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+                InvalidationScope::Pack {
+                    name,
+                    previous_version: Some(version),
+                } => {
+                    for owner in view
+                        .owners_by_producer(&name, Some(&version))
+                        .map_err(|e| e.to_string())?
+                    {
+                        result
+                            .targeted_files
+                            .insert((owner.root.clone(), owner.path.clone()));
+                    }
+                    IndexingCoordinator::invalidate_language_pack(store, &name, &version, current)
+                        .map_err(|e| e.to_string())?;
+                }
+                InvalidationScope::Extractor {
+                    name,
+                    previous_version: Some(version),
+                } => {
+                    for owner in view
+                        .owners_by_producer(&name, Some(&version))
+                        .map_err(|e| e.to_string())?
+                    {
+                        result
+                            .targeted_files
+                            .insert((owner.root.clone(), owner.path.clone()));
+                    }
+                    IndexingCoordinator::invalidate_extractor(store, &name, &version, current)
+                        .map_err(|e| e.to_string())?;
+                }
+                InvalidationScope::KindRegistry | InvalidationScope::AttributeRegistry => {
+                    result.full_rebuild = true;
+                    IndexingCoordinator::invalidate_all_claims(store, current)
+                        .map_err(|e| e.to_string())?;
+                }
+                InvalidationScope::Pack { .. } | InvalidationScope::Extractor { .. } => {}
+            }
+        }
+        Ok(result)
+    }
+
+    /// Execute the public recovery target. Graph/all use the idempotent,
+    /// version-aware source coordinator; derived-index targets remain
+    /// explicit until their concrete adapters are available.
+    pub fn rebuild(&self, target: repin_protocol::ipc::RebuildTarget) -> Result<usize, String> {
+        match target {
+            repin_protocol::ipc::RebuildTarget::Graph | repin_protocol::ipc::RebuildTarget::All => {
+                let store = self
+                    .store
+                    .as_ref()
+                    .ok_or_else(|| "rebuild error: store not available".to_string())?;
+                let records = self.current_version_records();
+                let report = IndexingCoordinator::rebuild_source_with_records(
+                    store,
+                    &self.fs,
+                    &self.packs,
+                    &records,
+                )
+                .map_err(|e| format!("rebuild error: {e}"))?;
+                IndexingCoordinator::resolve_existing(store, &records)
+                    .map_err(|e| format!("resolution error: {e}"))?;
+                Ok(report.files_indexed)
+            }
+            repin_protocol::ipc::RebuildTarget::Lexical => self
+                .store
+                .as_ref()
+                .ok_or_else(|| "lexical rebuild error: store not available".to_string())?
+                .rebuild_lexical()
+                .map(|_| 0)
+                .map_err(|e| format!("lexical rebuild error: {e}")),
+            repin_protocol::ipc::RebuildTarget::Vector => {
+                Err("vector rebuild is unavailable: no vector adapter is configured".to_string())
+            }
+        }
+    }
+
+    fn current_version_records(&self) -> VersionRecords {
+        let mut pack_versions = BTreeMap::new();
+        let mut extractor_versions = BTreeMap::new();
+        for pack in &self.packs {
+            pack_versions.insert(pack.name().to_string(), pack.version().to_string());
+            extractor_versions.insert(pack.name().to_string(), pack.version().to_string());
+        }
+        VersionRecords {
+            store_schema_version: repin_store_sqlite::STORE_SCHEMA_VERSION,
+            kind_registry_version: repin_core::versions::KIND_REGISTRY_VERSION,
+            attribute_registry_version: repin_core::versions::ATTRIBUTE_REGISTRY_VERSION,
+            classification_version: repin_core::versions::CLASSIFICATION_VERSION,
+            resolution_version: repin_core::versions::RESOLUTION_VERSION,
+            pack_versions,
+            extractor_versions,
+            engine_version: env!("CARGO_PKG_VERSION").to_string(),
+            vcs_revision: option_env!("REPIN_GIT_COMMIT").map(str::to_owned),
+            observed_dirty_set: None,
+        }
     }
 }
 
@@ -545,12 +753,22 @@ fn graph_freshness(view: &dyn repin_core::ports::store::ReadView) -> Freshness {
     }
 }
 
-fn unavailable_graph() -> ResultEnvelope<Vec<RankedCandidate>> {
+fn unavailable_graph(error: Option<&StoreError>) -> ResultEnvelope<Vec<RankedCandidate>> {
     let mut envelope = ResultEnvelope::not_found(Vec::new());
     envelope.status = repin_protocol::envelope::Status::Unavailable;
+    let code = match error {
+        Some(StoreError::SchemaVersionMismatch { found, supported }) if found > supported => {
+            repin_protocol::errors::ErrorCode::ProjectStateNewer
+        }
+        Some(_) => repin_protocol::errors::ErrorCode::ProjectStateInvalid,
+        None => repin_protocol::errors::ErrorCode::CapabilityUnavailable,
+    };
+    let message = error
+        .map(ToString::to_string)
+        .unwrap_or_else(|| "graph store not configured or available".to_string());
     envelope.warnings.push(repin_protocol::envelope::Warning {
-        code: repin_protocol::errors::ErrorCode::CapabilityUnavailable,
-        message: "graph store not configured or available".to_string(),
+        code,
+        message,
         detail: None,
     });
     envelope

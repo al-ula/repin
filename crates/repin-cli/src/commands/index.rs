@@ -46,10 +46,7 @@ pub fn execute_uninit(project_dir: &std::path::Path, force: bool) -> Result<(), 
     };
 
     if !repin_dir.exists() {
-        println!(
-            "No Repin workspace found in {}",
-            project_dir.display()
-        );
+        println!("No Repin workspace found in {}", project_dir.display());
         return Ok(());
     }
 
@@ -76,10 +73,7 @@ pub fn execute_uninit(project_dir: &std::path::Path, force: bool) -> Result<(), 
     std::fs::remove_dir_all(&repin_dir)
         .map_err(|e| format!("Failed to remove {}: {e}", repin_dir.display()))?;
 
-    println!(
-        "Uninitialized Repin workspace in {}",
-        repin_dir.display()
-    );
+    println!("Uninitialized Repin workspace in {}", repin_dir.display());
     Ok(())
 }
 
@@ -186,4 +180,3 @@ mod tests {
         assert!(!repin_dir.exists());
     }
 }
-

@@ -11,12 +11,20 @@ use repin_cli::commands::eval::execute_eval;
 use repin_cli::commands::graph::{execute_entity, execute_neighbors};
 use repin_cli::commands::index::{execute_index, execute_init, execute_uninit};
 use repin_cli::commands::inspect::{execute_at_position, execute_inspect};
+use repin_cli::commands::rebuild::execute_rebuild;
 use repin_cli::commands::rerank::execute_rerank;
 use repin_cli::commands::search::execute_search;
 use repin_cli::commands::status::execute_status;
 use repin_cli::commands::update::execute_update;
 use repin_cli::commands::watch::execute_watch;
 use repin_cli::discovery::{discover_project_from, load_effective_config};
+use repin_core::versions::{
+    ATTRIBUTE_REGISTRY_VERSION, CLASSIFICATION_VERSION, KIND_REGISTRY_VERSION, RESOLUTION_VERSION,
+};
+use repin_protocol::{PROTOCOL_MAX, PROTOCOL_MIN, ipc::RebuildTarget};
+use repin_store_sqlite::SqliteStore;
+use repin_store_sqlite::{STORE_FORMAT_ID, STORE_SCHEMA_VERSION};
+use serde::Serialize;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -50,9 +58,21 @@ use repin_cli::commands::model::{
 
 #[derive(Subcommand)]
 enum Commands {
+    #[command(about = "Display package and compatibility version diagnostics")]
+    Version {
+        #[arg(long, help = "Emit structured JSON diagnostics")]
+        json: bool,
+    },
+    #[command(about = "Inspect or explicitly migrate SQLite project state")]
+    Db {
+        #[command(subcommand)]
+        action: DbAction,
+    },
     #[command(about = "Initialize .repin metadata and index repository root")]
     Init {
-        #[arg(help = "Optional project directory path (defaults to current directory or --project)")]
+        #[arg(
+            help = "Optional project directory path (defaults to current directory or --project)"
+        )]
         path: Option<PathBuf>,
 
         #[arg(long, help = "Skip automatic initial repository indexing")]
@@ -61,7 +81,9 @@ enum Commands {
 
     #[command(about = "Remove .repin metadata directory and uninitialize workspace")]
     Uninit {
-        #[arg(help = "Optional project directory path (defaults to current directory or --project)")]
+        #[arg(
+            help = "Optional project directory path (defaults to current directory or --project)"
+        )]
         path: Option<PathBuf>,
 
         #[arg(
@@ -92,6 +114,12 @@ enum Commands {
     #[command(about = "Incrementally update graph from VCS worktree changes")]
     Update,
 
+    #[command(about = "Rebuild authoritative graph or a derived index")]
+    Rebuild {
+        #[arg(value_enum)]
+        target: RebuildTargetArg,
+    },
+
     #[command(
         about = "Search the repository using text, regex, graph symbols, or deterministic hybrid fusion"
     )]
@@ -103,7 +131,11 @@ enum Commands {
         graph: bool,
         #[arg(long, help = "Hybrid multi-channel search (FTS + Symbol graph)")]
         hybrid: bool,
-        #[arg(short, long, help = "Maximum matches to return (defaults to config limit)")]
+        #[arg(
+            short,
+            long,
+            help = "Maximum matches to return (defaults to config limit)"
+        )]
         limit: Option<usize>,
     },
 
@@ -212,10 +244,30 @@ enum Commands {
 }
 
 #[derive(Subcommand, Debug, Clone)]
+enum DbAction {
+    #[command(about = "Inspect SQLite identity and schema without graph activation")]
+    Inspect {
+        #[arg(help = "SQLite database path (defaults to .repin/graph.sqlite3)")]
+        path: Option<PathBuf>,
+        #[arg(long, help = "Emit inspection as JSON")]
+        json: bool,
+    },
+    #[command(about = "Run an explicitly authorized SQLite migration")]
+    Migrate {
+        #[arg(help = "SQLite database path (defaults to .repin/graph.sqlite3)")]
+        path: Option<PathBuf>,
+    },
+}
+
+#[derive(Subcommand, Debug, Clone)]
 pub enum ConfigAction {
     #[command(about = "Initialize starter config.toml (project-level or user global)")]
     Init {
-        #[arg(short, long, help = "Initialize user global configuration (~/.config/repin/config.toml)")]
+        #[arg(
+            short,
+            long,
+            help = "Initialize user global configuration (~/.config/repin/config.toml)"
+        )]
         global: bool,
         #[arg(short, long, help = "Overwrite existing configuration if present")]
         force: bool,
@@ -256,15 +308,65 @@ enum DaemonAction {
     Status,
 }
 
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum RebuildTargetArg {
+    Graph,
+    Lexical,
+    Vector,
+    All,
+}
+
+impl From<RebuildTargetArg> for RebuildTarget {
+    fn from(value: RebuildTargetArg) -> Self {
+        match value {
+            RebuildTargetArg::Graph => Self::Graph,
+            RebuildTargetArg::Lexical => Self::Lexical,
+            RebuildTargetArg::Vector => Self::Vector,
+            RebuildTargetArg::All => Self::All,
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     let cli = Cli::parse();
-
     let start_path = cli
         .project
         .clone()
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+
+    if let Commands::Version { json } = cli.command {
+        print_version(json)?;
+        return Ok(());
+    }
+
+    if let Commands::Db { ref action } = cli.command {
+        let default_db = start_path.join(".repin/graph.sqlite3");
+        match action {
+            DbAction::Inspect { path, json } => {
+                let db_path = path.clone().unwrap_or(default_db);
+                let inspection = SqliteStore::inspect(&db_path)
+                    .map_err(|error| format!("db inspect failed: {error}"))?;
+                if *json {
+                    println!("{}", serde_json::to_string_pretty(&inspection)?);
+                } else {
+                    println!("path: {}", db_path.display());
+                    println!("application_id: {:#x}", inspection.application_id);
+                    println!("schema_version: {}", inspection.schema_version);
+                    println!("has_user_tables: {}", inspection.has_user_tables);
+                }
+                return Ok(());
+            }
+            DbAction::Migrate { path } => {
+                let db_path = path.clone().unwrap_or(default_db);
+                SqliteStore::migrate(&db_path)
+                    .map_err(|error| format!("db migrate failed: {error}"))?;
+                println!("SQLite state is at the current supported schema.");
+                return Ok(());
+            }
+        }
+    }
 
     // Config management commands
     if let Commands::Config { ref action } = cli.command {
@@ -310,9 +412,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Restart { runtime_dir } => {
             let discovered = discover_project_from(&start_path).ok_or_else(|| {
-                format!(
-                    "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
-                )
+                "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
+                    .to_string()
             })?;
             return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
                 .map_err(|e| format!("Restart error: {e}").into());
@@ -329,9 +430,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             if restart || matches!(action, Some(DaemonAction::Restart)) {
                 let discovered = discover_project_from(&start_path).ok_or_else(|| {
-                    format!(
-                        "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
-                    )
+                    "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
+                        .to_string()
                 })?;
                 return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
                     .map_err(|e| format!("Restart error: {e}").into());
@@ -373,19 +473,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let discovered = discover_project_from(&start_path).ok_or_else(|| {
-        format!(
-            "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
-        )
+        "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
+            .to_string()
     })?;
 
-    let effective_config = load_effective_config(&discovered.root_dir, cli.config.as_deref())
-        .unwrap_or_default();
+    let effective_config =
+        load_effective_config(&discovered.root_dir, cli.config.as_deref()).unwrap_or_default();
 
     let mut client = DaemonClient::connect_or_start(&discovered.db_path)
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
-        Commands::Init { .. }
+        Commands::Version { .. }
+        | Commands::Db { .. }
+        | Commands::Init { .. }
         | Commands::Uninit { .. }
         | Commands::Config { .. }
         | Commands::Model { .. } => unreachable!(),
@@ -398,6 +499,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Update => {
             execute_update(&mut client).map_err(|e| format!("Update error: {e}").into())
         }
+        Commands::Rebuild { target } => execute_rebuild(&mut client, target.into())
+            .map_err(|e| format!("Rebuild error: {e}").into()),
         Commands::Search {
             pattern,
             mut regex,
@@ -421,7 +524,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             candidates,
             agent_cmd,
         } => {
-            let eff_cmd = agent_cmd.unwrap_or_else(|| effective_config.intelligence.rerank.agent_cmd.clone());
+            let eff_cmd =
+                agent_cmd.unwrap_or_else(|| effective_config.intelligence.rerank.agent_cmd.clone());
             if eff_cmd.is_empty() {
                 return Err("Missing agent callback command. Specify --agent-cmd or configure intelligence.rerank.agent_cmd in config.toml".into());
             }
@@ -452,7 +556,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map_err(|e| format!("ReviewContext error: {e}").into())
         }
         Commands::Watch { interval } => {
-            let eff_interval = interval.unwrap_or(effective_config.daemon.watch_debounce_ms.max(100));
+            let eff_interval =
+                interval.unwrap_or(effective_config.daemon.watch_debounce_ms.max(100));
             execute_watch(&mut client, eff_interval).map_err(|e| format!("Watch error: {e}").into())
         }
         Commands::Eval => execute_eval(&mut client).map_err(|e| format!("Eval error: {e}").into()),
@@ -460,4 +565,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             execute_status(&mut client).map_err(|e| format!("Status error: {e}").into())
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+struct VersionDiagnostics {
+    package_version: &'static str,
+    commit: Option<&'static str>,
+    build_id: Option<&'static str>,
+    target: String,
+    protocol_min: u32,
+    protocol_max: u32,
+    store_format: &'static str,
+    store_schema_version: u32,
+    kind_registry_version: u32,
+    attribute_registry_version: u32,
+    classification_version: u32,
+    resolution_version: u32,
+}
+
+fn print_version(json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    if !json {
+        println!("repin {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+    let diagnostics = VersionDiagnostics {
+        package_version: env!("CARGO_PKG_VERSION"),
+        commit: option_env!("REPIN_GIT_COMMIT"),
+        build_id: option_env!("REPIN_BUILD_ID"),
+        target: option_env!("TARGET")
+            .map(str::to_owned)
+            .unwrap_or_else(|| format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS)),
+        protocol_min: PROTOCOL_MIN,
+        protocol_max: PROTOCOL_MAX,
+        store_format: STORE_FORMAT_ID,
+        store_schema_version: STORE_SCHEMA_VERSION,
+        kind_registry_version: KIND_REGISTRY_VERSION,
+        attribute_registry_version: ATTRIBUTE_REGISTRY_VERSION,
+        classification_version: CLASSIFICATION_VERSION,
+        resolution_version: RESOLUTION_VERSION,
+    };
+    println!("{}", serde_json::to_string_pretty(&diagnostics)?);
+    Ok(())
 }

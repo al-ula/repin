@@ -37,10 +37,15 @@ fn test_conformance_partial_toml_merging() {
         padding_lines = 4
     "#;
 
-    config.merge_toml_str(project_toml).expect("merge should succeed");
+    config
+        .merge_toml_str(project_toml)
+        .expect("merge should succeed");
 
     assert_eq!(config.indexing.exclude_paths, vec!["build/**", "dist/**"]);
-    assert_eq!(config.indexing.exclude_extensions, vec!["bundle.js", "snap"]);
+    assert_eq!(
+        config.indexing.exclude_extensions,
+        vec!["bundle.js", "snap"]
+    );
     assert_eq!(config.indexing.max_file_size_bytes, 1048576);
     assert_eq!(config.retrieval.default_limit, 25);
     assert_eq!(config.retrieval.centrality_boost, 0.25);
@@ -55,7 +60,7 @@ fn test_conformance_partial_toml_merging() {
 #[test]
 fn test_conformance_precedence_hierarchy() {
     let mut defaults = RepinConfig::default();
-    
+
     // User config layer
     let mut user_config = RepinConfig::default();
     user_config.retrieval.default_limit = 100;
@@ -73,8 +78,18 @@ fn test_conformance_precedence_hierarchy() {
     defaults.merge(project_config);
     assert_eq!(defaults.retrieval.default_limit, 25);
     // Exclusions merge via union
-    assert!(defaults.indexing.exclude_paths.contains(&"global_ignore/**".to_string()));
-    assert!(defaults.indexing.exclude_paths.contains(&"local_build/**".to_string()));
+    assert!(
+        defaults
+            .indexing
+            .exclude_paths
+            .contains(&"global_ignore/**".to_string())
+    );
+    assert!(
+        defaults
+            .indexing
+            .exclude_paths
+            .contains(&"local_build/**".to_string())
+    );
 }
 
 #[test]
@@ -144,4 +159,3 @@ fn test_conformance_global_only_credential_safety_floor() {
     "#;
     assert!(RepinConfig::validate_project_toml_str(clean_project).is_ok());
 }
-

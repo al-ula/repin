@@ -268,3 +268,39 @@ The extraction is accepted only when these checks pass with no added
 in-process serialization, store round trips, or source reads in an existing
 operation. Deterministic median and p95 regressions are compared with the
 baseline under the 5% ADR-023 budget after variance analysis.
+# Compatibility versioning (ADR-024)
+
+The conformance suite MUST verify owning-crate constants and JSON diagnostics;
+highest-common protocol selection and bounded bootstrap handling; SQLite
+identity inspection before DDL, empty-versus-existing version-zero
+classification, unrelated/newer/corrupt/contradictory state handling, and
+transactional migration/version-record preservation; complete scoped
+invalidation for registry, classification, resolution, pack, and extractor
+changes; and conservative replacement with full-idle detection, singleton
+election, and actionable busy-daemon mismatch recovery.
+
+Recovery target vocabulary (`graph`, `lexical`, `vector`, `all`) must remain
+consistent across CLI and IPC; unavailable derived-index adapters must return
+explicit capability errors.
+
+The protocol suite also verifies the 1 MiB ordinary-frame and 64 KiB bootstrap
+limits and the 2,000 ms bootstrap deadline, including rejection before project
+binding.
+
+The lifecycle suite verifies that detached contexts remain isolated while
+within the ten-minute idle window, then release their project writer lease on
+reaping; a daemon replacement request is eligible only after that reaping and
+with no other bootstrap/client connection.
+
+Producer-version invalidation must exercise owner discovery across nodes,
+edges, unresolved references, skips, and diagnostics, verify that no source
+read occurs during removal, and confirm that replacement `VersionRecords` and
+the removal revision become visible together.
+
+Classification conformance must verify batched node-claim updates, no source
+reads, and atomic publication of the classification version record.
+
+The storage suite also includes the adopted v1-to-v2 migration, verifies that
+ordinary open refuses v1, verifies journal and version-record stamping after
+explicit migration, and injects a malformed version record to prove rollback
+leaves the v1 schema untouched.

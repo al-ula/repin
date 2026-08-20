@@ -14,6 +14,7 @@ path = "src/main.rs"
 [dependencies]
 repin-core.workspace = true
 repin-protocol.workspace = true
+repin-store-sqlite.workspace = true
 repin-engine.workspace = true
 repin-daemon.workspace = true
 clap.workspace = true

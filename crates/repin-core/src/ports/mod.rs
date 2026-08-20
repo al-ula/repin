@@ -11,7 +11,8 @@ pub use model::{
 };
 pub use pack::{ExtractedFacts, ExtractionError, LanguagePack};
 pub use store::{
-    DerivedIndexIntent, DerivedIndexState, EdgeFilters, IndexKind, NodeFilters, ReadView, Store,
-    StoreCapabilities, StoreError, Transaction, UpdateSummary, VersionRecords,
+    DerivedIndexIntent, DerivedIndexState, EdgeFilters, IndexKind, NodeClassificationUpdate,
+    NodeFilters, ReadView, Store, StoreCapabilities, StoreError, Transaction, UpdateSummary,
+    VersionRecords,
 };
 pub use vcs::{BranchInfo, Vcs, VcsChangeSet, VcsError};

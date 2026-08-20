@@ -9,6 +9,7 @@ use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::{ExtractedFacts, ExtractionError, LanguagePack};
 use tree_sitter::{Node as TsNode, Parser};
 
+pub const TS_PACK_VERSION: &str = "0.2.0";
 pub struct TsLanguagePack;
 
 impl Default for TsLanguagePack {
@@ -29,7 +30,7 @@ impl LanguagePack for TsLanguagePack {
     }
 
     fn version(&self) -> &'static str {
-        "0.2.0"
+        TS_PACK_VERSION
     }
 
     fn can_handle(&self, path: &str, _sample_content: &[u8]) -> bool {

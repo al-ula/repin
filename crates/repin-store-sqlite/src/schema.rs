@@ -1,11 +1,14 @@
 pub const SCHEMA_DDL: &str = r#"
-PRAGMA journal_mode = WAL;
-PRAGMA synchronous = FULL;
-PRAGMA foreign_keys = ON;
-
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS migration_journal (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_version INTEGER NOT NULL,
+    to_version INTEGER NOT NULL,
+    completed_at INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS string_pool (

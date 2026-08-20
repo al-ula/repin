@@ -3,6 +3,7 @@ pub mod hash;
 pub mod line_index;
 pub mod model;
 pub mod ports;
+pub mod versions;
 
 pub use config::{
     ConfigError, ContextConfig, DaemonConfig, ExtractionConfig, IndexingConfig, IntelligenceConfig,
@@ -17,7 +18,7 @@ pub use model::{
 };
 pub use ports::{
     ChangeOrigin, DerivedIndexIntent, DerivedIndexState, Diagnostic, EdgeFilters, ExtractedFacts,
-    ExtractionError, FileChange, FileSnapshot, IndexKind, LanguagePack, NodeFilters, ReadView,
-    Skip, SourceError, SourceFs, Store, StoreCapabilities, StoreError, Transaction, UpdateSummary,
-    Vcs, VcsChangeSet, VcsError, VersionRecords,
+    ExtractionError, FileChange, FileSnapshot, IndexKind, LanguagePack, NodeClassificationUpdate,
+    NodeFilters, ReadView, Skip, SourceError, SourceFs, Store, StoreCapabilities, StoreError,
+    Transaction, UpdateSummary, Vcs, VcsChangeSet, VcsError, VersionRecords,
 };

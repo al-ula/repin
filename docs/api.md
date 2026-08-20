@@ -200,6 +200,11 @@ RebuildRequest
 - `rebuild(target: lexical)` — discard and reconstruct only the lexical index from the current authoritative graph. Graph revision/facts and vector state do not change.
 - `rebuild(target: vector)` — discard and reconstruct only the enabled vector index from the current authoritative graph/content. Graph and lexical state do not change; unavailable/disabled vector capability is reported explicitly.
 - `rebuild(target: all)` — explicit full state reconstruction; equivalent in dependency scope to `graph`, retained for operational clarity.
+
+The CLI exposes these targets as `repin rebuild graph|lexical|vector|all`, and
+the daemon carries the same target over its negotiated IPC contract. When a
+derived-index adapter is unavailable, the operation returns an explicit
+capability error rather than reporting a successful rebuild.
 - `pause`/`resume` — bracket a known bulk operation.
 
 A rebuild never advances or rewrites the authoritative graph revision merely for reconstructing a derived index. Destructive replacement occurs only after cancellation-safe preparation where possible. Authoritative commits and individual product commits are non-cancellable atomic sections; cancellation stops before the next such section, preserves the last valid state, and reports any pending derived work. Long-running phases may report the bounded, best-effort progress events defined in [Progress events](#progress-events).
@@ -459,6 +464,19 @@ If both timeout and absolute deadline are supplied, the earlier bound wins. The 
 ## 9. Stability
 
 Semantic versioning applies to this document, not to any implementation's internals.
+
+`repin --version` prints the conventional package identity. `repin version
+--json` reports package version, optional commit and build ID, target, protocol
+range, store format/schema, and core semantic component versions. Missing
+release provenance is JSON `null`. Package and build identity are diagnostic
+only; protocol, store, and semantic versions determine compatibility and
+invalidation according to [ADR-024](decisions/ADR-024-compatibility-versioning.md).
+
+Operational state inspection is available without graph activation through
+`repin db inspect [PATH]` (add `--json` for structured output). `repin db
+migrate [PATH]` is an explicit migration entrypoint and never performs a
+silent migration during ordinary activation. Graph and derived-index rebuilds
+use the public `rebuild(target)` contract described in [Updating](#3-updating).
 
 **Minor (compatible):**
 

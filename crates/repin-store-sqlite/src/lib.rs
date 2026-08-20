@@ -9,8 +9,12 @@ pub use fts5::{Fts5Index, FtsHit};
 pub use intern::InternerCache;
 pub use read_view::SqliteReadView;
 pub use schema::SCHEMA_DDL;
-pub use store::SqliteStore;
+pub use store::{SqliteStore, StoreInspection};
 pub use transaction::SqliteTransaction;
+
+pub const STORE_FORMAT_ID: &str = "repin.sqlite";
+pub const STORE_APPLICATION_ID: u32 = 0x5250_494E;
+pub const STORE_SCHEMA_VERSION: u32 = 2;
 
 #[cfg(test)]
 mod tests {
@@ -24,6 +28,162 @@ mod tests {
     use repin_core::model::unresolved::UnresolvedRef;
     use repin_core::ports::fs::{Diagnostic, Skip};
     use repin_core::ports::store::Store;
+    use tempfile::tempdir;
+
+    #[test]
+    fn new_file_is_stamped_with_store_identity() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("graph.sqlite3");
+        let store = SqliteStore::open(&path).unwrap();
+        let conn = store.raw_connection();
+        let conn = conn.lock().unwrap();
+        let application_id: u32 = conn
+            .query_row("PRAGMA application_id", [], |row| row.get::<_, i64>(0))
+            .unwrap() as u32;
+        let schema_version: u32 = conn
+            .query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0))
+            .unwrap() as u32;
+        assert_eq!(application_id, STORE_APPLICATION_ID);
+        assert_eq!(schema_version, STORE_SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn inspect_does_not_create_schema_for_empty_file() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("empty.sqlite3");
+        let inspection = SqliteStore::inspect(&path).unwrap();
+        assert_eq!(inspection.application_id, 0);
+        assert_eq!(inspection.schema_version, 0);
+        assert!(!inspection.has_user_tables);
+        let reopened = rusqlite::Connection::open(&path).unwrap();
+        let tables: i64 = reopened
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(tables, 0);
+    }
+
+    #[test]
+    fn version_records_must_match_sqlite_schema_version() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("graph.sqlite3");
+        let store = SqliteStore::open(&path).unwrap();
+        let conn = store.raw_connection();
+        conn.lock().unwrap().execute(
+            "INSERT INTO meta(key, value) VALUES ('version_records', ?1)",
+            [r#"{"store_schema_version":99,"kind_registry_version":1,"attribute_registry_version":1,"classification_version":1,"resolution_version":1,"pack_versions":{},"extractor_versions":{},"engine_version":"0.1.0"}"#],
+        ).unwrap();
+        drop(conn);
+        drop(store);
+        let error = match SqliteStore::open(&path) {
+            Ok(_) => panic!("contradictory version records were accepted"),
+            Err(error) => error,
+        };
+        assert!(error.to_string().contains("disagrees"));
+    }
+
+    #[test]
+    fn explicit_migration_v1_to_v2_is_transactional_and_stamps_records() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("v1.sqlite3");
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute_batch(&format!(
+            "CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             PRAGMA application_id = {STORE_APPLICATION_ID};
+             PRAGMA user_version = 1;"
+        ))
+        .unwrap();
+        let records = serde_json::json!({
+            "store_schema_version": 1,
+            "kind_registry_version": 1,
+            "attribute_registry_version": 1,
+            "classification_version": 1,
+            "resolution_version": 1,
+            "pack_versions": {},
+            "extractor_versions": {},
+            "engine_version": "0.1.0"
+        });
+        conn.execute(
+            "INSERT INTO meta(key, value) VALUES ('version_records', ?1)",
+            [records.to_string()],
+        )
+        .unwrap();
+        drop(conn);
+
+        let error = match SqliteStore::open(&path) {
+            Ok(_) => panic!("ordinary open silently migrated v1"),
+            Err(error) => error,
+        };
+        assert!(error.to_string().contains("schema version"));
+
+        let store = SqliteStore::migrate(&path).unwrap();
+        let inspection = SqliteStore::inspect(&path).unwrap();
+        assert_eq!(inspection.schema_version, STORE_SCHEMA_VERSION);
+        let conn = store.raw_connection();
+        let conn = conn.lock().unwrap();
+        let journal_rows: i64 = conn
+            .query_row("SELECT COUNT(*) FROM migration_journal", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(journal_rows, 1);
+        let serialized: String = conn
+            .query_row(
+                "SELECT value FROM meta WHERE key = 'version_records'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let migrated: repin_core::ports::VersionRecords =
+            serde_json::from_str(&serialized).unwrap();
+        assert_eq!(migrated.store_schema_version, STORE_SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn failed_migration_rolls_back_schema_and_version_records() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("broken-v1.sqlite3");
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute_batch(&format!(
+            "CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             PRAGMA application_id = {STORE_APPLICATION_ID};
+             PRAGMA user_version = 1;
+             INSERT INTO meta(key, value) VALUES ('version_records', '{{not-json');"
+        ))
+        .unwrap();
+        drop(conn);
+
+        assert!(SqliteStore::migrate(&path).is_err());
+        let inspection = SqliteStore::inspect(&path).unwrap();
+        assert_eq!(inspection.schema_version, 1);
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        let journal_exists: i64 = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name = 'migration_journal')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(journal_exists, 0);
+    }
+
+    #[test]
+    fn unrelated_sqlite_file_is_rejected_before_schema_creation() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("other.sqlite3");
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute_batch("CREATE TABLE unrelated(value TEXT);")
+            .unwrap();
+        drop(conn);
+        let error = match SqliteStore::open(&path) {
+            Ok(_) => panic!("unrelated database was accepted"),
+            Err(error) => error,
+        };
+        assert!(error.to_string().contains("application_id"));
+    }
 
     #[test]
     fn test_sqlite_store_roundtrip() {
@@ -80,7 +240,14 @@ mod tests {
         let mut tx = store.begin_write().unwrap();
 
         let id_target = NodeId::new(NodeKind::Struct, "root", "src/lib.rs", &[], "Target", 0);
-        let id_caller = NodeId::new(NodeKind::Function, "root", "src/caller.rs", &[], "caller", 0);
+        let id_caller = NodeId::new(
+            NodeKind::Function,
+            "root",
+            "src/caller.rs",
+            &[],
+            "caller",
+            0,
+        );
 
         let edge = Edge {
             id: EdgeId::new(id_caller, id_target, EdgeKind::Calls, "rust_pack"),
@@ -127,8 +294,14 @@ mod tests {
         let mut claims = Vec::new();
         for i in 0..10 {
             let name = format!("fn_{}", i);
-            let id =
-                NodeId::new(NodeKind::Function, "workspace_root", "src/main.rs", &[], &name, i);
+            let id = NodeId::new(
+                NodeKind::Function,
+                "workspace_root",
+                "src/main.rs",
+                &[],
+                &name,
+                i,
+            );
             let node = Node {
                 id,
                 kind: NodeKind::Function,
@@ -171,6 +344,11 @@ mod tests {
         let view = store.read_view().unwrap();
         let nodes = view.nodes_by_file("workspace_root", "src/main.rs").unwrap();
         assert_eq!(nodes.len(), 10);
+        let owners = view
+            .owners_by_producer("rust_analyzer", Some("2026-08"))
+            .unwrap();
+        assert_eq!(owners.len(), 1);
+        assert_eq!(owners[0].path, "src/main.rs");
         for (i, node) in nodes.iter().enumerate() {
             assert_eq!(node.name, format!("fn_{}", i));
             assert_eq!(node.root, "workspace_root");
@@ -199,11 +377,53 @@ mod tests {
     }
 
     #[test]
+    fn resolution_owners_enumerates_all_derived_edge_producers() {
+        let store = SqliteStore::open_in_memory().unwrap();
+        let from = NodeId::new(NodeKind::Function, "root", "src/a.rs", &[], "from", 0);
+        let to = NodeId::new(NodeKind::Function, "root", "src/b.rs", &[], "to", 0);
+        let edge = Edge {
+            id: EdgeId::new(from, to, EdgeKind::Calls, "resolver_v2"),
+            from,
+            to,
+            kind: EdgeKind::Calls,
+            provenance: Provenance {
+                root: "root".into(),
+                path: "src/a.rs".into(),
+                range: None,
+                extractor: "resolver_v2".into(),
+                extractor_version: "2".into(),
+                derivation: Derivation::Resolved,
+                confidence: Confidence::EXACT,
+                revision: Revision::INITIAL,
+            },
+            attributes: Default::default(),
+        };
+        let owner = FactOwner::new("root", "src/a.rs", "resolver_v2", "2");
+        let mut tx = store.begin_write().unwrap();
+        tx.put_edges(&[EdgeClaim {
+            edge,
+            owner: owner.clone(),
+        }])
+        .unwrap();
+        tx.commit().unwrap();
+
+        let view = store.read_view().unwrap();
+        assert_eq!(view.resolution_owners().unwrap(), vec![owner]);
+    }
+
+    #[test]
     fn test_empty_and_custom_attributes_and_provenance() {
         let store = SqliteStore::open_in_memory().unwrap();
         let mut tx = store.begin_write().unwrap();
 
-        let id1 = NodeId::new(NodeKind::Function, "root", "src/lib.rs", &[], "empty_attr_fn", 0);
+        let id1 = NodeId::new(
+            NodeKind::Function,
+            "root",
+            "src/lib.rs",
+            &[],
+            "empty_attr_fn",
+            0,
+        );
         let node1 = Node {
             id: id1,
             kind: NodeKind::Function,
@@ -228,11 +448,21 @@ mod tests {
         };
 
         let mut custom_attrs = Attributes::new();
-        custom_attrs.insert("doc".to_string(), serde_json::json!("This is a complex doc comment"));
+        custom_attrs.insert(
+            "doc".to_string(),
+            serde_json::json!("This is a complex doc comment"),
+        );
         custom_attrs.insert("visibility".to_string(), serde_json::json!("pub(crate)"));
         custom_attrs.insert("is_async".to_string(), serde_json::json!(true));
 
-        let id2 = NodeId::new(NodeKind::Function, "root", "src/lib.rs", &[], "custom_attr_fn", 1);
+        let id2 = NodeId::new(
+            NodeKind::Function,
+            "root",
+            "src/lib.rs",
+            &[],
+            "custom_attr_fn",
+            1,
+        );
         let node2 = Node {
             id: id2,
             kind: NodeKind::Function,
@@ -417,7 +647,14 @@ mod tests {
             owner: owner.clone(),
         };
 
-        let unres_id = NodeId::new(NodeKind::Function, "root", "src/skipped.rs", &[], "caller", 0);
+        let unres_id = NodeId::new(
+            NodeKind::Function,
+            "root",
+            "src/skipped.rs",
+            &[],
+            "caller",
+            0,
+        );
         let unres = UnresolvedRef {
             from: unres_id,
             seeking: "missing_target".to_string(),

@@ -1,6 +1,6 @@
 # Decisions
 
-This directory records the 23 accepted Architectural Decision Records (ADRs) establishing the architecture, contracts, and implementation profile for Repin.
+This directory records the 24 accepted Architectural Decision Records (ADRs) establishing the architecture, contracts, and implementation profile for Repin.
 
 Research has concluded and all decisions are finalized and accepted. These ADRs bridge architectural requirements and production implementation.
 
@@ -31,6 +31,7 @@ Research has concluded and all decisions are finalized and accepted. These ADRs 
 | [ADR-021](ADR-021-per-project-configuration.md) | Per-project configuration file and precedence merge protocol | accepted contract and capability decision | system configuration, safety floor enforcement & ergonomics |
 | [ADR-022](ADR-022-multi-tier-model-providers.md) | Multi-tier model provider architecture (Embedded, Agent, and APIs) | accepted contract and capability decision | offline privacy, agent pipelines & API interoperability |
 | [ADR-023](ADR-023-reusable-library-crates.md) | Reusable capability crates and the runtime compatibility facade | accepted architecture and library API decision | embedded consumers, cycle-free composition & semantics-preserving extraction |
+| [ADR-024](ADR-024-compatibility-versioning.md) | Compatibility versioning and conservative state replacement | accepted contract decision | independent package, IPC, store, semantic, and provenance boundaries |
 
 ## Implementation Validation Scope
 

@@ -71,6 +71,7 @@ mod tests {
 
         let indexed = engine.index_all_worktree().unwrap();
         assert_eq!(indexed, 1);
+        assert!(engine.pending_version_invalidations().is_empty());
 
         let res = engine.search_graph("compute_sum", 10);
         assert_eq!(res.status, repin_protocol::envelope::Status::Ok);

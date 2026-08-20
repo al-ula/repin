@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use crate::config::types::{
     ContextConfig, DaemonConfig, EmbeddingConfig, EnrichmentConfig, ExtractionConfig,
-    IndexingConfig, IntelligenceConfig, ProjectConfig, ProviderProfile, RepinConfig,
-    RerankConfig, RetrievalConfig, SimpleCapabilityConfig, StorageConfig,
+    IndexingConfig, IntelligenceConfig, ProjectConfig, ProviderProfile, RepinConfig, RerankConfig,
+    RetrievalConfig, SimpleCapabilityConfig, StorageConfig,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PartialProjectConfig {
@@ -310,10 +310,14 @@ impl PartialIntelligenceConfig {
         }
         if let Some(providers) = &self.providers {
             for (k, v) in providers {
-                let profile = target.providers.entry(k.clone()).or_insert_with(|| ProviderProfile {
-                    endpoint: None,
-                    api_key_env: None,
-                });
+                let profile =
+                    target
+                        .providers
+                        .entry(k.clone())
+                        .or_insert_with(|| ProviderProfile {
+                            endpoint: None,
+                            api_key_env: None,
+                        });
                 v.apply_to(profile);
             }
         }

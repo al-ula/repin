@@ -9,6 +9,7 @@ use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::{ExtractedFacts, ExtractionError, LanguagePack};
 use tree_sitter::{Node as TsNode, Parser};
 
+pub const PROSE_PACK_VERSION: &str = "0.2.0";
 pub struct ProseLanguagePack;
 
 impl Default for ProseLanguagePack {
@@ -29,7 +30,7 @@ impl LanguagePack for ProseLanguagePack {
     }
 
     fn version(&self) -> &'static str {
-        "0.2.0"
+        PROSE_PACK_VERSION
     }
 
     fn can_handle(&self, path: &str, _sample_content: &[u8]) -> bool {

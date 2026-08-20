@@ -3,9 +3,9 @@ pub mod prose_pack;
 pub mod rust_pack;
 pub mod ts_pack;
 
-pub use prose_pack::ProseLanguagePack;
-pub use rust_pack::RustLanguagePack;
-pub use ts_pack::TsLanguagePack;
+pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
+pub use rust_pack::{RUST_PACK_VERSION, RustLanguagePack};
+pub use ts_pack::{TS_PACK_VERSION, TsLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 

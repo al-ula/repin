@@ -92,11 +92,13 @@ fn resolve_intelligence_providers(config: &mut RepinConfig) {
             if let Some(p) = providers.get(emb_p) {
                 config.intelligence.embedding.endpoint = p.endpoint.clone();
             } else if emb_p == "openai" {
-                config.intelligence.embedding.endpoint = Some("https://api.openai.com/v1".to_string());
+                config.intelligence.embedding.endpoint =
+                    Some("https://api.openai.com/v1".to_string());
             } else if emb_p == "ollama" {
                 config.intelligence.embedding.endpoint = Some("http://localhost:11434".to_string());
             } else if emb_p == "google" {
-                config.intelligence.embedding.endpoint = Some("https://generativelanguage.googleapis.com".to_string());
+                config.intelligence.embedding.endpoint =
+                    Some("https://generativelanguage.googleapis.com".to_string());
             }
         }
         if config.intelligence.embedding.api_key_env.is_none() {
@@ -138,11 +140,14 @@ fn resolve_intelligence_providers(config: &mut RepinConfig) {
             if let Some(p) = providers.get(enrich_p) {
                 config.intelligence.enrichment.endpoint = p.endpoint.clone();
             } else if enrich_p == "google" {
-                config.intelligence.enrichment.endpoint = Some("https://generativelanguage.googleapis.com".to_string());
+                config.intelligence.enrichment.endpoint =
+                    Some("https://generativelanguage.googleapis.com".to_string());
             } else if enrich_p == "openai" {
-                config.intelligence.enrichment.endpoint = Some("https://api.openai.com/v1".to_string());
+                config.intelligence.enrichment.endpoint =
+                    Some("https://api.openai.com/v1".to_string());
             } else if enrich_p == "ollama" {
-                config.intelligence.enrichment.endpoint = Some("http://localhost:11434".to_string());
+                config.intelligence.enrichment.endpoint =
+                    Some("http://localhost:11434".to_string());
             }
         }
         if config.intelligence.enrichment.api_key_env.is_none() {

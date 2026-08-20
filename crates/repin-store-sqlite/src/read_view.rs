@@ -1,7 +1,7 @@
 use repin_core::line_index::Range;
 use repin_core::model::edge::Edge;
 use repin_core::model::identity::{EdgeId, NodeId};
-use repin_core::model::node::{Attributes, Node};
+use repin_core::model::node::{Attributes, Node, NodeClaim};
 use repin_core::model::provenance::{Confidence, Derivation, FactOwner, Provenance, Revision};
 use repin_core::model::registries::{EdgeKind, NodeKind};
 use repin_core::model::unresolved::UnresolvedRef;
@@ -50,6 +50,15 @@ fn parse_attributes(attr_json: Option<&str>) -> Attributes {
             }
         })
         .unwrap_or_default()
+}
+
+fn owner_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FactOwner> {
+    Ok(FactOwner::new(
+        row.get::<_, String>(0)?,
+        row.get::<_, String>(1)?,
+        row.get::<_, String>(2)?,
+        row.get::<_, String>(3)?,
+    ))
 }
 
 pub struct SqliteReadView {
@@ -289,6 +298,162 @@ impl ReadView for SqliteReadView {
         Ok(nodes)
     }
 
+    fn node_claims_by_file(&self, root: &str, path: &str) -> Result<Vec<NodeClaim>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT
+                    nc.node_id, nc.kind, nc.name, nc.qualified_name,
+                    sp_root.value, sp_path.value, nc.range_json,
+                    sp_lang.value, nc.artifact_class, nc.provenance_json, nc.attributes_json,
+                    sp_prod.value, sp_ver.value
+                 FROM node_claims nc
+                 JOIN fact_owners fo ON nc.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 LEFT JOIN string_pool sp_lang ON nc.language_id = sp_lang.id
+                 WHERE sp_root.value = ?1 AND sp_path.value = ?2
+                 ORDER BY nc.node_id, sp_prod.value, sp_ver.value",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let rows = stmt
+            .query_map([root, path], |row| {
+                let node_id_bytes: [u8; 32] = row.get(0)?;
+                let kind_str: String = row.get(1)?;
+                let root: String = row.get(4)?;
+                let path: String = row.get(5)?;
+                let range_json: Option<String> = row.get(6)?;
+                let producer: String = row.get(11)?;
+                let producer_version: String = row.get(12)?;
+                let range: Option<Range> = range_json.and_then(|j| serde_json::from_str(&j).ok());
+                let provenance = parse_provenance(
+                    row.get::<_, Option<String>>(9)?.as_deref(),
+                    &root,
+                    &path,
+                    range,
+                    &producer,
+                    &producer_version,
+                );
+                let node = Node {
+                    id: NodeId::from_bytes(node_id_bytes),
+                    kind: serde_json::from_str(&format!("\"{}\"", kind_str))
+                        .unwrap_or(NodeKind::File),
+                    name: row.get(2)?,
+                    qualified_name: row.get(3)?,
+                    root: root.clone(),
+                    path: path.clone(),
+                    range,
+                    language: row.get(7)?,
+                    artifact_class: row
+                        .get::<_, Option<String>>(8)?
+                        .and_then(|s| serde_json::from_str(&format!("\"{}\"", s)).ok()),
+                    provenance,
+                    attributes: parse_attributes(row.get::<_, Option<String>>(10)?.as_deref()),
+                };
+                Ok(NodeClaim {
+                    node,
+                    owner: FactOwner::new(root, path, producer, producer_version),
+                })
+            })
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        rows.map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+            .collect()
+    }
+
+    fn owners_by_producer(
+        &self,
+        producer: &str,
+        producer_version: Option<&str>,
+    ) -> Result<Vec<FactOwner>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut sql = String::from(
+            "SELECT sp_root.value, sp_path.value, sp_producer.value, sp_version.value
+             FROM fact_owners fo
+             JOIN string_pool sp_root ON sp_root.id = fo.root_id
+             JOIN string_pool sp_path ON sp_path.id = fo.path_id
+             JOIN string_pool sp_producer ON sp_producer.id = fo.producer_id
+             JOIN string_pool sp_version ON sp_version.id = fo.producer_version_id
+             WHERE sp_producer.value = ?1",
+        );
+        if producer_version.is_some() {
+            sql.push_str(" AND sp_version.value = ?2");
+        }
+        sql.push_str(" ORDER BY sp_root.value, sp_path.value, sp_version.value");
+
+        let mut stmt = conn
+            .prepare(&sql)
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let rows = if let Some(version) = producer_version {
+            stmt.query_map(rusqlite::params![producer, version], owner_from_row)
+        } else {
+            stmt.query_map(rusqlite::params![producer], owner_from_row)
+        }
+        .map_err(|e| StoreError::Io(e.to_string()))?;
+        rows.map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+            .collect()
+    }
+
+    fn resolution_owners(&self) -> Result<Vec<FactOwner>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT
+                    sp_root.value, sp_path.value, sp_producer.value, sp_version.value
+                 FROM edge_claims ec
+                 JOIN fact_owners fo ON ec.owner_id = fo.id
+                 JOIN string_pool sp_root ON sp_root.id = fo.root_id
+                 JOIN string_pool sp_path ON sp_path.id = fo.path_id
+                 JOIN string_pool sp_producer ON sp_producer.id = fo.producer_id
+                 JOIN string_pool sp_version ON sp_version.id = fo.producer_version_id
+                 WHERE json_extract(ec.provenance_json, '$.derivation')
+                    IN ('resolved', 'heuristic')
+                 ORDER BY sp_root.value, sp_path.value, sp_producer.value, sp_version.value",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        stmt.query_map([], owner_from_row)
+            .map_err(|e| StoreError::Io(e.to_string()))?
+            .map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+            .collect()
+    }
+
+    fn files(&self) -> Result<Vec<(String, String)>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT sp_root.value, sp_path.value
+                 FROM fact_owners fo
+                 JOIN string_pool sp_root ON sp_root.id = fo.root_id
+                 JOIN string_pool sp_path ON sp_path.id = fo.path_id
+                 ORDER BY sp_root.value, sp_path.value",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .map_err(|e| StoreError::Io(e.to_string()))?
+            .map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+            .collect()
+    }
+
+    fn all_owners(&self) -> Result<Vec<FactOwner>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT root.value, path.value, producer.value, version.value
+                 FROM fact_owners fo
+                 JOIN string_pool root ON root.id = fo.root_id
+                 JOIN string_pool path ON path.id = fo.path_id
+                 JOIN string_pool producer ON producer.id = fo.producer_id
+                 JOIN string_pool version ON version.id = fo.producer_version_id
+                 ORDER BY root.value, path.value, producer.value, version.value",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        stmt.query_map([], owner_from_row)
+            .map_err(|e| StoreError::Io(e.to_string()))?
+            .map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+            .collect()
+    }
+
     fn edges_from(&self, id: &NodeId, _filters: &EdgeFilters) -> Result<Vec<Edge>, StoreError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
@@ -478,6 +643,55 @@ impl ReadView for SqliteReadView {
             refs.push(r.map_err(|e| StoreError::Io(e.to_string()))?);
         }
         Ok(refs)
+    }
+
+    fn unresolved_refs(&self) -> Result<Vec<UnresolvedRef>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT ur.from_id, ur.seeking, ur.scope_hint, ur.edge_kind,
+                        sp_root.value, sp_path.value, ur.provenance_json,
+                        sp_prod.value, sp_ver.value
+                 FROM unresolved_refs ur
+                 JOIN fact_owners fo ON ur.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 ORDER BY ur.seeking, ur.from_id, ur.edge_kind",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let rows = stmt
+            .query_map([], |row| {
+                let from_id_bytes: [u8; 32] = row.get(0)?;
+                let seeking: String = row.get(1)?;
+                let scope_hint: Option<String> = row.get(2)?;
+                let edge_kind_str: String = row.get(3)?;
+                let root: String = row.get(4)?;
+                let path: String = row.get(5)?;
+                let provenance_json: Option<String> = row.get(6)?;
+                let producer: String = row.get(7)?;
+                let version: String = row.get(8)?;
+                let edge_kind = serde_json::from_str(&format!("\"{}\"", edge_kind_str))
+                    .unwrap_or(EdgeKind::References);
+                Ok(UnresolvedRef {
+                    from: NodeId::from_bytes(from_id_bytes),
+                    seeking,
+                    scope_hint,
+                    edge_kind,
+                    provenance: parse_provenance(
+                        provenance_json.as_deref(),
+                        &root,
+                        &path,
+                        None,
+                        &producer,
+                        &version,
+                    ),
+                })
+            })
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        rows.map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+            .collect()
     }
 
     fn skips(&self, root: Option<&str>, path: Option<&str>) -> Result<Vec<Skip>, StoreError> {

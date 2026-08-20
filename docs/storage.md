@@ -29,6 +29,7 @@ Transaction
   removeNodeClaims(keys: FactClaimKey[])
   removeEdgeClaims(keys: FactClaimKey[])
   removeClaims(owner: FactOwner)
+  clearGraph()
   removeByFile(root, path)
   putUnresolved(refs: UnresolvedRef[])
   removeUnresolved(keys: UnresolvedKey[])
@@ -36,6 +37,7 @@ Transaction
   putDiagnostics(diagnostics: Diagnostic[])
   putUpdateSummary(summary: UpdateSummary)
   putVersionRecords(records: VersionRecords)
+  updateNodeClassifications(updates: NodeClassificationUpdate[])
   putIndexIntent(intent: DerivedIndexIntent)
   acknowledgeIndex(kind: lexical | vector, revision: Revision)
   setRevision(revision: Revision)
@@ -46,10 +48,16 @@ ReadView
   node(id)                     -> Node?
   nodesByName(name, filters)   -> Node[]
   nodesByFile(root, path)      -> Node[]
+  nodeClaimsByFile(root, path)  -> NodeClaim[]
+  ownersByProducer(producer, producerVersion?) -> FactOwner[]
+  resolutionOwners()            -> FactOwner[]
+  files()                       -> (root, path)[]
+  allOwners()                   -> FactOwner[]
   edgesFrom(id, filters)       -> Edge[]
   edgesTo(id, filters)         -> Edge[]
   incomingEdgeCount(id)        -> Count
   unresolvedSeeking(name)      -> UnresolvedRef[]
+  unresolvedRefs()             -> UnresolvedRef[]
   skips(filters)               -> Skip[]
   diagnostics(filters)         -> Diagnostic[]
   changesSince(revision)       -> ChangesResult
@@ -59,6 +67,24 @@ ReadView
 ```
 
 `NodeClaim`/`EdgeClaim` pair a fact with its `FactOwner`; `FactClaimKey` pairs the canonical fact ID with that owner. The operation set is deliberately small and set-oriented. Facts are stored as owner-scoped claims under the `FactOwner` contract in [Graph Model §3](graph-model.md#3-provenance), then deterministically materialized into canonical nodes/edges. `removeClaims(owner)` removes only one producer/version's nodes, edges, unresolved references, skips, and diagnostics for a file. `removeByFile` removes all claims rooted at the previous file version, but not incoming edges claimed by references in other files; affected incoming claims are explicitly demoted through `removeEdgeClaims`/`putUnresolved`. Global removal by a bare canonical fact ID is intentionally absent: if another valid claim supports the same fact, materialization retains it. `expectRevision` makes an update plan conditional on the snapshot from which it was computed, preventing a stale plan from committing. Immutable normalized change summaries are persisted atomically with their graph revision so `changesSince` remains correct across reopen.
+
+`ownersByProducer` is the required discovery operation for semantic
+invalidation. It returns every persisted `(root, path, producer,
+producerVersion)` owner matching the producer and optional version before the
+coordinator issues exact removals. A coordinator MUST NOT infer this set from
+only currently materialized nodes or call `removeClaims` with an owner it has
+not discovered.
+
+`resolutionOwners` discovers every owner of persisted resolved or heuristic
+edge claims, independent of resolver name or version. `files` supplies the
+persisted file catalog for source-independent classification updates, and
+`allOwners` is reserved for registry changes whose adopted migration rule
+requires a full graph invalidation.
+
+Classification changes use `nodeClaimsByFile` plus the batched
+`updateNodeClassifications` mutation. The classifier operates on persisted
+node facts and does not read or parse source files; the classification version
+record and all updates commit in the same revision.
 
 Two things are notable by their absence:
 
@@ -140,9 +166,9 @@ VersionRecords
   resolutionVersion:       Version
   packVersions:            Map<LanguageId, Version>
   extractorVersions:       Map<ExtractorId, Version>
-  engineVersion:           Version
-  vcsRevision?:            Text
-  observedDirtySet?:       Path[]
+  engineVersion:           Text       // diagnostic provenance
+  vcsRevision?:            Text       // diagnostic provenance
+  observedDirtySet?:       Path[]     // diagnostic/recovery provenance
 ```
 
 On open:
@@ -163,6 +189,42 @@ Two rules carry the weight here:
 **Scoped invalidation.** A version change invalidates only the facts its owner produced. Upgrading one language pack re-extracts that language; it does not rebuild the graph. This is only possible because provenance records the producing extractor and version ([Graph Model §3](graph-model.md#3-provenance)).
 
 **Refuse rather than corrupt.** A graph written by a newer engine is not readable by an older one. Opening it read-only and hoping is how stores get corrupted; refusing is a recoverable inconvenience.
+
+### 3.1 SQLite identity and inspection
+
+The initial SQLite adapter owns these constants:
+
+```text
+STORE_FORMAT_ID:       "repin.sqlite"
+STORE_APPLICATION_ID: 0x5250_494E
+STORE_SCHEMA_VERSION:  2
+```
+
+`PRAGMA application_id` identifies the Repin SQLite format and `PRAGMA
+user_version` identifies its physical schema. Inspection reads both values and
+the serialized `VersionRecords` before schema DDL, legacy cleanup, or graph
+activation. A new empty database has both values set to zero and may be
+initialized atomically. An existing zero-version database is classified
+separately and requires an explicit legacy migration or rebuild path.
+
+The adapter exposes distinct `create`, `inspect`, `open`, and authorized
+`migrate` paths. Creation stamps the application ID and schema version in the
+same transaction as the initial schema. Migration changes `user_version` only
+in its final successful transaction. Unrelated SQLite state is rejected;
+newer schema state returns `PROJECT_STATE_NEWER`; corrupt, unknown, or
+contradictory identity/version state returns `PROJECT_STATE_INVALID`. An
+existing database MUST NOT be made to appear valid by applying `CREATE TABLE
+IF NOT EXISTS` before classification. A disagreement between `user_version`
+and `VersionRecords.storeSchemaVersion` is contradictory state. Failed
+migrations preserve the previous valid revision and version records.
+
+The supported migration is v1→v2. It creates the durable
+`migration_journal(id, from_version, to_version, completed_at)` table and
+stamps both SQLite `user_version` and `VersionRecords.storeSchemaVersion` as
+2 in one transaction. Failure before commit leaves the v1 schema, version,
+records, and graph revision unchanged. The migration is available only through
+the explicit `migrate` path; ordinary `open` refuses v1 with a structured
+schema mismatch.
 
 A full rebuild is always an acceptable fallback. Serving facts produced by a different extractor version is not.
 
@@ -374,4 +436,3 @@ To achieve maximum page density and minimal on-disk footprint, the SQLite persis
 - **String Pool & Owner Normalization**: Paths, roots, language identifiers, and extractor names are interned in a shared `string_pool` table. Fact owner 4-tuples `(root, path, producer, producer_version)` are mapped to integer surrogate keys (`owner_id`) in `fact_owners`. Primary keys on claim tables use compact binary pairs `(node_id, owner_id)`.
 - **In-Memory Interner Caching**: Write transactions buffer dictionary lookups in memory, resolving common strings and owners with zero per-row SQL lookups.
 - **Empty Attribute & Compact Payload Optimization**: Empty attribute maps (`{}`) are stored as `NULL` / 0-byte blobs, eliminating JSON serialization overhead for standard AST nodes.
-

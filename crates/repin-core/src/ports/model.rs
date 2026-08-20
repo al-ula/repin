@@ -10,7 +10,10 @@ pub enum ModelError {
     #[error("network timeout after {timeout_ms}ms")]
     Timeout { timeout_ms: u64 },
     #[error("rate limit exceeded for {provider}: retry after {retry_after_secs:?}s")]
-    RateLimited { provider: String, retry_after_secs: Option<u64> },
+    RateLimited {
+        provider: String,
+        retry_after_secs: Option<u64>,
+    },
     #[error("model not found: {model}")]
     ModelNotFound { model: String },
     #[error("unsupported task or operation: {0}")]
@@ -75,7 +78,11 @@ pub trait EmbeddingModel: Send + Sync + Debug {
 /// Port for cross-encoder reranking
 pub trait Reranker: Send + Sync + Debug {
     fn identity(&self) -> ModelIdentity;
-    fn rerank(&self, query: &str, candidates: &[RerankCandidate]) -> Result<Vec<RerankHit>, ModelError>;
+    fn rerank(
+        &self,
+        query: &str,
+        candidates: &[RerankCandidate],
+    ) -> Result<Vec<RerankHit>, ModelError>;
 }
 
 /// Port for text model generation and relation derivation

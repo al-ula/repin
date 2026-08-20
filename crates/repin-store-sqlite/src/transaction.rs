@@ -6,7 +6,8 @@ use repin_core::model::provenance::{Confidence, Derivation, FactOwner, Provenanc
 use repin_core::model::unresolved::{UnresolvedKey, UnresolvedRef};
 use repin_core::ports::fs::{Diagnostic, Skip};
 use repin_core::ports::store::{
-    DerivedIndexIntent, IndexKind, StoreError, Transaction, UpdateSummary, VersionRecords,
+    DerivedIndexIntent, IndexKind, NodeClassificationUpdate, StoreError, Transaction,
+    UpdateSummary, VersionRecords,
 };
 use rusqlite::Connection;
 use std::sync::Arc;
@@ -202,16 +203,62 @@ impl Transaction for SqliteTransaction {
     fn remove_claims(&mut self, owner: &FactOwner) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
         if let Some(owner_id) = self.interner.lookup_owner_id(&conn, owner)? {
+            let node_ids: Vec<Vec<u8>> = {
+                let mut stmt = conn
+                    .prepare("SELECT node_id FROM node_claims WHERE owner_id = ?1")
+                    .map_err(|e| StoreError::Io(e.to_string()))?;
+                stmt.query_map([owner_id], |row| row.get(0))
+                    .map_err(|e| StoreError::Io(e.to_string()))?
+                    .map(|row| row.map_err(|e| StoreError::Io(e.to_string())))
+                    .collect::<Result<_, _>>()?
+            };
             conn.execute("DELETE FROM node_claims WHERE owner_id = ?1", [owner_id])
                 .map_err(|e| StoreError::Io(e.to_string()))?;
             conn.execute("DELETE FROM edge_claims WHERE owner_id = ?1", [owner_id])
                 .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute(
+                "DELETE FROM unresolved_refs WHERE owner_id = ?1",
+                [owner_id],
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
             conn.execute("DELETE FROM skips WHERE owner_id = ?1", [owner_id])
                 .map_err(|e| StoreError::Io(e.to_string()))?;
             conn.execute("DELETE FROM diagnostics WHERE owner_id = ?1", [owner_id])
                 .map_err(|e| StoreError::Io(e.to_string()))?;
+            for node_id in node_ids {
+                let still_claimed: bool = conn
+                    .query_row(
+                        "SELECT EXISTS(SELECT 1 FROM node_claims WHERE node_id = ?1)",
+                        [&node_id],
+                        |row| row.get::<_, i64>(0),
+                    )
+                    .map_err(|e| StoreError::Io(e.to_string()))?
+                    != 0;
+                if !still_claimed {
+                    conn.execute("DELETE FROM fts_nodes WHERE node_id = ?1", [&node_id])
+                        .map_err(|e| StoreError::Io(e.to_string()))?;
+                }
+            }
         }
         Ok(())
+    }
+
+    fn clear_graph(&mut self) -> Result<(), StoreError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute_batch(
+            "DELETE FROM node_claims;
+             DELETE FROM edge_claims;
+             DELETE FROM unresolved_refs;
+             DELETE FROM skips;
+             DELETE FROM diagnostics;
+             DELETE FROM fts_nodes;
+             DELETE FROM fact_owners;
+             DELETE FROM string_pool;
+             DELETE FROM update_history;
+             DELETE FROM index_state;
+             DELETE FROM meta WHERE key = 'revision';",
+        )
+        .map_err(|e| StoreError::Io(e.to_string()))
     }
 
     fn remove_by_file(&mut self, root: &str, path: &str) -> Result<(), StoreError> {
@@ -333,6 +380,37 @@ impl Transaction for SqliteTransaction {
             [&j],
         )
         .map_err(|e| StoreError::Io(e.to_string()))?;
+        Ok(())
+    }
+
+    fn update_node_classifications(
+        &mut self,
+        updates: &[NodeClassificationUpdate],
+    ) -> Result<(), StoreError> {
+        let conn = self.conn.lock().unwrap();
+        for update in updates {
+            let Some(owner_id) = self.interner.lookup_owner_id(&conn, &update.owner)? else {
+                return Err(StoreError::Corrupt(
+                    "classification update references an unknown owner".to_string(),
+                ));
+            };
+            let artifact_class = update
+                .artifact_class
+                .as_ref()
+                .map(|class| class.as_str().to_string());
+            let changed = conn
+                .execute(
+                    "UPDATE node_claims SET artifact_class = ?1
+                     WHERE node_id = ?2 AND owner_id = ?3",
+                    (&artifact_class, update.node_id.as_bytes(), owner_id),
+                )
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            if changed == 0 {
+                return Err(StoreError::Corrupt(
+                    "classification update references an unknown node claim".to_string(),
+                ));
+            }
+        }
         Ok(())
     }
 

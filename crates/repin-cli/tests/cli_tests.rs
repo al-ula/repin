@@ -15,7 +15,10 @@ fn test_index_on_uninitialized_project_fails() {
         .output()
         .expect("Failed to execute repin binary");
 
-    assert!(!output.status.success(), "Expected repin index to fail on uninitialized project");
+    assert!(
+        !output.status.success(),
+        "Expected repin index to fail on uninitialized project"
+    );
     let stderr = String::from_utf8_lossy(&output.stderr);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let combined = format!("{stdout}\n{stderr}");
@@ -52,5 +55,8 @@ fn test_init_then_index_succeeds() {
         .output()
         .expect("Failed to execute repin index");
 
-    assert!(index_output.status.success(), "repin index should succeed on initialized project");
+    assert!(
+        index_output.status.success(),
+        "repin index should succeed on initialized project"
+    );
 }

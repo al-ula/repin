@@ -4,15 +4,81 @@ use repin_core::model::provenance::Revision;
 use repin_core::ports::fs::FileChange;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BootstrapHandshake {
+    pub bootstrap_version: u32,
+    pub protocol_min: u32,
+    pub protocol_max: u32,
+    pub client_package_version: String,
+    pub client_build_id: Option<String>,
+    #[serde(default)]
+    pub replacement_request: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BootstrapHandshakeOk {
+    pub bootstrap_version: u32,
+    pub selected_protocol: u32,
+    pub daemon_protocol_min: u32,
+    pub daemon_protocol_max: u32,
+    pub daemon_package_version: String,
+    pub daemon_build_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BootstrapRejected {
+    pub code: ErrorCode,
+    pub bootstrap_version: u32,
+    pub daemon_protocol_min: u32,
+    pub daemon_protocol_max: u32,
+    pub daemon_package_version: String,
+    pub daemon_build_id: Option<String>,
+    pub replacement_allowed: bool,
+    pub message: String,
+}
+
+pub fn select_protocol(
+    client_min: u32,
+    client_max: u32,
+    daemon_min: u32,
+    daemon_max: u32,
+) -> Option<u32> {
+    let min = client_min.max(daemon_min);
+    let max = client_max.min(daemon_max);
+    (min <= max).then_some(max)
+}
+
+pub fn replacement_allowed(
+    client_protocol_min: u32,
+    daemon_protocol_max: u32,
+    full_idle: bool,
+) -> bool {
+    client_protocol_min > daemon_protocol_max && full_idle
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RebuildTarget {
+    Graph,
+    Lexical,
+    Vector,
+    All,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum IpcRequest {
+    Bootstrap(BootstrapHandshake),
+    RequestReplacement,
     Handshake {
         client_version: String,
         project_db_path: String,
     },
     Status,
     IndexAll,
+    Rebuild {
+        target: RebuildTarget,
+    },
     SearchDirect {
         pattern: String,
         is_regex: bool,
@@ -66,6 +132,9 @@ pub enum IpcRequest {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum IpcResponse {
+    BootstrapOk(BootstrapHandshakeOk),
+    BootstrapRejected(BootstrapRejected),
+    ReplacementAccepted,
     HandshakeOk {
         protocol_version: u32,
         daemon_version: String,
@@ -77,6 +146,11 @@ pub enum IpcResponse {
         edge_count: usize,
     },
     IndexAllOk {
+        files_indexed: usize,
+        revision: Revision,
+    },
+    RebuildOk {
+        target: RebuildTarget,
         files_indexed: usize,
         revision: Revision,
     },

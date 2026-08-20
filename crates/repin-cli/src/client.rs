@@ -1,5 +1,8 @@
-use repin_protocol::ipc::{IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope};
-use std::io::{BufRead, BufReader, Write};
+use repin_protocol::ipc::{
+    BootstrapHandshake, IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope,
+};
+use repin_protocol::{BOOTSTRAP_VERSION, PROTOCOL_MAX, PROTOCOL_MIN};
+use std::io::{BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 
@@ -7,6 +10,24 @@ pub struct DaemonClient {
     stream: UnixStream,
     reader: BufReader<UnixStream>,
     next_req_id: u64,
+}
+
+fn read_bounded_frame<R: Read>(reader: &mut R, max_bytes: usize) -> Result<Vec<u8>, String> {
+    let mut frame = Vec::new();
+    let mut byte = [0_u8; 1];
+    loop {
+        let read = reader.read(&mut byte).map_err(|e| e.to_string())?;
+        if read == 0 {
+            return Err("daemon closed an incomplete IPC frame".to_string());
+        }
+        if frame.len() >= max_bytes {
+            return Err("daemon response exceeds configured frame limit".to_string());
+        }
+        frame.push(byte[0]);
+        if byte[0] == b'\n' {
+            return Ok(frame);
+        }
+    }
 }
 
 impl DaemonClient {
@@ -35,11 +56,18 @@ impl DaemonClient {
             .map_err(|e| format!("Failed to connect to daemon socket: {e}"))?;
 
         let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
-        Ok(Self {
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_millis(
+                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+            )))
+            .map_err(|e| e.to_string())?;
+        let mut client = Self {
             stream,
             reader: BufReader::new(reader_stream),
             next_req_id: 1,
-        })
+        };
+        client.negotiate_bootstrap()?;
+        Ok(client)
     }
 
     pub fn connect_or_start(db_path: &Path) -> Result<Self, String> {
@@ -49,8 +77,6 @@ impl DaemonClient {
         let stream = match UnixStream::connect(&socket_path) {
             Ok(s) => s,
             Err(_) => {
-                let _ = std::fs::remove_file(&socket_path);
-
                 // Spawn persistent background daemon subprocess
                 let current_exe =
                     std::env::current_exe().unwrap_or_else(|_| PathBuf::from("repin"));
@@ -74,6 +100,11 @@ impl DaemonClient {
             }
         };
 
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_millis(
+                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+            )))
+            .map_err(|e| e.to_string())?;
         let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
         let mut client = Self {
             stream,
@@ -81,7 +112,9 @@ impl DaemonClient {
             next_req_id: 1,
         };
 
-        // Handshake
+        client.negotiate_bootstrap()?;
+
+        // Project binding handshake follows successful bootstrap negotiation.
         let resp = client.send_request(IpcRequest::Handshake {
             client_version: env!("CARGO_PKG_VERSION").to_string(),
             project_db_path: db_path.display().to_string(),
@@ -94,6 +127,34 @@ impl DaemonClient {
             }
             _ => Err("unexpected handshake response".to_string()),
         }
+    }
+
+    fn negotiate_bootstrap(&mut self) -> Result<(), String> {
+        let bootstrap = self.send_request(IpcRequest::Bootstrap(BootstrapHandshake {
+            bootstrap_version: BOOTSTRAP_VERSION,
+            protocol_min: PROTOCOL_MIN,
+            protocol_max: PROTOCOL_MAX,
+            client_package_version: env!("CARGO_PKG_VERSION").to_string(),
+            client_build_id: option_env!("REPIN_BUILD_ID").map(str::to_owned),
+            replacement_request: false,
+        }))?;
+        match bootstrap {
+            IpcResponse::BootstrapOk(_) => {}
+            IpcResponse::BootstrapRejected(rejected) => {
+                return Err(format!(
+                    "bootstrap negotiation failed: {} (daemon supports {}..={}, replacement_allowed={})",
+                    rejected.message,
+                    rejected.daemon_protocol_min,
+                    rejected.daemon_protocol_max,
+                    rejected.replacement_allowed
+                ));
+            }
+            other => return Err(format!("bootstrap negotiation failed: {other:?}")),
+        }
+        self.stream
+            .set_read_timeout(None)
+            .map_err(|e| e.to_string())?;
+        Ok(())
     }
 
     pub fn stop_daemon(runtime_dir: Option<&Path>) -> Result<(), String> {
@@ -110,8 +171,10 @@ impl DaemonClient {
         let mut client = match Self::connect_existing(Some(&rt_dir)) {
             Ok(c) => c,
             Err(_) => {
-                let _ = std::fs::remove_file(&socket_path);
-                println!("Removed stale daemon socket at {}.", socket_path.display());
+                println!(
+                    "Daemon socket at {} is unavailable; leaving it for a lease-owning candidate to clean up.",
+                    socket_path.display()
+                );
                 return Ok(());
             }
         };
@@ -153,6 +216,96 @@ impl DaemonClient {
         Ok(client)
     }
 
+    pub fn request_replacement(&mut self) -> Result<(), String> {
+        match self.send_request(IpcRequest::RequestReplacement)? {
+            IpcResponse::ReplacementAccepted => Ok(()),
+            IpcResponse::Error { code, message } => {
+                Err(format!("daemon replacement rejected: {code:?}: {message}"))
+            }
+            response => Err(format!("unexpected replacement response: {response:?}")),
+        }
+    }
+
+    /// Request replacement through the stable bootstrap envelope when this
+    /// client advertises a strictly newer protocol range.
+    pub fn request_incompatible_replacement(
+        runtime_dir: Option<&Path>,
+        protocol_min: u32,
+        protocol_max: u32,
+    ) -> Result<(), String> {
+        let rt_dir = runtime_dir
+            .map(Path::to_path_buf)
+            .unwrap_or_else(Self::default_runtime_dir);
+        let socket_path = rt_dir.join("daemon.sock");
+        let stream = UnixStream::connect(&socket_path)
+            .map_err(|e| format!("failed to connect to daemon endpoint: {e}"))?;
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_millis(
+                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+            )))
+            .map_err(|e| e.to_string())?;
+        let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
+        let mut client = Self {
+            stream,
+            reader: BufReader::new(reader_stream),
+            next_req_id: 1,
+        };
+        let accepted = match client.send_request(IpcRequest::Bootstrap(BootstrapHandshake {
+            bootstrap_version: BOOTSTRAP_VERSION,
+            protocol_min,
+            protocol_max,
+            client_package_version: env!("CARGO_PKG_VERSION").to_string(),
+            client_build_id: option_env!("REPIN_BUILD_ID").map(str::to_owned),
+            replacement_request: true,
+        }))? {
+            IpcResponse::ReplacementAccepted => true,
+            IpcResponse::BootstrapRejected(rejected) => {
+                return Err(format!(
+                    "daemon replacement rejected: {} (replacement_allowed={})",
+                    rejected.message, rejected.replacement_allowed
+                ));
+            }
+            response => return Err(format!("unexpected replacement response: {response:?}")),
+        };
+        debug_assert!(accepted);
+
+        // Dropping the acknowledged bootstrap connection lets the old daemon
+        // complete its bounded drain before releasing the singleton lease.
+        drop(client);
+        for _ in 0..40 {
+            if !socket_path.exists() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        if socket_path.exists() {
+            return Err(
+                "old daemon did not release its socket after replacement acknowledgement"
+                    .to_string(),
+            );
+        }
+
+        let current_exe = std::env::current_exe()
+            .map_err(|e| format!("failed to locate current executable: {e}"))?;
+        std::process::Command::new(current_exe)
+            .arg("daemon")
+            .arg("--runtime-dir")
+            .arg(&rt_dir)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map_err(|e| format!("failed to launch successor daemon: {e}"))?;
+
+        for _ in 0..40 {
+            if socket_path.exists() && UnixStream::connect(&socket_path).is_ok() {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        Err("successor daemon did not become ready within the bounded retry budget".to_string())
+    }
+
     pub fn send_request(&mut self, request: IpcRequest) -> Result<IpcResponse, String> {
         let req_id = self.next_req_id;
         self.next_req_id += 1;
@@ -165,13 +318,9 @@ impl DaemonClient {
         let msg_str = serde_json::to_string(&msg).map_err(|e| e.to_string())?;
         writeln!(self.stream, "{msg_str}").map_err(|e| e.to_string())?;
 
-        let mut line = String::new();
-        self.reader
-            .read_line(&mut line)
-            .map_err(|e| e.to_string())?;
-
+        let frame = read_bounded_frame(&mut self.reader, repin_protocol::MAX_FRAME_BYTES)?;
         let resp_env: IpcResponseEnvelope =
-            serde_json::from_str(line.trim()).map_err(|e| e.to_string())?;
+            serde_json::from_slice(&frame).map_err(|e| e.to_string())?;
 
         Ok(resp_env.body)
     }
