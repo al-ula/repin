@@ -156,3 +156,56 @@ fn resolve_intelligence_providers(config: &mut RepinConfig) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_discover_project_uninitialized_returns_none() {
+        let temp = tempdir().unwrap();
+        let discovered = discover_project_from(temp.path());
+        assert!(discovered.is_none());
+    }
+
+    #[test]
+    fn test_discover_project_initialized_returns_some() {
+        let temp = tempdir().unwrap();
+        let repin_dir = temp.path().join(".repin");
+        fs::create_dir_all(&repin_dir).unwrap();
+        fs::write(repin_dir.join("graph.sqlite3"), b"").unwrap();
+
+        let discovered = discover_project_from(temp.path());
+        assert!(discovered.is_some());
+        let proj = discovered.unwrap();
+        assert_eq!(proj.root_dir, temp.path());
+        assert_eq!(proj.db_path, repin_dir.join("graph.sqlite3"));
+    }
+
+    #[test]
+    fn test_discover_project_from_subdirectory() {
+        let temp = tempdir().unwrap();
+        let repin_dir = temp.path().join(".repin");
+        fs::create_dir_all(&repin_dir).unwrap();
+        fs::write(repin_dir.join("graph.sqlite3"), b"").unwrap();
+
+        let sub_dir = temp.path().join("src").join("commands");
+        fs::create_dir_all(&sub_dir).unwrap();
+
+        let discovered = discover_project_from(&sub_dir);
+        assert!(discovered.is_some());
+        let proj = discovered.unwrap();
+        assert_eq!(proj.root_dir, temp.path());
+    }
+
+    #[test]
+    fn test_discover_project_without_graph_sqlite3_returns_none() {
+        let temp = tempdir().unwrap();
+        let repin_dir = temp.path().join(".repin");
+        fs::create_dir_all(&repin_dir).unwrap();
+
+        let discovered = discover_project_from(temp.path());
+        assert!(discovered.is_none());
+    }
+}

@@ -75,6 +75,9 @@ repin init
 
 # Index the working tree deterministically
 repin index
+
+# Remove .repin metadata and uninitialize workspace
+repin uninit
 ```
 
 ### Search & Retrieval

@@ -9,7 +9,7 @@ use repin_cli::commands::daemon::{
 };
 use repin_cli::commands::eval::execute_eval;
 use repin_cli::commands::graph::{execute_entity, execute_neighbors};
-use repin_cli::commands::index::{execute_index, execute_init};
+use repin_cli::commands::index::{execute_index, execute_init, execute_uninit};
 use repin_cli::commands::inspect::{execute_at_position, execute_inspect};
 use repin_cli::commands::rerank::execute_rerank;
 use repin_cli::commands::search::execute_search;
@@ -52,8 +52,26 @@ use repin_cli::commands::model::{
 enum Commands {
     #[command(about = "Initialize .repin metadata and index repository root")]
     Init {
+        #[arg(help = "Optional project directory path (defaults to current directory or --project)")]
+        path: Option<PathBuf>,
+
         #[arg(long, help = "Skip automatic initial repository indexing")]
         no_index: bool,
+    },
+
+    #[command(about = "Remove .repin metadata directory and uninitialize workspace")]
+    Uninit {
+        #[arg(help = "Optional project directory path (defaults to current directory or --project)")]
+        path: Option<PathBuf>,
+
+        #[arg(
+            short,
+            long,
+            short_alias = 'y',
+            alias = "yes",
+            help = "Force removal without interactive confirmation"
+        )]
+        force: bool,
     },
 
     #[command(about = "Manage repository configuration (config.toml)")]
@@ -291,14 +309,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map_err(|e| format!("Stop error: {e}").into());
         }
         Commands::Restart { runtime_dir } => {
-            let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
-                let default_repin = start_path.join(".repin");
-                let default_db = default_repin.join("graph.sqlite3");
-                repin_cli::discovery::DiscoveredProject {
-                    root_dir: start_path.clone(),
-                    db_path: default_db,
-                }
-            });
+            let discovered = discover_project_from(&start_path).ok_or_else(|| {
+                format!(
+                    "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
+                )
+            })?;
             return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
                 .map_err(|e| format!("Restart error: {e}").into());
         }
@@ -313,14 +328,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| format!("Stop error: {e}").into());
             }
             if restart || matches!(action, Some(DaemonAction::Restart)) {
-                let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
-                    let default_repin = start_path.join(".repin");
-                    let default_db = default_repin.join("graph.sqlite3");
-                    repin_cli::discovery::DiscoveredProject {
-                        root_dir: start_path.clone(),
-                        db_path: default_db,
-                    }
-                });
+                let discovered = discover_project_from(&start_path).ok_or_else(|| {
+                    format!(
+                        "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
+                    )
+                })?;
                 return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
                     .map_err(|e| format!("Restart error: {e}").into());
             }
@@ -335,14 +347,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {}
     }
 
-    if let Commands::Init { no_index } = cli.command {
-        execute_init(&start_path)?;
+    if let Commands::Init { path, no_index } = cli.command {
+        let target_path = path.unwrap_or(start_path);
+        execute_init(&target_path)?;
         if !no_index {
-            let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
-                let default_repin = start_path.join(".repin");
+            let discovered = discover_project_from(&target_path).unwrap_or_else(|| {
+                let default_repin = target_path.join(".repin");
                 let default_db = default_repin.join("graph.sqlite3");
                 repin_cli::discovery::DiscoveredProject {
-                    root_dir: start_path.clone(),
+                    root_dir: target_path.clone(),
                     db_path: default_db,
                 }
             });
@@ -353,14 +366,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
-        let default_repin = start_path.join(".repin");
-        let default_db = default_repin.join("graph.sqlite3");
-        repin_cli::discovery::DiscoveredProject {
-            root_dir: start_path.clone(),
-            db_path: default_db,
-        }
-    });
+    if let Commands::Uninit { path, force } = cli.command {
+        let target_path = path.unwrap_or(start_path);
+        execute_uninit(&target_path, force)?;
+        return Ok(());
+    }
+
+    let discovered = discover_project_from(&start_path).ok_or_else(|| {
+        format!(
+            "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
+        )
+    })?;
 
     let effective_config = load_effective_config(&discovered.root_dir, cli.config.as_deref())
         .unwrap_or_default();
@@ -369,7 +385,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
-        Commands::Init { .. } | Commands::Config { .. } | Commands::Model { .. } => unreachable!(),
+        Commands::Init { .. }
+        | Commands::Uninit { .. }
+        | Commands::Config { .. }
+        | Commands::Model { .. } => unreachable!(),
         Commands::Daemon { .. } | Commands::Stop { .. } | Commands::Restart { .. } => {
             unreachable!()
         }

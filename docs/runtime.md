@@ -148,6 +148,10 @@ It MUST NOT overwrite an existing database. Creation and activation recheck
 the canonical paths and filesystem identity before publishing the initialized
 context.
 
+`repin uninit` removes the `.repin` metadata directory and uninitializes the
+repository workspace. Interactive confirmation is prompted before removing the
+directory unless bypassed via `--force` / `-f` / `-y`.
+
 Project membership and graph capability are separate outcomes:
 
 | State | Connection outcome |

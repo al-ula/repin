@@ -81,6 +81,12 @@ class BenchmarkSuite:
             )
         if self.available_engines.get("repin") and os.path.exists(self.repin_bin):
             subprocess.run(
+                f"{self.repin_bin} uninit -f 2>/dev/null || true",
+                cwd=self.repo_dir,
+                shell=True,
+                capture_output=True
+            )
+            subprocess.run(
                 f"{self.repin_bin} stop 2>/dev/null || true",
                 cwd=self.repo_dir,
                 shell=True,
