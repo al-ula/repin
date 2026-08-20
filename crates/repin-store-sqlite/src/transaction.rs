@@ -1,6 +1,8 @@
+use crate::intern::InternerCache;
+use repin_core::line_index::Range;
 use repin_core::model::edge::{EdgeClaim, FactClaimKey};
-use repin_core::model::node::NodeClaim;
-use repin_core::model::provenance::{FactOwner, Revision};
+use repin_core::model::node::{Attributes, NodeClaim};
+use repin_core::model::provenance::{Confidence, Derivation, FactOwner, Provenance, Revision};
 use repin_core::model::unresolved::{UnresolvedKey, UnresolvedRef};
 use repin_core::ports::fs::{Diagnostic, Skip};
 use repin_core::ports::store::{
@@ -10,8 +12,37 @@ use rusqlite::Connection;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+fn compact_provenance_json(
+    prov: &Provenance,
+    owner: &FactOwner,
+    node_range: Option<&Range>,
+) -> Option<String> {
+    if prov.derivation == Derivation::Extracted
+        && prov.confidence == Confidence::EXACT
+        && prov.revision == Revision::INITIAL
+        && prov.extractor == owner.producer
+        && prov.extractor_version == owner.producer_version
+        && prov.root == owner.root
+        && prov.path == owner.path
+        && prov.range.as_ref() == node_range
+    {
+        None
+    } else {
+        serde_json::to_string(prov).ok()
+    }
+}
+
+fn compact_attributes_json(attributes: &Attributes) -> Option<String> {
+    if attributes.is_empty() {
+        None
+    } else {
+        serde_json::to_string(attributes).ok()
+    }
+}
+
 pub struct SqliteTransaction {
     conn: Arc<Mutex<Connection>>,
+    interner: InternerCache,
     committed: bool,
 }
 
@@ -25,6 +56,7 @@ impl SqliteTransaction {
 
         Ok(Self {
             conn,
+            interner: InternerCache::new(),
             committed: false,
         })
     }
@@ -59,31 +91,33 @@ impl Transaction for SqliteTransaction {
         let conn = self.conn.lock().unwrap();
         for claim in claims {
             let node = &claim.node;
+            let owner_id = self.interner.get_or_insert_owner(&conn, &claim.owner)?;
+            let lang_id = match &node.language {
+                Some(lang) => Some(self.interner.get_or_insert_string(&conn, lang)?),
+                None => None,
+            };
             let range_json = node
                 .range
                 .as_ref()
                 .map(|r| serde_json::to_string(r).unwrap());
-            let prov_json = serde_json::to_string(&node.provenance).unwrap_or_default();
-            let attr_json = serde_json::to_string(&node.attributes).unwrap_or_default();
+            let prov_json =
+                compact_provenance_json(&node.provenance, &claim.owner, node.range.as_ref());
+            let attr_json = compact_attributes_json(&node.attributes);
             let artifact_class_str = node.artifact_class.as_ref().map(|a| a.as_str().to_string());
 
             conn.execute(
                 "INSERT OR REPLACE INTO node_claims (
-                    node_id, root, path, producer, producer_version,
-                    kind, name, qualified_name, range_json, language,
-                    artifact_class, provenance_json, attributes_json
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                    node_id, owner_id, kind, name, qualified_name, range_json,
+                    language_id, artifact_class, provenance_json, attributes_json
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
                 (
                     node.id.as_bytes(),
-                    &node.root,
-                    &node.path,
-                    &claim.owner.producer,
-                    &claim.owner.producer_version,
+                    owner_id,
                     node.kind.as_str(),
                     &node.name,
                     &node.qualified_name,
                     &range_json,
-                    &node.language,
+                    lang_id,
                     &artifact_class_str,
                     &prov_json,
                     &attr_json,
@@ -98,9 +132,9 @@ impl Transaction for SqliteTransaction {
                 (
                     node.id.as_bytes(),
                     &node.name,
-                    &node.qualified_name.as_deref().unwrap_or(""),
+                    node.qualified_name.as_deref().unwrap_or(""),
                     &node.path,
-                    &attr_json,
+                    attr_json.as_deref().unwrap_or(""),
                 ),
             );
         }
@@ -111,22 +145,20 @@ impl Transaction for SqliteTransaction {
         let conn = self.conn.lock().unwrap();
         for claim in claims {
             let edge = &claim.edge;
-            let prov_json = serde_json::to_string(&edge.provenance).unwrap_or_default();
-            let attr_json = serde_json::to_string(&edge.attributes).unwrap_or_default();
+            let owner_id = self.interner.get_or_insert_owner(&conn, &claim.owner)?;
+            let prov_json = compact_provenance_json(&edge.provenance, &claim.owner, None);
+            let attr_json = compact_attributes_json(&edge.attributes);
 
             conn.execute(
                 "INSERT OR REPLACE INTO edge_claims (
-                    edge_id, from_id, to_id, root, path, producer, producer_version,
-                    kind, provenance_json, attributes_json
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                    edge_id, from_id, to_id, owner_id, kind,
+                    provenance_json, attributes_json
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 (
                     edge.id.as_bytes(),
                     edge.from.as_bytes(),
                     edge.to.as_bytes(),
-                    &claim.owner.root,
-                    &claim.owner.path,
-                    &claim.owner.producer,
-                    &claim.owner.producer_version,
+                    owner_id,
                     edge.kind.as_str(),
                     &prov_json,
                     &attr_json,
@@ -140,20 +172,15 @@ impl Transaction for SqliteTransaction {
     fn remove_node_claims(&mut self, keys: &[FactClaimKey]) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
         for key in keys {
-            conn.execute(
-                "DELETE FROM node_claims
-                 WHERE node_id = ?1 AND root = ?2 AND path = ?3 AND producer = ?4 AND producer_version = ?5",
-                (
-                    &key.fact_id,
-                    &key.owner.root,
-                    &key.owner.path,
-                    &key.owner.producer,
-                    &key.owner.producer_version,
-                ),
-            )
-            .map_err(|e| StoreError::Io(e.to_string()))?;
+            if let Some(owner_id) = self.interner.lookup_owner_id(&conn, &key.owner)? {
+                conn.execute(
+                    "DELETE FROM node_claims WHERE node_id = ?1 AND owner_id = ?2",
+                    (&key.fact_id, owner_id),
+                )
+                .map_err(|e| StoreError::Io(e.to_string()))?;
 
-            let _ = conn.execute("DELETE FROM fts_nodes WHERE node_id = ?1", [&key.fact_id]);
+                let _ = conn.execute("DELETE FROM fts_nodes WHERE node_id = ?1", [&key.fact_id]);
+            }
         }
         Ok(())
     }
@@ -161,78 +188,50 @@ impl Transaction for SqliteTransaction {
     fn remove_edge_claims(&mut self, keys: &[FactClaimKey]) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
         for key in keys {
-            conn.execute(
-                "DELETE FROM edge_claims
-                 WHERE edge_id = ?1 AND root = ?2 AND path = ?3 AND producer = ?4 AND producer_version = ?5",
-                (
-                    &key.fact_id,
-                    &key.owner.root,
-                    &key.owner.path,
-                    &key.owner.producer,
-                    &key.owner.producer_version,
-                ),
-            )
-            .map_err(|e| StoreError::Io(e.to_string()))?;
+            if let Some(owner_id) = self.interner.lookup_owner_id(&conn, &key.owner)? {
+                conn.execute(
+                    "DELETE FROM edge_claims WHERE edge_id = ?1 AND owner_id = ?2",
+                    (&key.fact_id, owner_id),
+                )
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            }
         }
         Ok(())
     }
 
     fn remove_claims(&mut self, owner: &FactOwner) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "DELETE FROM node_claims WHERE root = ?1 AND path = ?2 AND producer = ?3 AND producer_version = ?4",
-            (&owner.root, &owner.path, &owner.producer, &owner.producer_version),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-
-        conn.execute(
-            "DELETE FROM edge_claims WHERE root = ?1 AND path = ?2 AND producer = ?3 AND producer_version = ?4",
-            (&owner.root, &owner.path, &owner.producer, &owner.producer_version),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-
-        conn.execute(
-            "DELETE FROM skips WHERE root = ?1 AND path = ?2 AND producer = ?3 AND producer_version = ?4",
-            (&owner.root, &owner.path, &owner.producer, &owner.producer_version),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-
-        conn.execute(
-            "DELETE FROM diagnostics WHERE root = ?1 AND path = ?2 AND producer = ?3 AND producer_version = ?4",
-            (&owner.root, &owner.path, &owner.producer, &owner.producer_version),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-
+        if let Some(owner_id) = self.interner.lookup_owner_id(&conn, owner)? {
+            conn.execute("DELETE FROM node_claims WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute("DELETE FROM edge_claims WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute("DELETE FROM skips WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute("DELETE FROM diagnostics WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+        }
         Ok(())
     }
 
     fn remove_by_file(&mut self, root: &str, path: &str) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "DELETE FROM node_claims WHERE root = ?1 AND path = ?2",
-            (root, path),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-        conn.execute(
-            "DELETE FROM edge_claims WHERE root = ?1 AND path = ?2",
-            (root, path),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-        conn.execute(
-            "DELETE FROM unresolved_refs WHERE root = ?1 AND path = ?2",
-            (root, path),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-        conn.execute(
-            "DELETE FROM skips WHERE root = ?1 AND path = ?2",
-            (root, path),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
-        conn.execute(
-            "DELETE FROM diagnostics WHERE root = ?1 AND path = ?2",
-            (root, path),
-        )
-        .map_err(|e| StoreError::Io(e.to_string()))?;
+        let owner_ids = self.interner.lookup_owner_ids_by_file(&conn, root, path)?;
+        for owner_id in owner_ids {
+            conn.execute("DELETE FROM node_claims WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute("DELETE FROM edge_claims WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute(
+                "DELETE FROM unresolved_refs WHERE owner_id = ?1",
+                [owner_id],
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute("DELETE FROM skips WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+            conn.execute("DELETE FROM diagnostics WHERE owner_id = ?1", [owner_id])
+                .map_err(|e| StoreError::Io(e.to_string()))?;
+        }
         conn.execute("DELETE FROM fts_nodes WHERE path = ?1", [path])
             .map_err(|e| StoreError::Io(e.to_string()))?;
         Ok(())
@@ -241,18 +240,25 @@ impl Transaction for SqliteTransaction {
     fn put_unresolved(&mut self, refs: &[UnresolvedRef]) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
         for u in refs {
-            let prov_json = serde_json::to_string(&u.provenance).unwrap_or_default();
+            let owner = FactOwner::new(
+                &u.provenance.root,
+                &u.provenance.path,
+                &u.provenance.extractor,
+                &u.provenance.extractor_version,
+            );
+            let owner_id = self.interner.get_or_insert_owner(&conn, &owner)?;
+            let prov_json =
+                compact_provenance_json(&u.provenance, &owner, u.provenance.range.as_ref());
             conn.execute(
                 "INSERT OR REPLACE INTO unresolved_refs (
-                    from_id, seeking, scope_hint, edge_kind, root, path, provenance_json
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    from_id, seeking, scope_hint, edge_kind, owner_id, provenance_json
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 (
                     u.from.as_bytes(),
                     &u.seeking,
                     &u.scope_hint,
                     u.edge_kind.as_str(),
-                    &u.provenance.root,
-                    &u.provenance.path,
+                    owner_id,
                     &prov_json,
                 ),
             )
@@ -276,16 +282,11 @@ impl Transaction for SqliteTransaction {
     fn put_skips(&mut self, skips: &[Skip]) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
         for s in skips {
+            let owner_id = self.interner.get_or_insert_owner(&conn, &s.owner)?;
             conn.execute(
-                "INSERT OR REPLACE INTO skips (root, path, reason, producer, producer_version)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
-                (
-                    &s.root,
-                    &s.path,
-                    &s.reason,
-                    &s.owner.producer,
-                    &s.owner.producer_version,
-                ),
+                "INSERT OR REPLACE INTO skips (owner_id, reason)
+                 VALUES (?1, ?2)",
+                (owner_id, &s.reason),
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
         }
@@ -295,11 +296,12 @@ impl Transaction for SqliteTransaction {
     fn put_diagnostics(&mut self, diagnostics: &[Diagnostic]) -> Result<(), StoreError> {
         let conn = self.conn.lock().unwrap();
         for d in diagnostics {
+            let owner_id = self.interner.get_or_insert_owner(&conn, &d.owner)?;
             let span_json = d.span.as_ref().map(|s| serde_json::to_string(s).unwrap());
             conn.execute(
-                "INSERT INTO diagnostics (root, path, message, span_json, producer, producer_version)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                (&d.root, &d.path, &d.message, &span_json, &d.owner.producer, &d.owner.producer_version),
+                "INSERT INTO diagnostics (owner_id, message, span_json)
+                 VALUES (?1, ?2, ?3)",
+                (owner_id, &d.message, &span_json),
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
         }

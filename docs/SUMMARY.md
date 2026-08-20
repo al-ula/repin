@@ -50,6 +50,7 @@
   - [ADR-017 — Verbatim context & blast radius](decisions/ADR-017-verbatim-context-and-blast-radius.md)
   - [ADR-018 — Graph degree centrality in ranking](decisions/ADR-018-graph-degree-centrality-rank-fusion.md)
   - [ADR-019 — SQLite WAL checkpoint & compaction](decisions/ADR-019-sqlite-wal-checkpoint-and-compaction.md)
+  - [ADR-020 — Schema string interning & JSON compression](decisions/ADR-020-schema-string-interning-and-compression.md)
 
 # Part VI: Subsystem Specifications
 

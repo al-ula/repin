@@ -46,17 +46,14 @@ In side-by-side evaluations across the `repin` codebase (77 Rust source files, 1
   * Distinguish high-centrality architectural hubs (e.g. `Engine`, `StoreError`, `DaemonClient`) from low-centrality local helpers and temporary identifiers sharing the same name.
 * **Impact:** Significantly boosts Precision@1 and Mean Reciprocal Rank (MRR) for architectural queries.
 
-### 1.3 Storage Footprint Compaction & Post-Index WAL Checkpoint
-* **Location:** [`crates/repin-store-sqlite/src/schema.rs`](file:///home/seer/Projects/repin/crates/repin-store-sqlite/src/schema.rs) and [`crates/repin-store-sqlite/src/store.rs`](file:///home/seer/Projects/repin/crates/repin-store-sqlite/src/store.rs)
+### 1.3 Storage Footprint Compaction & Post-Index WAL Checkpoint *(Implemented in ADR-019 & ADR-020)*
+* **Location:** [`crates/repin-store-sqlite/src/schema.rs`](file:///home/seer/Projects/repin/crates/repin-store-sqlite/src/schema.rs), [`crates/repin-store-sqlite/src/intern.rs`](file:///home/seer/Projects/repin/crates/repin-store-sqlite/src/intern.rs), and [`crates/repin-store-sqlite/src/store.rs`](file:///home/seer/Projects/repin/crates/repin-store-sqlite/src/store.rs)
 * **Analysis & Key Findings:**
-  * **Markdown Accounts for 62.6% of Nodes:** `repin` indexed 136 files (77 Rust + 59 Markdown docs/ADRs), producing **879 markdown nodes** and **524 rust nodes** plus full FTS5 search indexes. In contrast, `codegraph` indexed only 77 Rust files (0 markdown).
-  * **Uncheckpointed WAL:** The `.repin` directory appeared as **6.8 MB** because `repin index` left an uncheckpointed 4.44 MB `graph.sqlite3-wal` file. The actual database is only **2.68 MB**.
-  * Running `PRAGMA wal_checkpoint(TRUNCATE);` immediately drops the total disk size to **2.73 MB** (which is smaller than `codegraph`'s 3.32 MB despite indexing nearly 2x the files).
-* **Proposed Enhancement:**
-  * Auto-execute `PRAGMA wal_checkpoint(TRUNCATE);` at the end of `index` and `update` batch commits in [`crates/repin-store-sqlite/src/store.rs`](file:///home/seer/Projects/repin/crates/repin-store-sqlite/src/store.rs).
-  * Intern repeated string columns (`root`, `path`, `producer`, `producer_version`) in `node_claims` and `edge_claims` using integer foreign keys into a `paths` / `producers` table.
-  * Compress `provenance_json` and `attributes_json` or store only non-default fields.
-* **Impact:** Immediately drops on-disk index size to **<2.5 MB** even with full multi-modal Markdown + Rust + FTS5 indexing.
+  * **Markdown Accounts for 62.6% of Nodes:** `repin` indexed 141 files (77 Rust + 64 Markdown docs/ADRs), producing **879 markdown nodes** and **524 rust nodes** plus full FTS5 search indexes. In contrast, `codegraph` indexed only 77 Rust files (0 markdown).
+  * **String Pool & Fact Owners Normalization (ADR-020):** Repeated strings (`root`, `path`, `producer`, `producer_version`, `language`) are interned in `string_pool` and `fact_owners`. Primary keys are compact 40-byte binary pairs `(node_id, owner_id)`.
+  * **Payload Optimization:** Empty attribute maps (`{}`) are stored as `NULL` and standard provenance is reconstructed from `FactOwner`, eliminating hundreds of kilobytes of boilerplate JSON strings.
+  * **Post-Index WAL Checkpoint (ADR-019):** Auto-executes `PRAGMA wal_checkpoint(TRUNCATE);` at the conclusion of batch writes.
+* **Results:** Total database footprint reduced from **6.8 MB** (uncheckpointed WAL) and **2.73 MB** (checkpointed denormalized) to **1.87 MB** (1920 KB) — significantly smaller than `codegraph`'s 3.88 MB despite indexing 2x the files.
 
 ---
 

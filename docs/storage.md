@@ -365,3 +365,12 @@ and Data Handling §8](safety.md#8-state-on-disk) before the store adapter opens
 any file. A store adapter may add stricter requirements, but it may not weaken
 the engine's private-state floor or treat an unverifiable permission check as
 safe.
+
+## 10. Normalized storage & compression profile (ADR-020)
+
+To achieve maximum page density and minimal on-disk footprint, the SQLite persistence profile implements dictionary normalization and payload compression:
+
+- **String Pool & Owner Normalization**: Paths, roots, language identifiers, and extractor names are interned in a shared `string_pool` table. Fact owner 4-tuples `(root, path, producer, producer_version)` are mapped to integer surrogate keys (`owner_id`) in `fact_owners`. Primary keys on claim tables use compact binary pairs `(node_id, owner_id)`.
+- **In-Memory Interner Caching**: Write transactions buffer dictionary lookups in memory, resolving common strings and owners with zero per-row SQL lookups.
+- **Empty Attribute & Compact Payload Optimization**: Empty attribute maps (`{}`) are stored as `NULL` / 0-byte blobs, eliminating JSON serialization overhead for standard AST nodes.
+

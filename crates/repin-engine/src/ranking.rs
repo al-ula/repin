@@ -94,16 +94,16 @@ impl DeterministicRanker {
             }
 
             // Graph degree centrality signal (ADR-018)
-            if let Some(&in_deg) = in_degrees.get(&node.id) {
-                if in_deg > 0 {
-                    let centrality_bonus = ((in_deg as f64) / (max_degree as f64)).min(1.0) * 0.15;
-                    score += centrality_bonus;
-                    reasons.push(RankReason {
-                        signal: "graph_degree_centrality".to_string(),
-                        score: centrality_bonus,
-                        detail: Some(format!("in-degree {} / max {}", in_deg, max_degree)),
-                    });
-                }
+            if let Some(&in_deg) = in_degrees.get(&node.id)
+                && in_deg > 0
+            {
+                let centrality_bonus = ((in_deg as f64) / (max_degree as f64)).min(1.0) * 0.15;
+                score += centrality_bonus;
+                reasons.push(RankReason {
+                    signal: "graph_degree_centrality".to_string(),
+                    score: centrality_bonus,
+                    detail: Some(format!("in-degree {} / max {}", in_deg, max_degree)),
+                });
             }
 
             // Artifact class preference

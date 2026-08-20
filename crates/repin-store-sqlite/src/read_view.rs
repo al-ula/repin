@@ -1,7 +1,8 @@
+use repin_core::line_index::Range;
 use repin_core::model::edge::Edge;
 use repin_core::model::identity::{EdgeId, NodeId};
-use repin_core::model::node::Node;
-use repin_core::model::provenance::{Confidence, Derivation, Provenance, Revision};
+use repin_core::model::node::{Attributes, Node};
+use repin_core::model::provenance::{Confidence, Derivation, FactOwner, Provenance, Revision};
 use repin_core::model::registries::{EdgeKind, NodeKind};
 use repin_core::model::unresolved::UnresolvedRef;
 use repin_core::ports::fs::{Diagnostic, Skip};
@@ -12,6 +13,44 @@ use repin_core::ports::store::{
 use rusqlite::Connection;
 use std::sync::Arc;
 use std::sync::Mutex;
+
+fn parse_provenance(
+    prov_json: Option<&str>,
+    root: &str,
+    path: &str,
+    range: Option<Range>,
+    producer: &str,
+    producer_version: &str,
+) -> Provenance {
+    if let Some(j) = prov_json
+        && !j.trim().is_empty()
+        && let Ok(p) = serde_json::from_str::<Provenance>(j)
+    {
+        return p;
+    }
+    Provenance {
+        root: root.to_string(),
+        path: path.to_string(),
+        range,
+        extractor: producer.to_string(),
+        extractor_version: producer_version.to_string(),
+        derivation: Derivation::Extracted,
+        confidence: Confidence::EXACT,
+        revision: Revision::INITIAL,
+    }
+}
+
+fn parse_attributes(attr_json: Option<&str>) -> Attributes {
+    attr_json
+        .and_then(|j| {
+            if j.trim().is_empty() {
+                None
+            } else {
+                serde_json::from_str(j).ok()
+            }
+        })
+        .unwrap_or_default()
+}
 
 pub struct SqliteReadView {
     conn: Arc<Mutex<Connection>>,
@@ -28,8 +67,19 @@ impl ReadView for SqliteReadView {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(
-                "SELECT node_id, kind, name, qualified_name, root, path, range_json, language, artifact_class, provenance_json, attributes_json
-                 FROM node_claims WHERE node_id = ?1 LIMIT 1",
+                "SELECT
+                    nc.node_id, nc.kind, nc.name, nc.qualified_name,
+                    sp_root.value, sp_path.value, nc.range_json,
+                    sp_lang.value, nc.artifact_class, nc.provenance_json, nc.attributes_json,
+                    sp_prod.value, sp_ver.value
+                 FROM node_claims nc
+                 JOIN fact_owners fo ON nc.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 LEFT JOIN string_pool sp_lang ON nc.language_id = sp_lang.id
+                 WHERE nc.node_id = ?1 LIMIT 1",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
@@ -50,25 +100,27 @@ impl ReadView for SqliteReadView {
             let language: Option<String> = row.get(7).map_err(|e| StoreError::Io(e.to_string()))?;
             let artifact_class_str: Option<String> =
                 row.get(8).map_err(|e| StoreError::Io(e.to_string()))?;
-            let prov_json: String = row.get(9).map_err(|e| StoreError::Io(e.to_string()))?;
-            let attr_json: String = row.get(10).map_err(|e| StoreError::Io(e.to_string()))?;
+            let prov_json: Option<String> =
+                row.get(9).map_err(|e| StoreError::Io(e.to_string()))?;
+            let attr_json: Option<String> =
+                row.get(10).map_err(|e| StoreError::Io(e.to_string()))?;
+            let producer: String = row.get(11).map_err(|e| StoreError::Io(e.to_string()))?;
+            let producer_version: String =
+                row.get(12).map_err(|e| StoreError::Io(e.to_string()))?;
 
             let kind = serde_json::from_str(&format!("\"{}\"", kind_str)).unwrap_or(NodeKind::File);
-            let range = range_json.and_then(|j| serde_json::from_str(&j).ok());
+            let range: Option<Range> = range_json.and_then(|j| serde_json::from_str(&j).ok());
             let artifact_class =
                 artifact_class_str.and_then(|s| serde_json::from_str(&format!("\"{}\"", s)).ok());
-            let provenance: Provenance =
-                serde_json::from_str(&prov_json).unwrap_or_else(|_| Provenance {
-                    root: root.clone(),
-                    path: path.clone(),
-                    range: None,
-                    extractor: "unknown".to_string(),
-                    extractor_version: "0".to_string(),
-                    derivation: Derivation::Extracted,
-                    confidence: Confidence::EXACT,
-                    revision: Revision::INITIAL,
-                });
-            let attributes = serde_json::from_str(&attr_json).unwrap_or_default();
+            let provenance = parse_provenance(
+                prov_json.as_deref(),
+                &root,
+                &path,
+                range,
+                &producer,
+                &producer_version,
+            );
+            let attributes = parse_attributes(attr_json.as_deref());
 
             Ok(Some(Node {
                 id: NodeId::from_bytes(node_id_bytes),
@@ -93,8 +145,19 @@ impl ReadView for SqliteReadView {
         let pattern = format!("%{}%", name);
         let mut stmt = conn
             .prepare(
-                "SELECT node_id, kind, name, qualified_name, root, path, range_json, language, artifact_class, provenance_json, attributes_json
-                 FROM node_claims WHERE name = ?1 COLLATE NOCASE OR name LIKE ?2",
+                "SELECT
+                    nc.node_id, nc.kind, nc.name, nc.qualified_name,
+                    sp_root.value, sp_path.value, nc.range_json,
+                    sp_lang.value, nc.artifact_class, nc.provenance_json, nc.attributes_json,
+                    sp_prod.value, sp_ver.value
+                 FROM node_claims nc
+                 JOIN fact_owners fo ON nc.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 LEFT JOIN string_pool sp_lang ON nc.language_id = sp_lang.id
+                 WHERE nc.name = ?1 COLLATE NOCASE OR nc.name LIKE ?2",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
@@ -109,26 +172,25 @@ impl ReadView for SqliteReadView {
                 let range_json: Option<String> = row.get(6)?;
                 let language: Option<String> = row.get(7)?;
                 let artifact_class_str: Option<String> = row.get(8)?;
-                let prov_json: String = row.get(9)?;
-                let attr_json: String = row.get(10)?;
+                let prov_json: Option<String> = row.get(9)?;
+                let attr_json: Option<String> = row.get(10)?;
+                let producer: String = row.get(11)?;
+                let producer_version: String = row.get(12)?;
 
                 let kind =
                     serde_json::from_str(&format!("\"{}\"", kind_str)).unwrap_or(NodeKind::File);
-                let range = range_json.and_then(|j| serde_json::from_str(&j).ok());
+                let range: Option<Range> = range_json.and_then(|j| serde_json::from_str(&j).ok());
                 let artifact_class = artifact_class_str
                     .and_then(|s| serde_json::from_str(&format!("\"{}\"", s)).ok());
-                let provenance: Provenance =
-                    serde_json::from_str(&prov_json).unwrap_or_else(|_| Provenance {
-                        root: root.clone(),
-                        path: path.clone(),
-                        range: None,
-                        extractor: "unknown".to_string(),
-                        extractor_version: "0".to_string(),
-                        derivation: Derivation::Extracted,
-                        confidence: Confidence::EXACT,
-                        revision: Revision::INITIAL,
-                    });
-                let attributes = serde_json::from_str(&attr_json).unwrap_or_default();
+                let provenance = parse_provenance(
+                    prov_json.as_deref(),
+                    &root,
+                    &path,
+                    range,
+                    &producer,
+                    &producer_version,
+                );
+                let attributes = parse_attributes(attr_json.as_deref());
 
                 Ok(Node {
                     id: NodeId::from_bytes(node_id_bytes),
@@ -157,8 +219,19 @@ impl ReadView for SqliteReadView {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(
-                "SELECT node_id, kind, name, qualified_name, root, path, range_json, language, artifact_class, provenance_json, attributes_json
-                 FROM node_claims WHERE root = ?1 AND path = ?2",
+                "SELECT
+                    nc.node_id, nc.kind, nc.name, nc.qualified_name,
+                    sp_root.value, sp_path.value, nc.range_json,
+                    sp_lang.value, nc.artifact_class, nc.provenance_json, nc.attributes_json,
+                    sp_prod.value, sp_ver.value
+                 FROM node_claims nc
+                 JOIN fact_owners fo ON nc.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 LEFT JOIN string_pool sp_lang ON nc.language_id = sp_lang.id
+                 WHERE sp_root.value = ?1 AND sp_path.value = ?2",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
@@ -173,26 +246,25 @@ impl ReadView for SqliteReadView {
                 let range_json: Option<String> = row.get(6)?;
                 let language: Option<String> = row.get(7)?;
                 let artifact_class_str: Option<String> = row.get(8)?;
-                let prov_json: String = row.get(9)?;
-                let attr_json: String = row.get(10)?;
+                let prov_json: Option<String> = row.get(9)?;
+                let attr_json: Option<String> = row.get(10)?;
+                let producer: String = row.get(11)?;
+                let producer_version: String = row.get(12)?;
 
                 let kind =
                     serde_json::from_str(&format!("\"{}\"", kind_str)).unwrap_or(NodeKind::File);
-                let range = range_json.and_then(|j| serde_json::from_str(&j).ok());
+                let range: Option<Range> = range_json.and_then(|j| serde_json::from_str(&j).ok());
                 let artifact_class = artifact_class_str
                     .and_then(|s| serde_json::from_str(&format!("\"{}\"", s)).ok());
-                let provenance: Provenance =
-                    serde_json::from_str(&prov_json).unwrap_or_else(|_| Provenance {
-                        root: root.clone(),
-                        path: path.clone(),
-                        range: None,
-                        extractor: "unknown".to_string(),
-                        extractor_version: "0".to_string(),
-                        derivation: Derivation::Extracted,
-                        confidence: Confidence::EXACT,
-                        revision: Revision::INITIAL,
-                    });
-                let attributes = serde_json::from_str(&attr_json).unwrap_or_default();
+                let provenance = parse_provenance(
+                    prov_json.as_deref(),
+                    &root,
+                    &path,
+                    range,
+                    &producer,
+                    &producer_version,
+                );
+                let attributes = parse_attributes(attr_json.as_deref());
 
                 Ok(Node {
                     id: NodeId::from_bytes(node_id_bytes),
@@ -221,8 +293,17 @@ impl ReadView for SqliteReadView {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(
-                "SELECT edge_id, from_id, to_id, kind, provenance_json, attributes_json
-                 FROM edge_claims WHERE from_id = ?1",
+                "SELECT
+                    ec.edge_id, ec.from_id, ec.to_id, ec.kind,
+                    sp_root.value, sp_path.value, ec.provenance_json, ec.attributes_json,
+                    sp_prod.value, sp_ver.value
+                 FROM edge_claims ec
+                 JOIN fact_owners fo ON ec.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 WHERE ec.from_id = ?1",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
@@ -232,23 +313,24 @@ impl ReadView for SqliteReadView {
                 let from_id_bytes: [u8; 32] = row.get(1)?;
                 let to_id_bytes: [u8; 32] = row.get(2)?;
                 let kind_str: String = row.get(3)?;
-                let prov_json: String = row.get(4)?;
-                let attr_json: String = row.get(5)?;
+                let root: String = row.get(4)?;
+                let path: String = row.get(5)?;
+                let prov_json: Option<String> = row.get(6)?;
+                let attr_json: Option<String> = row.get(7)?;
+                let producer: String = row.get(8)?;
+                let producer_version: String = row.get(9)?;
 
                 let kind = serde_json::from_str(&format!("\"{}\"", kind_str))
                     .unwrap_or(EdgeKind::Contains);
-                let provenance: Provenance =
-                    serde_json::from_str(&prov_json).unwrap_or_else(|_| Provenance {
-                        root: "root".to_string(),
-                        path: "path".to_string(),
-                        range: None,
-                        extractor: "unknown".to_string(),
-                        extractor_version: "0".to_string(),
-                        derivation: Derivation::Extracted,
-                        confidence: Confidence::EXACT,
-                        revision: Revision::INITIAL,
-                    });
-                let attributes = serde_json::from_str(&attr_json).unwrap_or_default();
+                let provenance = parse_provenance(
+                    prov_json.as_deref(),
+                    &root,
+                    &path,
+                    None,
+                    &producer,
+                    &producer_version,
+                );
+                let attributes = parse_attributes(attr_json.as_deref());
 
                 Ok(Edge {
                     id: EdgeId::from_bytes(edge_id_bytes),
@@ -272,8 +354,17 @@ impl ReadView for SqliteReadView {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(
-                "SELECT edge_id, from_id, to_id, kind, provenance_json, attributes_json
-                 FROM edge_claims WHERE to_id = ?1",
+                "SELECT
+                    ec.edge_id, ec.from_id, ec.to_id, ec.kind,
+                    sp_root.value, sp_path.value, ec.provenance_json, ec.attributes_json,
+                    sp_prod.value, sp_ver.value
+                 FROM edge_claims ec
+                 JOIN fact_owners fo ON ec.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 WHERE ec.to_id = ?1",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
@@ -283,23 +374,24 @@ impl ReadView for SqliteReadView {
                 let from_id_bytes: [u8; 32] = row.get(1)?;
                 let to_id_bytes: [u8; 32] = row.get(2)?;
                 let kind_str: String = row.get(3)?;
-                let prov_json: String = row.get(4)?;
-                let attr_json: String = row.get(5)?;
+                let root: String = row.get(4)?;
+                let path: String = row.get(5)?;
+                let prov_json: Option<String> = row.get(6)?;
+                let attr_json: Option<String> = row.get(7)?;
+                let producer: String = row.get(8)?;
+                let producer_version: String = row.get(9)?;
 
                 let kind = serde_json::from_str(&format!("\"{}\"", kind_str))
                     .unwrap_or(EdgeKind::Contains);
-                let provenance: Provenance =
-                    serde_json::from_str(&prov_json).unwrap_or_else(|_| Provenance {
-                        root: "root".to_string(),
-                        path: "path".to_string(),
-                        range: None,
-                        extractor: "unknown".to_string(),
-                        extractor_version: "0".to_string(),
-                        derivation: Derivation::Extracted,
-                        confidence: Confidence::EXACT,
-                        revision: Revision::INITIAL,
-                    });
-                let attributes = serde_json::from_str(&attr_json).unwrap_or_default();
+                let provenance = parse_provenance(
+                    prov_json.as_deref(),
+                    &root,
+                    &path,
+                    None,
+                    &producer,
+                    &producer_version,
+                );
+                let attributes = parse_attributes(attr_json.as_deref());
 
                 Ok(Edge {
                     id: EdgeId::from_bytes(edge_id_bytes),
@@ -334,8 +426,17 @@ impl ReadView for SqliteReadView {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(
-                "SELECT from_id, seeking, scope_hint, edge_kind, provenance_json
-                 FROM unresolved_refs WHERE seeking = ?1",
+                "SELECT
+                    ur.from_id, ur.seeking, ur.scope_hint, ur.edge_kind,
+                    sp_root.value, sp_path.value, ur.provenance_json,
+                    sp_prod.value, sp_ver.value
+                 FROM unresolved_refs ur
+                 JOIN fact_owners fo ON ur.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 WHERE ur.seeking = ?1",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
@@ -345,21 +446,22 @@ impl ReadView for SqliteReadView {
                 let seeking: String = row.get(1)?;
                 let scope_hint: Option<String> = row.get(2)?;
                 let edge_kind_str: String = row.get(3)?;
-                let prov_json: String = row.get(4)?;
+                let root: String = row.get(4)?;
+                let path: String = row.get(5)?;
+                let prov_json: Option<String> = row.get(6)?;
+                let producer: String = row.get(7)?;
+                let producer_version: String = row.get(8)?;
 
                 let edge_kind = serde_json::from_str(&format!("\"{}\"", edge_kind_str))
                     .unwrap_or(EdgeKind::References);
-                let provenance: Provenance =
-                    serde_json::from_str(&prov_json).unwrap_or_else(|_| Provenance {
-                        root: "root".to_string(),
-                        path: "path".to_string(),
-                        range: None,
-                        extractor: "unknown".to_string(),
-                        extractor_version: "0".to_string(),
-                        derivation: Derivation::Extracted,
-                        confidence: Confidence::EXACT,
-                        revision: Revision::INITIAL,
-                    });
+                let provenance = parse_provenance(
+                    prov_json.as_deref(),
+                    &root,
+                    &path,
+                    None,
+                    &producer,
+                    &producer_version,
+                );
 
                 Ok(UnresolvedRef {
                     from: NodeId::from_bytes(from_id_bytes),
@@ -378,16 +480,94 @@ impl ReadView for SqliteReadView {
         Ok(refs)
     }
 
-    fn skips(&self, _root: Option<&str>, _path: Option<&str>) -> Result<Vec<Skip>, StoreError> {
-        Ok(Vec::new())
+    fn skips(&self, root: Option<&str>, path: Option<&str>) -> Result<Vec<Skip>, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT
+                    sp_root.value, sp_path.value, s.reason, sp_prod.value, sp_ver.value
+                 FROM skips s
+                 JOIN fact_owners fo ON s.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 WHERE (?1 IS NULL OR sp_root.value = ?1)
+                   AND (?2 IS NULL OR sp_path.value = ?2)",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+
+        let rows = stmt
+            .query_map((root, path), |row| {
+                let r: String = row.get(0)?;
+                let p: String = row.get(1)?;
+                let reason: String = row.get(2)?;
+                let prod: String = row.get(3)?;
+                let ver: String = row.get(4)?;
+
+                Ok(Skip {
+                    root: r.clone(),
+                    path: p.clone(),
+                    reason,
+                    owner: FactOwner::new(r, p, prod, ver),
+                })
+            })
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+
+        let mut skips = Vec::new();
+        for r in rows {
+            skips.push(r.map_err(|e| StoreError::Io(e.to_string()))?);
+        }
+        Ok(skips)
     }
 
     fn diagnostics(
         &self,
-        _root: Option<&str>,
-        _path: Option<&str>,
+        root: Option<&str>,
+        path: Option<&str>,
     ) -> Result<Vec<Diagnostic>, StoreError> {
-        Ok(Vec::new())
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT
+                    sp_root.value, sp_path.value, d.message, d.span_json, sp_prod.value, sp_ver.value
+                 FROM diagnostics d
+                 JOIN fact_owners fo ON d.owner_id = fo.id
+                 JOIN string_pool sp_root ON fo.root_id = sp_root.id
+                 JOIN string_pool sp_path ON fo.path_id = sp_path.id
+                 JOIN string_pool sp_prod ON fo.producer_id = sp_prod.id
+                 JOIN string_pool sp_ver ON fo.producer_version_id = sp_ver.id
+                 WHERE (?1 IS NULL OR sp_root.value = ?1)
+                   AND (?2 IS NULL OR sp_path.value = ?2)",
+            )
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+
+        let rows = stmt
+            .query_map((root, path), |row| {
+                let r: String = row.get(0)?;
+                let p: String = row.get(1)?;
+                let message: String = row.get(2)?;
+                let span_json: Option<String> = row.get(3)?;
+                let prod: String = row.get(4)?;
+                let ver: String = row.get(5)?;
+
+                let span = span_json.and_then(|j| serde_json::from_str(&j).ok());
+
+                Ok(Diagnostic {
+                    root: r.clone(),
+                    path: p.clone(),
+                    message,
+                    span,
+                    owner: FactOwner::new(r, p, prod, ver),
+                })
+            })
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+
+        let mut diags = Vec::new();
+        for r in rows {
+            diags.push(r.map_err(|e| StoreError::Io(e.to_string()))?);
+        }
+        Ok(diags)
     }
 
     fn changes_since(&self, revision: Revision) -> Result<Vec<UpdateSummary>, StoreError> {
