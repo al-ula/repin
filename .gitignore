@@ -10,3 +10,8 @@ __pycache__/
 
 # Pi plans
 .pi/plans/
+
+# Repin local graph databases
+.repin/
+*.sqlite3*
+

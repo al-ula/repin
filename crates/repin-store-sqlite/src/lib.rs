@@ -67,4 +67,51 @@ mod tests {
         assert_eq!(fts_hits.len(), 1);
         assert_eq!(fts_hits[0].node_id, id);
     }
+
+    #[test]
+    fn test_checkpoint_and_incoming_edge_count() {
+        use repin_core::model::edge::{Edge, EdgeClaim};
+        use repin_core::model::identity::EdgeId;
+        use repin_core::model::registries::EdgeKind;
+
+        let store = SqliteStore::open_in_memory().unwrap();
+        let mut tx = store.begin_write().unwrap();
+
+        let id_target = NodeId::new(NodeKind::Struct, "root", "src/lib.rs", &[], "Target", 0);
+        let id_caller = NodeId::new(NodeKind::Function, "root", "src/caller.rs", &[], "caller", 0);
+
+        let edge = Edge {
+            id: EdgeId::new(id_caller, id_target, EdgeKind::Calls, "rust_pack"),
+            from: id_caller,
+            to: id_target,
+            kind: EdgeKind::Calls,
+            provenance: Provenance {
+                root: "root".to_string(),
+                path: "src/caller.rs".to_string(),
+                range: None,
+                extractor: "rust_pack".to_string(),
+                extractor_version: "1.0".to_string(),
+                derivation: Derivation::Extracted,
+                confidence: Confidence::EXACT,
+                revision: Revision::INITIAL,
+            },
+            attributes: Default::default(),
+        };
+
+        let edge_claim = EdgeClaim {
+            edge,
+            owner: FactOwner::new("root", "src/caller.rs", "rust_pack", "1.0"),
+        };
+
+        tx.put_edges(&[edge_claim]).unwrap();
+        tx.commit().unwrap();
+
+        // Check incoming edge count
+        let view = store.read_view().unwrap();
+        assert_eq!(view.incoming_edge_count(&id_target).unwrap(), 1);
+        assert_eq!(view.incoming_edge_count(&id_caller).unwrap(), 0);
+
+        // Checkpoint execution
+        assert!(store.checkpoint().is_ok());
+    }
 }

@@ -36,6 +36,13 @@ impl SqliteStore {
         let conn = self.conn.lock().unwrap();
         Fts5Index::search(&conn, query, limit)
     }
+
+    pub fn checkpoint(&self) -> Result<(), StoreError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        Ok(())
+    }
 }
 
 impl Store for SqliteStore {
@@ -57,5 +64,9 @@ impl Store for SqliteStore {
             max_batch_size: Some(10_000),
             supports_savepoints: true,
         }
+    }
+
+    fn checkpoint(&self) -> Result<(), StoreError> {
+        self.checkpoint()
     }
 }

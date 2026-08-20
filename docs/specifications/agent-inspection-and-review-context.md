@@ -105,6 +105,13 @@ Repin establishes deterministic foundations: symbol and graph-aware search, boun
 
 The design strictly preserves the working-tree rule: inspection metadata originates from the graph, but exact source bodies and evidence are re-read directly from current working-tree bytes with full freshness and redaction enforcement.
 
+### 3.1 Verbatim source and blast-radius context packing
+
+Under ADR-017, when context fragments are assembled for coding agents:
+1. **1-Indexed Source Formatting**: Target entities with valid line ranges are extracted directly from working-tree bytes and formatted with 1-indexed line numbers (`<line>: <code_line>`), eliminating secondary agent read round-trips.
+2. **Blast-Radius Headers**: Each entity snippet contains immediate fan-in (incoming caller count) and fan-out (outgoing dependency count) metrics.
+3. **Deterministic Byte Budgeting**: The packing process strictly respects `budget_bytes`, reporting honest truncation markers when capacity is exceeded.
+
 ## 4. Identifier-aware lexical profile
 
 The symbol channel normalizes and tokenizes compound identifiers into their complete spelling and sub-components across camelCase, PascalCase, snake_case, kebab-case, dotted names, and digit boundaries.

@@ -1,13 +1,27 @@
 use clap::{Parser, Subcommand};
 use repin_cli::client::DaemonClient;
-use repin_cli::commands::inspect::execute_inspect;
+use repin_cli::commands::context::{execute_context, execute_review_context};
+use repin_cli::commands::daemon::{
+    execute_daemon_restart, execute_daemon_run, execute_daemon_status, execute_daemon_stop,
+};
+use repin_cli::commands::eval::execute_eval;
+use repin_cli::commands::graph::{execute_entity, execute_neighbors};
+use repin_cli::commands::index::{execute_index, execute_init};
+use repin_cli::commands::inspect::{execute_at_position, execute_inspect};
+use repin_cli::commands::rerank::execute_rerank;
 use repin_cli::commands::search::execute_search;
 use repin_cli::commands::status::execute_status;
+use repin_cli::commands::update::execute_update;
+use repin_cli::commands::watch::execute_watch;
 use repin_cli::discovery::discover_project_from;
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "repin", version, about = "Repository intelligence engine")]
+#[command(
+    name = "repin",
+    version,
+    about = "Repin — Fast, deterministic repository intelligence engine"
+)]
 struct Cli {
     #[arg(
         short,
@@ -22,23 +36,148 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(about = "Search the repository using direct pattern/regex match")]
+    #[command(about = "Initialize .repin metadata in repository root")]
+    Init,
+
+    #[command(about = "Index all repository files deterministically")]
+    Index,
+
+    #[command(about = "Incrementally update graph from VCS worktree changes")]
+    Update,
+
+    #[command(
+        about = "Search the repository using text, regex, graph symbols, or deterministic hybrid fusion"
+    )]
     Search {
         pattern: String,
-        #[arg(short, long, help = "Treat pattern as regular expression")]
+        #[arg(short, long, help = "Direct regular expression worktree search")]
         regex: bool,
+        #[arg(short, long, help = "Symbol graph index search")]
+        graph: bool,
+        #[arg(long, help = "Hybrid multi-channel search (FTS + Symbol graph)")]
+        hybrid: bool,
         #[arg(short, long, default_value = "50", help = "Maximum matches to return")]
         limit: usize,
     },
-    #[command(about = "Inspect a file's structural outline and declarations")]
+
+    #[command(about = "Rerank candidate symbols using an agent shell callback command")]
+    Rerank {
+        #[arg(help = "User query or search intent")]
+        query: String,
+        #[arg(
+            long = "agent-cmd",
+            short = 'c',
+            help = "Shell callback command to invoke for AI reranking (e.g. 'agy -p \"$(cat)\"' or './my-reranker.sh')"
+        )]
+        agent_cmd: String,
+        #[arg(
+            help = "Optional candidate symbol names or entity IDs. If omitted, top candidates are automatically retrieved from search"
+        )]
+        candidates: Vec<String>,
+    },
+
+    #[command(about = "Inspect a file's structural AST outline and declared symbols")]
     Inspect { path: String },
-    #[command(about = "Display daemon connection and graph index status")]
+
+    #[command(about = "Resolve AST symbol definition at a specific file coordinate")]
+    AtPosition {
+        path: String,
+        line: u32,
+        column: u32,
+    },
+
+    #[command(about = "Lookup detailed metadata for an entity by name or node ID")]
+    Entity { name_or_id: String },
+
+    #[command(about = "Display graph relationship neighbors (callers, callees, definitions)")]
+    Neighbors {
+        name_or_id: String,
+        #[arg(short, long, default_value = "1", help = "Maximum traversal depth")]
+        max_depth: usize,
+    },
+
+    #[command(about = "Construct budgeted context packed for LLM consumption")]
+    Context {
+        query: String,
+        #[arg(
+            short,
+            long,
+            default_value = "65536",
+            help = "Maximum context budget in bytes"
+        )]
+        budget: usize,
+    },
+
+    #[command(about = "Construct review context focused on changed files and impact (ADR-016)")]
+    ReviewContext {
+        #[arg(long, help = "Base revision number to compute changes since")]
+        since: Option<u64>,
+        #[arg(
+            short,
+            long,
+            default_value = "65536",
+            help = "Maximum review budget in bytes"
+        )]
+        budget: usize,
+    },
+
+    #[command(about = "Continuously watch repository worktree for changes")]
+    Watch {
+        #[arg(
+            short,
+            long,
+            default_value = "1000",
+            help = "Polling interval in milliseconds"
+        )]
+        interval: u64,
+    },
+
+    #[command(about = "Run Precision-at-N retrieval evaluation suite")]
+    Eval,
+
+    #[command(about = "Display daemon connection, graph revision, and index status")]
     Status,
-    #[command(about = "Run local daemon server in foreground")]
+
+    #[command(about = "Manage background daemon server (run, stop/kill, restart, status)")]
     Daemon {
+        #[command(subcommand)]
+        action: Option<DaemonAction>,
+
+        #[arg(long, help = "Custom runtime directory")]
+        runtime_dir: Option<PathBuf>,
+
+        #[arg(long, help = "Stop/kill running daemon")]
+        stop: bool,
+
+        #[arg(long, help = "Restart running daemon")]
+        restart: bool,
+    },
+
+    #[command(about = "Stop/kill running background daemon")]
+    Stop {
         #[arg(long, help = "Custom runtime directory")]
         runtime_dir: Option<PathBuf>,
     },
+
+    #[command(about = "Restart running background daemon")]
+    Restart {
+        #[arg(long, help = "Custom runtime directory")]
+        runtime_dir: Option<PathBuf>,
+    },
+}
+
+#[derive(Subcommand, Debug, Clone)]
+enum DaemonAction {
+    #[command(about = "Run daemon server in foreground")]
+    Run,
+    #[command(about = "Stop/kill running background daemon")]
+    Stop,
+    #[command(about = "Alias for stop")]
+    Kill,
+    #[command(about = "Restart running background daemon")]
+    Restart,
+    #[command(about = "Check daemon process and socket status")]
+    Status,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -46,20 +185,66 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cli = Cli::parse();
 
-    if let Commands::Daemon { runtime_dir } = cli.command {
-        let rt_dir = runtime_dir.unwrap_or_else(DaemonClient::default_runtime_dir);
-        println!("Starting Repin daemon in {}", rt_dir.display());
-        let server = repin_daemon::DaemonServer::bind(rt_dir)
-            .map_err(|e| format!("Failed to bind daemon: {e}"))?;
-        server
-            .run_loop()
-            .map_err(|e| format!("Daemon error: {e}"))?;
-        return Ok(());
-    }
-
     let start_path = cli
         .project
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+
+    // Daemon lifecycle commands
+    match cli.command {
+        Commands::Stop { runtime_dir } => {
+            return execute_daemon_stop(runtime_dir.as_deref())
+                .map_err(|e| format!("Stop error: {e}").into());
+        }
+        Commands::Restart { runtime_dir } => {
+            let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
+                let default_repin = start_path.join(".repin");
+                let default_db = default_repin.join("graph.sqlite3");
+                repin_cli::discovery::DiscoveredProject {
+                    root_dir: start_path.clone(),
+                    db_path: default_db,
+                }
+            });
+            return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
+                .map_err(|e| format!("Restart error: {e}").into());
+        }
+        Commands::Daemon {
+            action,
+            runtime_dir,
+            stop,
+            restart,
+        } => {
+            if stop || matches!(action, Some(DaemonAction::Stop | DaemonAction::Kill)) {
+                return execute_daemon_stop(runtime_dir.as_deref())
+                    .map_err(|e| format!("Stop error: {e}").into());
+            }
+            if restart || matches!(action, Some(DaemonAction::Restart)) {
+                let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
+                    let default_repin = start_path.join(".repin");
+                    let default_db = default_repin.join("graph.sqlite3");
+                    repin_cli::discovery::DiscoveredProject {
+                        root_dir: start_path.clone(),
+                        db_path: default_db,
+                    }
+                });
+                return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
+                    .map_err(|e| format!("Restart error: {e}").into());
+            }
+            if matches!(action, Some(DaemonAction::Status)) {
+                return execute_daemon_status(runtime_dir.as_deref())
+                    .map_err(|e| format!("Status error: {e}").into());
+            }
+
+            return execute_daemon_run(runtime_dir)
+                .map_err(|e| format!("Daemon error: {e}").into());
+        }
+        _ => {}
+    }
+
+    if let Commands::Init = cli.command {
+        execute_init(&start_path)?;
+        return Ok(());
+    }
+
     let discovered = discover_project_from(&start_path).unwrap_or_else(|| {
         let default_repin = start_path.join(".repin");
         let default_db = default_repin.join("graph.sqlite3");
@@ -73,18 +258,56 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
+        Commands::Init => unreachable!(),
+        Commands::Daemon { .. } | Commands::Stop { .. } | Commands::Restart { .. } => {
+            unreachable!()
+        }
+        Commands::Index => {
+            execute_index(&mut client).map_err(|e| format!("Index error: {e}").into())
+        }
+        Commands::Update => {
+            execute_update(&mut client).map_err(|e| format!("Update error: {e}").into())
+        }
         Commands::Search {
             pattern,
             regex,
+            graph,
+            hybrid,
             limit,
-        } => execute_search(&mut client, &pattern, regex, limit)
+        } => execute_search(&mut client, &pattern, regex, graph, hybrid, limit)
             .map_err(|e| format!("Search error: {e}").into()),
+        Commands::Rerank {
+            query,
+            candidates,
+            agent_cmd,
+        } => execute_rerank(&mut client, &query, candidates, &agent_cmd)
+            .map_err(|e| format!("Rerank error: {e}").into()),
         Commands::Inspect { path } => {
             execute_inspect(&mut client, &path).map_err(|e| format!("Inspect error: {e}").into())
         }
+        Commands::AtPosition { path, line, column } => {
+            execute_at_position(&mut client, &path, line, column)
+                .map_err(|e| format!("AtPosition error: {e}").into())
+        }
+        Commands::Entity { name_or_id } => execute_entity(&mut client, &name_or_id)
+            .map_err(|e| format!("Entity error: {e}").into()),
+        Commands::Neighbors {
+            name_or_id,
+            max_depth,
+        } => execute_neighbors(&mut client, &name_or_id, max_depth)
+            .map_err(|e| format!("Neighbors error: {e}").into()),
+        Commands::Context { query, budget } => execute_context(&mut client, &query, budget)
+            .map_err(|e| format!("Context error: {e}").into()),
+        Commands::ReviewContext { since, budget } => {
+            execute_review_context(&mut client, since, budget)
+                .map_err(|e| format!("ReviewContext error: {e}").into())
+        }
+        Commands::Watch { interval } => {
+            execute_watch(&mut client, interval).map_err(|e| format!("Watch error: {e}").into())
+        }
+        Commands::Eval => execute_eval(&mut client).map_err(|e| format!("Eval error: {e}").into()),
         Commands::Status => {
             execute_status(&mut client).map_err(|e| format!("Status error: {e}").into())
         }
-        Commands::Daemon { .. } => unreachable!(),
     }
 }

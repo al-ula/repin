@@ -1,20 +1,25 @@
+use crate::agent::AgentReranker;
 use crate::context::{AssembledContext, ContextBuilder};
+use crate::eval::{BenchmarkHarness, EvalReport};
 use crate::inspect::{FileOutline, Inspector};
 use crate::invalidation::InvalidationCoordinator;
 use crate::ranking::{DeterministicRanker, RankedCandidate};
+use crate::traversal::{GraphTraversal, NeighborsData};
 use repin_core::line_index::Position;
 use repin_core::model::node::Node;
 use repin_core::model::provenance::Revision;
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 use repin_core::ports::store::{Store, StoreError, UpdateSummary};
+use repin_core::ports::vcs::Vcs;
 use repin_direct_search::{DirectRegex, DirectScanner};
-use repin_fs::CapabilityFs;
+use repin_fs::{CapabilityFs, GitVcs};
 use repin_packs::default_packs;
 use repin_protocol::envelope::{ResultEnvelope, SourceKind};
 use repin_protocol::evidence::Evidence;
 use repin_protocol::freshness::{CoverageState, Freshness, GraphState, LexicalState};
 use repin_store_sqlite::SqliteStore;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -164,7 +169,19 @@ impl Engine {
             }
         }
 
-        let mut ranked = DeterministicRanker::rank(query, candidate_nodes);
+        let mut in_degrees = HashMap::new();
+        for node in &candidate_nodes {
+            if let Ok(count) = view.incoming_edge_count(&node.id) {
+                in_degrees.insert(node.id, count);
+            }
+        }
+
+        let mut ranked = DeterministicRanker::rank_fusion(
+            query,
+            candidate_nodes,
+            &HashMap::new(),
+            &in_degrees,
+        );
         ranked.truncate(max_results);
 
         let mut env = ResultEnvelope::ok(ranked);
@@ -248,7 +265,12 @@ impl Engine {
         let sample_nodes = view
             .nodes_by_name("main", &Default::default())
             .unwrap_or_default();
-        let assembled = ContextBuilder::assemble_neighborhood(&*view, &sample_nodes, budget_bytes);
+        let assembled = ContextBuilder::assemble_neighborhood_with_fs(
+            &*view,
+            Some(&self.fs),
+            &sample_nodes,
+            budget_bytes,
+        );
 
         let mut env = ResultEnvelope::ok(assembled);
         env.provenance.sources.push(SourceKind::Graph);
@@ -262,6 +284,261 @@ impl Engine {
         InvalidationCoordinator::apply_snapshot_update(store, &self.packs, snapshot)
     }
 
+    pub fn search_hybrid(
+        &self,
+        query: &str,
+        max_results: usize,
+    ) -> ResultEnvelope<Vec<RankedCandidate>> {
+        let Some(ref store) = self.store else {
+            let mut env = ResultEnvelope::not_found(Vec::new());
+            env.status = repin_protocol::envelope::Status::Unavailable;
+            env.warnings.push(repin_protocol::envelope::Warning {
+                code: repin_protocol::errors::ErrorCode::CapabilityUnavailable,
+                message: "graph store not configured or available".to_string(),
+                detail: None,
+            });
+            return env;
+        };
+
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(Vec::new());
+        };
+
+        let mut candidate_map = HashMap::new();
+        let mut fts_scores = HashMap::new();
+
+        // 1. FTS5 Lexical channel
+        if let Ok(fts_hits) = store.search_fts(query, max_results * 3) {
+            for hit in fts_hits {
+                if let Ok(Some(node)) = view.node(&hit.node_id) {
+                    fts_scores.insert(node.id, hit.rank);
+                    candidate_map.insert(node.id, node);
+                }
+            }
+        }
+
+        // 2. Direct symbol name query channel
+        if let Ok(named_nodes) = view.nodes_by_name(query, &Default::default()) {
+            for node in named_nodes {
+                candidate_map.insert(node.id, node);
+            }
+        }
+        for token in query.split_whitespace() {
+            if token.len() >= 3
+                && let Ok(named_nodes) = view.nodes_by_name(token, &Default::default())
+            {
+                for node in named_nodes {
+                    candidate_map.insert(node.id, node);
+                }
+            }
+        }
+
+        let candidates: Vec<Node> = candidate_map.into_values().collect();
+        let mut in_degrees = HashMap::new();
+        for node in &candidates {
+            if let Ok(count) = view.incoming_edge_count(&node.id) {
+                in_degrees.insert(node.id, count);
+            }
+        }
+
+        let mut ranked =
+            DeterministicRanker::rank_fusion(query, candidates, &fts_scores, &in_degrees);
+
+        ranked.truncate(max_results);
+
+        let mut env = ResultEnvelope::ok(ranked);
+        env.provenance.sources.push(SourceKind::Graph);
+        env.freshness = Freshness {
+            observed_at: None,
+            graph_revision: view.revision().ok(),
+            graph_state: GraphState::Current,
+            lexical_revision: view.revision().ok(),
+            lexical_state: LexicalState::Current,
+            coverage: CoverageState::Complete,
+        };
+        env
+    }
+
+    pub fn rerank_candidates(
+        &self,
+        query: &str,
+        candidates: &[String],
+        agent_cmd: &str,
+    ) -> ResultEnvelope<Vec<RankedCandidate>> {
+        let Some(ref store) = self.store else {
+            let mut env = ResultEnvelope::not_found(Vec::new());
+            env.status = repin_protocol::envelope::Status::Unavailable;
+            return env;
+        };
+
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(Vec::new());
+        };
+
+        let ranked = if candidates.is_empty() {
+            // Auto-retrieve top candidates using deterministic multi-channel search
+            let hybrid_env = self.search_hybrid(query, 20);
+            hybrid_env.data
+        } else {
+            let mut nodes = Vec::new();
+            for item in candidates {
+                if let Some(node) = GraphTraversal::lookup_entity(&*view, item) {
+                    nodes.push(node);
+                }
+            }
+            DeterministicRanker::rank(query, nodes)
+        };
+
+        if ranked.is_empty() {
+            let mut env = ResultEnvelope::ok(Vec::new());
+            env.provenance.sources.push(SourceKind::Graph);
+            return env;
+        }
+
+        let final_ranked =
+            match AgentReranker::rerank_with_shell_callback(query, ranked.clone(), agent_cmd) {
+                Ok(reordered) => reordered,
+                Err(err_msg) => {
+                    let mut env = ResultEnvelope::ok(ranked);
+                    env.provenance.sources.push(SourceKind::Graph);
+                    env.warnings.push(repin_protocol::envelope::Warning {
+                        code: repin_protocol::errors::ErrorCode::CapabilityUnavailable,
+                        message: format!("Agent reranker callback failed: {err_msg}"),
+                        detail: None,
+                    });
+                    return env;
+                }
+            };
+
+        let mut env = ResultEnvelope::ok(final_ranked);
+        env.provenance.sources.push(SourceKind::Graph);
+        env
+    }
+
+    pub fn lookup_entity(&self, name_or_id: &str) -> ResultEnvelope<Option<Node>> {
+        let Some(ref store) = self.store else {
+            let mut env = ResultEnvelope::not_found(None);
+            env.status = repin_protocol::envelope::Status::Unavailable;
+            return env;
+        };
+
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(None);
+        };
+
+        let node = GraphTraversal::lookup_entity(&*view, name_or_id);
+        let mut env = ResultEnvelope::ok(node);
+        env.provenance.sources.push(SourceKind::Graph);
+        env
+    }
+
+    pub fn lookup_neighbors(
+        &self,
+        name_or_id: &str,
+        max_depth: usize,
+    ) -> ResultEnvelope<Option<NeighborsData>> {
+        let Some(ref store) = self.store else {
+            let mut env = ResultEnvelope::not_found(None);
+            env.status = repin_protocol::envelope::Status::Unavailable;
+            return env;
+        };
+
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(None);
+        };
+
+        let data = GraphTraversal::lookup_neighbors(&*view, name_or_id, max_depth);
+        let mut env = ResultEnvelope::ok(data);
+        env.provenance.sources.push(SourceKind::Graph);
+        env
+    }
+
+    pub fn assemble_context(
+        &self,
+        query: &str,
+        budget_bytes: usize,
+    ) -> ResultEnvelope<AssembledContext> {
+        let Some(ref store) = self.store else {
+            let mut env = ResultEnvelope::not_found(AssembledContext {
+                snippets: Vec::new(),
+                total_bytes: 0,
+                truncated: false,
+            });
+            env.status = repin_protocol::envelope::Status::Unavailable;
+            return env;
+        };
+
+        let Ok(view) = store.read_view() else {
+            return ResultEnvelope::not_found(AssembledContext {
+                snippets: Vec::new(),
+                total_bytes: 0,
+                truncated: false,
+            });
+        };
+
+        let search_res = self.search_graph(query, 5);
+        let primary_nodes: Vec<Node> = search_res.data.into_iter().map(|rc| rc.node).collect();
+        let assembled = ContextBuilder::assemble_neighborhood_with_fs(
+            &*view,
+            Some(&self.fs),
+            &primary_nodes,
+            budget_bytes,
+        );
+
+        let mut env = ResultEnvelope::ok(assembled);
+        env.provenance.sources.push(SourceKind::Graph);
+        env
+    }
+
+    pub fn sync_vcs(&self) -> Result<UpdateSummary, String> {
+        let git = GitVcs::new();
+        let root_str = self.options.root_path.to_string_lossy();
+        let change_set = git
+            .status(&root_str)
+            .map_err(|e| format!("git status failed: {e}"))?;
+
+        let mut total_summary = UpdateSummary {
+            revision: Revision::INITIAL,
+            files_added: 0,
+            files_modified: 0,
+            files_deleted: 0,
+            nodes_added: 0,
+            nodes_removed: 0,
+            edges_added: 0,
+            edges_removed: 0,
+            unresolved_promoted: 0,
+            unresolved_demoted: 0,
+        };
+
+        let mut changed_files = change_set.modified_files;
+        changed_files.extend(change_set.added_files);
+
+        for path_str in &changed_files {
+            if let Ok(snapshot) = self.fs.read_snapshot(path_str.as_str())
+                && let Ok(summary) = self.update_snapshot(&snapshot)
+            {
+                total_summary.files_modified += 1;
+                total_summary.nodes_added += summary.nodes_added;
+                total_summary.edges_added += summary.edges_added;
+                total_summary.unresolved_promoted += summary.unresolved_promoted;
+                total_summary.revision = summary.revision;
+            }
+        }
+
+        if let Some(ref store) = self.store {
+            let _ = store.checkpoint();
+        }
+
+        Ok(total_summary)
+    }
+
+    pub fn evaluate_precision(&self) -> ResultEnvelope<EvalReport> {
+        let report = BenchmarkHarness::evaluate_engine(self);
+        let mut env = ResultEnvelope::ok(report);
+        env.provenance.sources.push(SourceKind::Graph);
+        env
+    }
+
     pub fn index_all_worktree(&self) -> Result<usize, String> {
         let mut count = 0;
         self.fs
@@ -272,6 +549,11 @@ impl Engine {
                 Ok(())
             })
             .map_err(|e| format!("indexing error: {e}"))?;
+
+        if let Some(ref store) = self.store {
+            let _ = store.checkpoint();
+        }
+
         Ok(count)
     }
 }

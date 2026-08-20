@@ -33,7 +33,7 @@ All operations follow Repin's core invariants:
   and token budgets, use stable sort keys, and report truncation honestly.
 
 The detailed contract and acceptance criteria are recorded in the
-[agent inspection proposal](../proposals/agent-inspection-and-review-context.md).
+[agent inspection specification](../specifications/agent-inspection-and-review-context.md).
 
 ## Rationale
 

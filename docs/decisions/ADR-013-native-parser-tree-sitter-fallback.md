@@ -22,7 +22,7 @@ versions participate in extraction invalidation.
 Concrete packages for Rust, TypeScript/JavaScript, and Markdown are selected
 when those language packs are implemented. They do not block plan
 finalization. The complete fallback and versioning rules are recorded in the
-[parser proposal](../proposals/native-parsers-tree-sitter-fallback.md).
+[parser specification](../specifications/native-parsers-tree-sitter-fallback.md).
 
 ## Rationale
 

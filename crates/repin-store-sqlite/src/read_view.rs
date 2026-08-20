@@ -90,15 +90,16 @@ impl ReadView for SqliteReadView {
 
     fn nodes_by_name(&self, name: &str, _filters: &NodeFilters) -> Result<Vec<Node>, StoreError> {
         let conn = self.conn.lock().unwrap();
+        let pattern = format!("%{}%", name);
         let mut stmt = conn
             .prepare(
                 "SELECT node_id, kind, name, qualified_name, root, path, range_json, language, artifact_class, provenance_json, attributes_json
-                 FROM node_claims WHERE name = ?1",
+                 FROM node_claims WHERE name = ?1 COLLATE NOCASE OR name LIKE ?2",
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
         let rows = stmt
-            .query_map([name], |row| {
+            .query_map((name, &pattern), |row| {
                 let node_id_bytes: [u8; 32] = row.get(0)?;
                 let kind_str: String = row.get(1)?;
                 let name: String = row.get(2)?;
@@ -318,6 +319,17 @@ impl ReadView for SqliteReadView {
         Ok(edges)
     }
 
+    fn incoming_edge_count(&self, id: &NodeId) -> Result<usize, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT COUNT(*) FROM edge_claims WHERE to_id = ?1")
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let count: i64 = stmt
+            .query_row([id.as_bytes()], |row| row.get(0))
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        Ok(count as usize)
+    }
+
     fn unresolved_seeking(&self, name: &str) -> Result<Vec<UnresolvedRef>, StoreError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
@@ -473,5 +485,27 @@ impl ReadView for SqliteReadView {
         } else {
             Ok(Revision::INITIAL)
         }
+    }
+
+    fn node_count(&self) -> Result<usize, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT COUNT(DISTINCT node_id) FROM node_claims")
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let count: i64 = stmt
+            .query_row([], |r| r.get(0))
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        Ok(count.max(0) as usize)
+    }
+
+    fn edge_count(&self) -> Result<usize, StoreError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT COUNT(DISTINCT edge_id) FROM edge_claims")
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let count: i64 = stmt
+            .query_row([], |r| r.get(0))
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        Ok(count.max(0) as usize)
     }
 }

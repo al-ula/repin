@@ -1,6 +1,6 @@
 # Decisions
 
-This directory records the 16 accepted Architectural Decision Records (ADRs) establishing the architecture, contracts, and implementation profile for Repin.
+This directory records the 19 accepted Architectural Decision Records (ADRs) establishing the architecture, contracts, and implementation profile for Repin.
 
 Research has concluded and all decisions are finalized and accepted. These ADRs bridge architectural requirements and production implementation.
 
@@ -24,6 +24,9 @@ Research has concluded and all decisions are finalized and accepted. These ADRs 
 | [ADR-014](ADR-014-sparse-checkpoint-line-index.md) | Use a sparse-checkpoint line index | accepted implementation choice | proposal review & range evidence |
 | [ADR-015](ADR-015-hybrid-per-user-daemon-runtime.md) | Use a per-user daemon with an in-process engine surface | accepted implementation architecture | runtime contract review & topology analysis |
 | [ADR-016](ADR-016-agent-inspection-and-review-context.md) | Adopt agent inspection and change-review context profile | accepted contract and capability decision | proposal review & navigation analysis |
+| [ADR-017](ADR-017-verbatim-context-and-blast-radius.md) | Verbatim source context packing and blast-radius summaries | accepted contract and capability decision | empirical benchmark & agent UX analysis |
+| [ADR-018](ADR-018-graph-degree-centrality-rank-fusion.md) | Graph degree centrality in deterministic rank fusion | accepted contract and capability decision | empirical benchmark & ranking quality analysis |
+| [ADR-019](ADR-019-sqlite-wal-checkpoint-and-compaction.md) | SQLite post-batch WAL checkpointing and storage compaction | accepted contract and capability decision | storage footprint audit & benchmark analysis |
 
 ## Implementation Validation Scope
 

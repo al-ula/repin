@@ -47,12 +47,18 @@
   - [ADR-014 — Sparse-checkpoint line index](decisions/ADR-014-sparse-checkpoint-line-index.md)
   - [ADR-015 — Per-user daemon with in-process engine](decisions/ADR-015-hybrid-per-user-daemon-runtime.md)
   - [ADR-016 — Agent inspection and review context](decisions/ADR-016-agent-inspection-and-review-context.md)
+  - [ADR-017 — Verbatim context & blast radius](decisions/ADR-017-verbatim-context-and-blast-radius.md)
+  - [ADR-018 — Graph degree centrality in ranking](decisions/ADR-018-graph-degree-centrality-rank-fusion.md)
+  - [ADR-019 — SQLite WAL checkpoint & compaction](decisions/ADR-019-sqlite-wal-checkpoint-and-compaction.md)
 
-# Part VI: Technical Annexes & Concluded Research
+# Part VI: Subsystem Specifications
 
-- [Specification — Sparse-checkpoint line index](proposals/sparse-line-index.md)
-- [Specification — Language-native parsers with Tree-sitter fallback](proposals/native-parsers-tree-sitter-fallback.md)
-- [Specification — Exact Rust vector search baseline](proposals/vector-search-rust-friendly.md)
-- [Specification — Agent inspection and review context](proposals/agent-inspection-and-review-context.md)
+- [Specification — Sparse-checkpoint line index](specifications/sparse-line-index.md)
+- [Specification — Language-native parsers with Tree-sitter fallback](specifications/native-parsers-tree-sitter-fallback.md)
+- [Specification — Exact Rust vector search baseline](specifications/vector-search-rust-friendly.md)
+- [Specification — Agent inspection and review context](specifications/agent-inspection-and-review-context.md)
+
+# Part VII: Concluded Research & Trade Studies
+
 - [Research Record — redb + Tantivy versus SQLite + FTS5](research/redb-tantivy-vs-sqlite.md)
 - [Research Record — libSQL embedded-local](research/libsql-embedded-local.md)

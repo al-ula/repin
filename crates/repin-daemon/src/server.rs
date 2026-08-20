@@ -48,6 +48,9 @@ impl DaemonServer {
     pub fn run_loop(&self) -> Result<(), String> {
         let listener = UnixListener::bind(&self.socket_path)
             .map_err(|e| format!("failed to bind unix socket: {e}"))?;
+        listener
+            .set_nonblocking(true)
+            .map_err(|e| format!("failed to set non-blocking: {e}"))?;
 
         while self.running.load(Ordering::SeqCst) {
             match listener.accept() {
@@ -57,6 +60,9 @@ impl DaemonServer {
                     thread::spawn(move || {
                         let _ = Self::handle_connection(stream, registry, running);
                     });
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    thread::sleep(std::time::Duration::from_millis(50));
                 }
                 Err(e) => {
                     if !self.running.load(Ordering::SeqCst) {
@@ -167,8 +173,8 @@ impl DaemonServer {
                         (
                             view.revision()
                                 .unwrap_or(repin_core::model::provenance::Revision::INITIAL),
-                            0,
-                            0,
+                            view.node_count().unwrap_or(0),
+                            view.edge_count().unwrap_or(0),
                         )
                     } else {
                         (repin_core::model::provenance::Revision::INITIAL, 0, 0)
@@ -183,6 +189,23 @@ impl DaemonServer {
                     edge_count,
                 }
             }
+            IpcRequest::IndexAll => match engine.index_all_worktree() {
+                Ok(count) => {
+                    let rev = engine
+                        .store()
+                        .and_then(|s| s.read_view().ok())
+                        .and_then(|v| v.revision().ok())
+                        .unwrap_or(repin_core::model::provenance::Revision::INITIAL);
+                    IpcResponse::IndexAllOk {
+                        files_indexed: count,
+                        revision: rev,
+                    }
+                }
+                Err(e) => IpcResponse::Error {
+                    code: ErrorCode::InternalError,
+                    message: e,
+                },
+            },
             IpcRequest::SearchDirect {
                 pattern,
                 is_regex,
@@ -191,6 +214,20 @@ impl DaemonServer {
             } => {
                 let limit = max_results.unwrap_or(50);
                 let env = engine.search_direct(&pattern, is_regex, limit);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::SearchResult(deserialized)
+            }
+            IpcRequest::SearchGraph { query, max_results } => {
+                let limit = max_results.unwrap_or(50);
+                let env = engine.search_graph(&query, limit);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::SearchResult(deserialized)
+            }
+            IpcRequest::SearchHybrid { query, max_results } => {
+                let limit = max_results.unwrap_or(50);
+                let env = engine.search_hybrid(&query, limit);
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::SearchResult(deserialized)
@@ -208,6 +245,33 @@ impl DaemonServer {
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::PositionResult(deserialized)
             }
+            IpcRequest::Entity { name_or_id } => {
+                let env = engine.lookup_entity(&name_or_id);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::EntityResult(deserialized)
+            }
+            IpcRequest::Neighbors {
+                name_or_id,
+                max_depth,
+            } => {
+                let depth = max_depth.unwrap_or(1);
+                let env = engine.lookup_neighbors(&name_or_id, depth);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::NeighborsResult(deserialized)
+            }
+            IpcRequest::Context {
+                query,
+                budget_bytes,
+            } => {
+                let budget =
+                    budget_bytes.unwrap_or(repin_engine::ContextBuilder::DEFAULT_BYTE_BUDGET);
+                let env = engine.assemble_context(&query, budget);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::ContextResult(deserialized)
+            }
             IpcRequest::ReviewContext {
                 changed_since,
                 budget_bytes,
@@ -218,6 +282,31 @@ impl DaemonServer {
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::ReviewResult(deserialized)
+            }
+            IpcRequest::SyncVcs => match engine.sync_vcs() {
+                Ok(summary) => IpcResponse::UpdateOk {
+                    revision: summary.revision,
+                },
+                Err(e) => IpcResponse::Error {
+                    code: ErrorCode::InternalError,
+                    message: e,
+                },
+            },
+            IpcRequest::Eval => {
+                let env = engine.evaluate_precision();
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::EvalResult(deserialized)
+            }
+            IpcRequest::Rerank {
+                query,
+                candidates,
+                agent_cmd,
+            } => {
+                let env = engine.rerank_candidates(&query, &candidates, &agent_cmd);
+                let val = serde_json::to_value(&env).unwrap_or_default();
+                let deserialized = serde_json::from_value(val).unwrap();
+                IpcResponse::RerankResult(deserialized)
             }
             IpcRequest::UpdateFiles { changes: _ } => {
                 let _ = engine.index_all_worktree();

@@ -106,4 +106,48 @@ impl Vcs for GitVcs {
             deleted_files,
         })
     }
+
+    fn status(&self, root_path: &str) -> Result<VcsChangeSet, VcsError> {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root_path)
+            .arg("status")
+            .arg("--porcelain")
+            .output()
+            .map_err(|e| VcsError::CommandFailed(e.to_string()))?;
+
+        if !output.status.success() {
+            return Err(VcsError::CommandFailed("git status failed".to_string()));
+        }
+
+        let mut modified_files = Vec::new();
+        let mut added_files = Vec::new();
+        let mut deleted_files = Vec::new();
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            if line.len() >= 4 {
+                let status_code = &line[..2];
+                let file = line[3..].trim().to_string();
+                if status_code.contains('M') {
+                    modified_files.push(file);
+                } else if status_code.contains('?') || status_code.contains('A') {
+                    added_files.push(file);
+                } else if status_code.contains('D') {
+                    deleted_files.push(file);
+                }
+            }
+        }
+
+        let head = self
+            .head_revision(root_path)
+            .unwrap_or_else(|_| "HEAD".to_string());
+
+        Ok(VcsChangeSet {
+            base_revision: head,
+            modified_files,
+            added_files,
+            deleted_files,
+        })
+    }
 }

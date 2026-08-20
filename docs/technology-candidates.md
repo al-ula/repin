@@ -92,6 +92,23 @@ The daemon acts as the composition root for normal operation. Its private runtim
 
 The in-process engine surface (`open(EngineOptions) -> Engine`) is retained for unit/integration tests, daemon internal composition, and standalone embedding.
 
+### Workspace Crate Architecture
+
+The Rust implementation is partitioned into 10 decoupled crates:
+
+| Crate | Layer | Purpose |
+|---|---|---|
+| `repin-core` | L0/L1 | Canonical domain models (`Node`, `Edge`, `Identity`, `Position`), `LineIndex`, content hashing, and abstract port traits |
+| `repin-protocol` | L3/L5 | Public result envelope, error taxonomy, provenance, and IPC request/response serialization |
+| `repin-fs` | L0 | `cap-std` root-confined filesystem adapter, secret exclusion filters, and bounded Git subprocess VCS adapter |
+| `repin-store-sqlite` | L0 | Bundled SQLite 3.53.2 storage engine in WAL mode, FTS5 lexical index, transactional read/write views |
+| `repin-direct-search` | L2 | Working-tree direct regex search engine with exact byte spans (`regex` adapter) |
+| `repin-packs` | L0 | Language extractors (Rust, TypeScript/JavaScript, Markdown) with Tree-sitter & AST fallbacks |
+| `repin-engine` | L1–L4 | In-process engine composition, deterministic ranker, AST inspector, context builder, graph traversals, exact vector index, eval harness, agent reranker |
+| `repin-daemon` | L4/L5 | Per-user background daemon runtime, Unix domain socket rendezvous, per-project writer lease coordination |
+| `repin-cli` | L5 | Fast project-bound CLI frontend (`repin`) with ancestor discovery, auto-starting daemon client, and subcommands |
+| `repin-conformance` | QA | Automated port conformance tests, replay convergence harness, property test fixtures |
+
 ## 5. Persistence and search architecture
 
 ### SQLite + FTS5 unified transaction domain

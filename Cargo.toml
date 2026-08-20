@@ -40,6 +40,7 @@ bincode = "1.3"
 
 # Cryptography & hashing
 blake3 = "1.5"
+hex = "0.4"
 
 # Storage & SQLite
 rusqlite = { version = "0.40.1", default-features = false, features = ["bundled", "hooks"] }

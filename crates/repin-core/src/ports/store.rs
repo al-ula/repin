@@ -122,6 +122,9 @@ pub trait ReadView: Send + Sync {
     fn nodes_by_file(&self, root: &str, path: &str) -> Result<Vec<Node>, StoreError>;
     fn edges_from(&self, id: &NodeId, filters: &EdgeFilters) -> Result<Vec<Edge>, StoreError>;
     fn edges_to(&self, id: &NodeId, filters: &EdgeFilters) -> Result<Vec<Edge>, StoreError>;
+    fn incoming_edge_count(&self, id: &NodeId) -> Result<usize, StoreError> {
+        self.edges_to(id, &Default::default()).map(|e| e.len())
+    }
     fn unresolved_seeking(&self, name: &str) -> Result<Vec<UnresolvedRef>, StoreError>;
     fn skips(&self, root: Option<&str>, path: Option<&str>) -> Result<Vec<Skip>, StoreError>;
     fn diagnostics(
@@ -133,10 +136,15 @@ pub trait ReadView: Send + Sync {
     fn version_records(&self) -> Result<Option<VersionRecords>, StoreError>;
     fn index_states(&self) -> Result<Vec<DerivedIndexState>, StoreError>;
     fn revision(&self) -> Result<Revision, StoreError>;
+    fn node_count(&self) -> Result<usize, StoreError>;
+    fn edge_count(&self) -> Result<usize, StoreError>;
 }
 
 pub trait Store: Send + Sync {
     fn begin_write(&self) -> Result<Box<dyn Transaction>, StoreError>;
     fn read_view(&self) -> Result<Box<dyn ReadView>, StoreError>;
     fn capabilities(&self) -> StoreCapabilities;
+    fn checkpoint(&self) -> Result<(), StoreError> {
+        Ok(())
+    }
 }

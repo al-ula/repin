@@ -4,7 +4,7 @@ Repin is a standalone, deterministic knowledge-graph engine for repositories. It
 
 ## Status
 
-**Authoritative Architecture & Design Specification.** Research has concluded, all 16 Architectural Decision Records (ADRs) are finalized and accepted, and the implementation profile is established. This book is the normative design and contract blueprint for Repin.
+**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 16 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (10 crates) is in place. This book is the normative design, contract blueprint, and reference for Repin.
 
 ## What Repin is
 
@@ -38,14 +38,15 @@ Two independent axes, both required:
 
 ## How to read this book
 
-The specification is organized into six logical parts:
+The specification is organized into seven logical parts:
 
 - **Part I: Architecture Foundations** ([Architecture](architecture.md), [Safety & Security Boundary](safety.md), [Results & Evidence Model](results.md)) defines the system layers, trust boundary, and output contract.
 - **Part II: Core Domain & Data Model** ([Graph Model](graph-model.md), [Extraction](extraction.md), [Incremental Updates](incremental.md), [Storage](storage.md)) specifies what the engine stores, how facts are extracted and resolved, and how transactions and revisions guarantee convergence.
 - **Part III: Query & Integration Surfaces** ([Retrieval](retrieval.md), [Public API](api.md), [Runtime & IPC](runtime.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md)) covers search channels, client contracts, daemon rendezvous, and host seams.
 - **Part IV: Quality, Conformance & Implementation** ([Conformance](conformance.md), [Technology Selections & Implementation Profile](technology-candidates.md), [Roadmap](roadmap.md)) defines mechanical invariants, the accepted Rust/SQLite profile, and milestone delivery criteria.
 - **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 16 accepted ADRs documenting the design rationale and constraints.
-- **Part VI: Technical Annexes & Concluded Research** provides detailed subsystem specifications and concluded research records.
+- **Part VI: Subsystem Specifications** ([Line Index](specifications/sparse-line-index.md), [Native Parsers](specifications/native-parsers-tree-sitter-fallback.md), [Vector Baseline](specifications/vector-search-rust-friendly.md), [Agent Context](specifications/agent-inspection-and-review-context.md)) provides deep normative algorithmic specifications.
+- **Part VII: Concluded Research & Trade Studies** ([redb vs SQLite](research/redb-tantivy-vs-sqlite.md), [libSQL](research/libsql-embedded-local.md)) documents research and candidate evaluations.
 
 Start with [Architecture](architecture.md). It defines the vocabulary and the boundaries that the remaining documents assume. Then read [Results and Evidence](results.md), [Safety and Data Handling](safety.md), [Graph Model](graph-model.md), and [Extraction](extraction.md) to understand what the engine stores, returns, and refuses to do. [Incremental Updates](incremental.md) and [Storage](storage.md) specify how those facts remain current and durable.
 

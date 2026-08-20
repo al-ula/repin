@@ -20,7 +20,7 @@ waits for embeddings, and the semantic revision advances in a later
 transaction. The graph remains authoritative and stale hits are dropped.
 
 The detailed profile, acceptance criteria, and ANN escalation path are recorded
-in the [Rust-friendly vector proposal](../proposals/vector-search-rust-friendly.md).
+in the [Rust-friendly vector specification](../specifications/vector-search-rust-friendly.md).
 
 ## Rationale
 

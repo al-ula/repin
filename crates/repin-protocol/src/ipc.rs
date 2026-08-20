@@ -12,10 +12,19 @@ pub enum IpcRequest {
         project_db_path: String,
     },
     Status,
+    IndexAll,
     SearchDirect {
         pattern: String,
         is_regex: bool,
         paths: Option<Vec<String>>,
+        max_results: Option<usize>,
+    },
+    SearchGraph {
+        query: String,
+        max_results: Option<usize>,
+    },
+    SearchHybrid {
+        query: String,
         max_results: Option<usize>,
     },
     InspectFile {
@@ -26,6 +35,17 @@ pub enum IpcRequest {
         line: u32,
         column: u32,
     },
+    Entity {
+        name_or_id: String,
+    },
+    Neighbors {
+        name_or_id: String,
+        max_depth: Option<usize>,
+    },
+    Context {
+        query: String,
+        budget_bytes: Option<usize>,
+    },
     ReviewContext {
         changed_since: Option<Revision>,
         budget_bytes: Option<usize>,
@@ -33,6 +53,13 @@ pub enum IpcRequest {
     UpdateFiles {
         changes: Vec<FileChange>,
     },
+    SyncVcs,
+    Rerank {
+        query: String,
+        candidates: Vec<String>,
+        agent_cmd: String,
+    },
+    Eval,
     Shutdown,
 }
 
@@ -49,10 +76,19 @@ pub enum IpcResponse {
         node_count: usize,
         edge_count: usize,
     },
+    IndexAllOk {
+        files_indexed: usize,
+        revision: Revision,
+    },
     SearchResult(ResultEnvelope<serde_json::Value>),
     InspectResult(ResultEnvelope<serde_json::Value>),
     PositionResult(ResultEnvelope<serde_json::Value>),
+    EntityResult(ResultEnvelope<serde_json::Value>),
+    NeighborsResult(ResultEnvelope<serde_json::Value>),
+    ContextResult(ResultEnvelope<serde_json::Value>),
     ReviewResult(ResultEnvelope<serde_json::Value>),
+    RerankResult(ResultEnvelope<serde_json::Value>),
+    EvalResult(ResultEnvelope<serde_json::Value>),
     UpdateOk {
         revision: Revision,
     },

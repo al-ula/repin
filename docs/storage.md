@@ -19,6 +19,7 @@ Store
   read()                    -> ReadView
   versionRecords()          -> VersionRecords
   capabilities()            -> StoreCapabilities
+  checkpoint()              -> Result           // WAL truncation & store compaction (ADR-019)
   close()
 
 Transaction
@@ -47,6 +48,7 @@ ReadView
   nodesByFile(root, path)      -> Node[]
   edgesFrom(id, filters)       -> Edge[]
   edgesTo(id, filters)         -> Edge[]
+  incomingEdgeCount(id)        -> Count
   unresolvedSeeking(name)      -> UnresolvedRef[]
   skips(filters)               -> Skip[]
   diagnostics(filters)         -> Diagnostic[]

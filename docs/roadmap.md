@@ -33,7 +33,7 @@ Delivered:
 - Mapped each candidate to the applicable port contract and decision criteria.
 - Conducted primary documentation, source, release history, and issue reviews for storage, search, runtime, and parsing candidates.
 - Produced detailed comparative analyses: [redb + Tantivy versus SQLite + FTS5](research/redb-tantivy-vs-sqlite.md) and [libSQL embedded-local](research/libsql-embedded-local.md).
-- Formulated subsystem proposals: [sparse line index](proposals/sparse-line-index.md), [native parsers with Tree-sitter fallback](proposals/native-parsers-tree-sitter-fallback.md), [Rust-friendly vector baseline](proposals/vector-search-rust-friendly.md), and [agent inspection & review context](proposals/agent-inspection-and-review-context.md).
+- Formulated subsystem proposals: [sparse line index](specifications/sparse-line-index.md), [native parsers with Tree-sitter fallback](specifications/native-parsers-tree-sitter-fallback.md), [Rust-friendly vector baseline](specifications/vector-search-rust-friendly.md), and [agent inspection & review context](specifications/agent-inspection-and-review-context.md).
 - Classified candidates, established confidence levels, and identified required implementation-validation tasks.
 
 ## Stage 3 — Plan finalization *(finalized and accepted)*
@@ -52,9 +52,9 @@ Delivered:
 
 All decisions blocking deterministic implementation are resolved. The implementation plan is actionable without further architectural discovery.
 
-## Stage 4 — Implementation *(ready)*
+## Stage 4 — Implementation *(delivered core profile)*
 
-Implementation builds and validates the product according to the finalized plan. The milestones below describe capability, not schedule. Each leaves the engine in a coherent state and has explicit exit criteria. Implementation-validation tasks confirm behavior against the accepted contracts.
+Implementation builds and validates the product according to the finalized plan. The core implementation profile spanning milestones I0 through I6 is implemented across 10 workspace crates with conformance suites, replay convergence testing, and CLI frontend. Capability milestones below describe capability and exit criteria.
 
 ## Implementation capability milestones
 

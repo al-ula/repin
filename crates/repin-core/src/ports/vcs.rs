@@ -33,4 +33,5 @@ pub trait Vcs: Send + Sync {
         revision: &str,
     ) -> Result<VcsChangeSet, VcsError>;
     fn head_revision(&self, root_path: &str) -> Result<String, VcsError>;
+    fn status(&self, root_path: &str) -> Result<VcsChangeSet, VcsError>;
 }

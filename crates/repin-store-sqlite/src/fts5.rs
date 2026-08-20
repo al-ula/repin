@@ -14,6 +14,28 @@ pub struct Fts5Index;
 
 impl Fts5Index {
     pub fn search(conn: &Connection, query: &str, limit: usize) -> Result<Vec<FtsHit>, StoreError> {
+        let clean = query.replace(['"', '*'], "").trim().to_string();
+        if clean.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let tokens: Vec<&str> = clean.split_whitespace().filter(|t| !t.is_empty()).collect();
+
+        if tokens.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let fts_pattern = if tokens.len() == 1 {
+            format!("\"{}\"* OR {}", tokens[0], tokens[0])
+        } else {
+            let token_prefixes = tokens
+                .iter()
+                .map(|t| format!("\"{}\"*", t))
+                .collect::<Vec<_>>()
+                .join(" OR ");
+            format!("\"{}\" OR ({})", clean, token_prefixes)
+        };
+
         let mut stmt = conn
             .prepare(
                 "SELECT node_id, name, path, rank
@@ -24,21 +46,22 @@ impl Fts5Index {
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
-        let rows = stmt
-            .query_map((query, limit as i64), |row| {
-                let node_id_bytes: [u8; 32] = row.get(0)?;
-                let name: String = row.get(1)?;
-                let path: String = row.get(2)?;
-                let rank: f64 = row.get(3)?;
+        let rows = match stmt.query_map((&fts_pattern, limit as i64), |row| {
+            let node_id_bytes: [u8; 32] = row.get(0)?;
+            let name: String = row.get(1)?;
+            let path: String = row.get(2)?;
+            let rank: f64 = row.get(3)?;
 
-                Ok(FtsHit {
-                    node_id: NodeId::from_bytes(node_id_bytes),
-                    name,
-                    path,
-                    rank,
-                })
+            Ok(FtsHit {
+                node_id: NodeId::from_bytes(node_id_bytes),
+                name,
+                path,
+                rank,
             })
-            .map_err(|e| StoreError::Io(e.to_string()))?;
+        }) {
+            Ok(r) => r,
+            Err(_) => return Ok(Vec::new()),
+        };
 
         let mut hits = Vec::new();
         for r in rows {

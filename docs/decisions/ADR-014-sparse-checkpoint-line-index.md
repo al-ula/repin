@@ -20,7 +20,7 @@ checkpoint where needed, and decodes at most one stride plus a crossing scalar
 or maximal invalid run.
 
 The detailed representation, lifecycle, bounds, and oracle cases are recorded
-in the [line-index proposal](../proposals/sparse-line-index.md).
+in the [line-index specification](../specifications/sparse-line-index.md).
 
 ## Rationale
 
