@@ -1,0 +1,93 @@
+# Quick Start
+
+The current implementation is qualified on Linux x86_64 with glibc. Build it with a current stable Rust toolchain and Git available on `PATH`.
+
+## Build
+
+From the repository root:
+
+```bash
+cargo build --release
+cargo test
+```
+
+Use `target/release/repin` directly or put it on `PATH`:
+
+```bash
+install -Dm755 target/release/repin "$HOME/.local/bin/repin"
+```
+
+## Index a repository
+
+Run these commands from the repository you want to inspect:
+
+```bash
+repin init
+repin status
+```
+
+`repin init` creates `.repin` metadata and indexes the repository unless `--no-index` is supplied. To separate setup from indexing:
+
+```bash
+repin init --no-index
+repin index
+```
+
+Repin starts or connects to its per-user daemon as needed. The daemon owns shared project state; the project database lives at `.repin/graph.sqlite3`.
+
+## Search and inspect
+
+```bash
+repin search "connection pool"
+repin search -r 'fn [a-z_]+\('
+repin search -g "DaemonClient"
+repin inspect src/main.rs
+repin at-position src/main.rs 42 10
+```
+
+The default search mode comes from configuration and is `hybrid` by default. Use `-r` for a direct working-tree regular-expression search, `-g` for graph symbol search, and `--hybrid` to select both channels explicitly.
+
+For graph navigation and agent-ready context:
+
+```bash
+repin entity "DaemonClient"
+repin neighbors "DaemonClient" --max-depth 2
+repin impact "DaemonClient"
+repin path "DaemonClient" "DaemonRegistry"
+repin context "How does daemon IPC work?" --budget 32768
+repin review-context --since 1 --budget 65536
+```
+
+## Keep the index current
+
+```bash
+repin update
+repin watch --interval 1000
+```
+
+Use `update` after a batch of changes. Use `watch` while actively editing. Rebuild a specific derived view when needed:
+
+```bash
+repin rebuild graph
+repin rebuild lexical
+repin rebuild vector
+repin rebuild all
+```
+
+## Stop using Repin
+
+Stop or restart the daemon without removing project data:
+
+```bash
+repin daemon status
+repin daemon stop
+repin daemon restart
+```
+
+Remove the project metadata after confirming the prompt:
+
+```bash
+repin uninit
+```
+
+Use `repin uninit --force` for a non-interactive removal.

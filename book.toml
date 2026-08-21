@@ -1,7 +1,7 @@
 [book]
-title = "Repin Architecture & Design Specification"
+title = "Repin Documentation"
 authors = ["Repin contributors"]
-description = "Authoritative architecture, normative contracts, and finalized design specification for Repin."
+description = "User guidance and authoritative architecture, contracts, and design documentation for Repin."
 language = "en"
 src = "docs"
 

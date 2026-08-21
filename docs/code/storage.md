@@ -239,7 +239,7 @@ prefer:   write(nodes[0..n])
 
 Per-item writes are the worst pattern for every store, and dramatically worse for stores with higher per-operation overhead — which includes anything reached over a boundary or a socket. The overhead is per *operation*, not per row, so batching amortizes it directly.
 
-- Insert in multi-item batches. Moderate batch sizes capture nearly all the available gain; very large batches add memory pressure without improving throughput.
+- Insert in multi-item batches. Moderate batch sizes capture nearly all the available gain; large batches add memory pressure without improving throughput.
 - Keep a small set of pre-prepared batch shapes rather than constructing a new one per batch size.
 - Prefer positional over keyed row reads on hot paths where the port offers both; per-row object construction is measurable at scale.
 - Build secondary indexes **after** the initial bulk load, not during.

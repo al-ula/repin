@@ -4,7 +4,7 @@ Repin is a standalone, deterministic knowledge-graph engine for repositories. It
 
 ## Status
 
-**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 16 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (10 crates) is in place. This book is the normative design, contract blueprint, and reference for Repin.
+**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 26 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (15 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
 
 ## What Repin is
 
@@ -18,14 +18,6 @@ Two capabilities are exposed as one coherent product: direct retrieval from the 
 
 Optional intelligence (embeddings, reranking, semantic enrichment) is a layer *above* the deterministic engine. It can be absent entirely, and nothing degrades except recall on fuzzy queries.
 
-## What Repin is not
-
-- Not a plugin for any host application, and not aware that any particular host exists.
-- Not a language server, and not a substitute for one.
-- Not a compiler or type checker. It records structure and references, not full semantics.
-- Not an AI product. Intelligence is optional and additive.
-- Not a hosted or remote service. It uses an on-demand local daemon for shared user-level runtime state; remote operation is a later deployment choice, not an assumption.
-
 ## Agnosticism
 
 Two independent axes, both required:
@@ -36,6 +28,28 @@ Two independent axes, both required:
 
 **Driver and provider agnostic.** Storage, search indexes, file watching, and optional model capabilities are all *ports*. The core depends on the port, never on a product. No SQL, no vendor SDK, and no filesystem-notification API appears in core logic.
 
+## Workspace Crates
+
+The implementation is organized into 15 focused Rust crates in a single workspace:
+
+| Crate | Purpose | Key Responsibilities |
+|---|---|---|
+| [`repin-core`](../../crates/repin-core) | Core domain & ports | Domain models (`Node`, `Edge`, `Identity`, `Position`), `LineIndex`, hash protocols, port traits |
+| [`repin-protocol`](../../crates/repin-protocol) | Protocol & serialization | Result envelopes, status codes, IPC request/response framing |
+| [`repin-fs`](../../crates/repin-fs) | Filesystem & VCS | `cap-std` root-confined access, default exclusions, Git subprocess adapter |
+| [`repin-store-sqlite`](../../crates/repin-store-sqlite) | Storage & lexical engine | Bundled SQLite in WAL mode, FTS5 lexical index, string interning, transactional read/write views |
+| [`repin-direct-search`](../../crates/repin-direct-search) | Direct regex retrieval | Bounded working tree direct regex search engine (`regex` adapter) |
+| [`repin-packs`](../../crates/repin-packs) | Language extractors | Language packs (Rust, TypeScript/JavaScript, Markdown) with Tree-sitter & AST fallbacks |
+| [`repin-context`](../../crates/repin-context) | Context assembly | Budgeted context packing, verbatim source extraction, blast-radius calculation |
+| [`repin-retrieval`](../../crates/repin-retrieval) | Retrieval & ranking | Exact vector index, degree centrality rank fusion, hybrid multi-channel fusion |
+| [`repin-indexing`](../../crates/repin-indexing) | Graph indexing pipeline | Batch/incremental pipeline coordinator, replay convergence, scope invalidation |
+| [`repin-intelligence`](../../crates/repin-intelligence) | Optional intelligence | Multi-tier model providers (embedded, agent callback, remote API) |
+| [`repin-runtime`](../../crates/repin-runtime) | Runtime orchestration | Reusable in-process orchestration layer for embedded applications |
+| [`repin-engine`](../../crates/repin-engine) | Compatibility engine facade | High-level engine API facade preserving backwards compatibility |
+| [`repin-daemon`](../../crates/repin-daemon) | User daemon server | Background daemon runtime, Unix domain socket rendezvous, per-project writer lease coordination |
+| [`repin-cli`](../../crates/repin-cli) | CLI frontend | Project discovery, daemon auto-connect, rich developer and agent commands (`repin`) |
+| [`repin-conformance`](../../crates/repin-conformance) | Conformance & verification | Automated port conformance tests, replay convergence harness, property test fixtures |
+
 ## How to read this book
 
 The specification is organized into seven logical parts:
@@ -44,7 +58,7 @@ The specification is organized into seven logical parts:
 - **Part II: Core Domain & Data Model** ([Graph Model](graph-model.md), [Extraction](extraction.md), [Incremental Updates](incremental.md), [Storage](storage.md)) specifies what the engine stores, how facts are extracted and resolved, and how transactions and revisions guarantee convergence.
 - **Part III: Query & Integration Surfaces** ([Retrieval](retrieval.md), [Public API](api.md), [Runtime & IPC](runtime.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md)) covers search channels, client contracts, daemon rendezvous, and host seams.
 - **Part IV: Quality, Conformance & Implementation** ([Conformance](conformance.md), [Technology Selections & Implementation Profile](technology-candidates.md), [Roadmap](roadmap.md)) defines mechanical invariants, the accepted Rust/SQLite profile, and milestone delivery criteria.
-- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 16 accepted ADRs documenting the design rationale and constraints.
+- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 26 accepted ADRs documenting the design rationale and constraints.
 - **Part VI: Subsystem Specifications** ([Line Index](specifications/sparse-line-index.md), [Native Parsers](specifications/native-parsers-tree-sitter-fallback.md), [Vector Baseline](specifications/vector-search-rust-friendly.md), [Agent Context](specifications/agent-inspection-and-review-context.md)) provides deep normative algorithmic specifications.
 - **Part VII: Concluded Research & Trade Studies** ([redb vs SQLite](research/redb-tantivy-vs-sqlite.md), [libSQL](research/libsql-embedded-local.md)) documents research and candidate evaluations.
 

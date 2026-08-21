@@ -178,7 +178,7 @@ Fixture repositories with committed expected graphs, per language pack.
 
 Safety rules are only real if they are attacked.
 
-**Paths** — traversal sequences, absolute paths outside roots, symlinks escaping roots, symlink cycles, symlink swapped between check and read, unicode and encoding tricks in path components, very long paths.
+**Paths** — traversal sequences, absolute paths outside roots, symlinks escaping roots, symlink cycles, symlink swapped between check and read, unicode and encoding tricks in path components, long paths.
 
 **Content** — deeply nested structures, extremely long lines, files with no line breaks, invalid encodings, binary content with source extensions, pathologically large generated files, content engineered to trigger worst-case parser behavior.
 
@@ -203,9 +203,9 @@ Replaces the unmeasurable claim "useful without a model."
 
 Numbers without method are not evidence.
 
-**Corpus.** Future evidence runs should use versioned Micro, Small, Medium, Large normal, and Pathological bands. The prior target was 10,000 selected files and 250 MiB of selected content; generated, dependency, and vendor trees are excluded normally and measured in bounded pathological cases. Composition is documented, because corpus composition dominates results—a corpus heavy in declaration-only files measures something quite different from real implementation code. A corpus is classified by its highest file, byte, node, or edge band, and reported measurements use actual counts.
+**Corpus.** Future evidence runs should use versioned Micro, Small, Medium, Large normal, and Pathological bands. The prior target was 10,000 selected files and 250 MiB of selected content; generated, dependency, and vendor trees are excluded normally and measured in bounded pathological cases. Composition is documented, because corpus composition dominates results—a corpus heavy in declaration-only files measures something different from real implementation code. A corpus is classified by its highest file, byte, node, or edge band, and reported measurements use actual counts.
 
-**Phases measured separately.** Crawl, read, hash, detect, parse, extract, resolve, store write, lexical index, vector index. Aggregate-only numbers hide which phase actually costs.
+**Phases measured separately.** Crawl, read, hash, detect, parse, extract, resolve, store write, lexical index, vector index. Aggregate-only numbers hide which phase costs.
 
 **Resolution measured explicitly.** It does not parallelize the way extraction does and is the phase most likely to dominate at scale. Assuming it is cheap is the most common estimation error in engines of this kind.
 

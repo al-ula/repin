@@ -53,4 +53,4 @@ By normalizing fact owners into an integer surrogate key and interning strings i
 
 ## Reopen triggers
 
-Reopen this decision if dictionary join overhead measurably degrades read latency on very large graphs (>100k nodes) compared to denormalized storage.
+Reopen this decision if dictionary join overhead measurably degrades read latency on large graphs (>100k nodes) compared to denormalized storage.

@@ -116,7 +116,7 @@ Source code is not privileged. Documentation, manifests, schemas, and configurat
 
 **Schemas** yield `schema`, `schema_field`, `table`, and `column` nodes with `validates_with` and `queries` edges to code where determinable.
 
-**Configuration** yields `config_key` nodes. Configuration keys are frequently the thing a caller is actually looking for when tracing behavior, and they are invisible to code-only indexing.
+**Configuration** yields `config_key` nodes. Configuration keys are frequently the thing a caller is looking for when tracing behavior, and they are invisible to code-only indexing.
 
 A repository's prose and configuration often explain more than its source does. A pack set that only handles code produces a graph that answers "what calls this" but not "why does this exist."
 

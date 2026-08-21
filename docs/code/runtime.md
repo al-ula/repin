@@ -208,7 +208,7 @@ releasing the writer lease — and only then removes the directory. Removal is
 refused with `PROJECT_LEASE_UNAVAILABLE` while another connection is attached
 to that context, and the durable state is left intact. When no daemon is
 reachable, the client may remove an unattached state directory itself; it MUST
-NOT start a daemon in order to uninitialize. Uninitializing a project that is
+NOT start a daemon to uninitialize. Uninitializing a project that is
 not initialized succeeds and reports that nothing was removed. Interactive
 confirmation is prompted before removing the directory unless bypassed via
 `--force` / `-f` / `-y`.

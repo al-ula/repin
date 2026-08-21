@@ -169,7 +169,7 @@ Some entities have no stable name: unnamed default exports, callback literals, a
 1. If the entity is addressable through a binding — an export declaration, an assigned variable — address it by that binding.
 2. Otherwise use its ordinal position within the nearest named ancestor, and set `unstableId: true` in attributes.
 
-`unstableId` nodes may be dropped and recreated on any edit to their file. They MUST NOT be embedding-cache keys, and consumers MUST NOT persist references to them across revisions. Treating them as stable produces cache corruption that is very hard to trace.
+`unstableId` nodes may be dropped and recreated on any edit to their file. They MUST NOT be embedding-cache keys, and consumers MUST NOT persist references to them across revisions. Treating them as stable produces cache corruption that is hard to trace.
 
 ### Edge identity
 
