@@ -74,6 +74,17 @@ pub enum IpcRequest {
         client_version: String,
         project_db_path: String,
     },
+    /// Daemon-mediated creation of durable project state (ADR-026). Issued
+    /// before project binding; a successful response binds the connection.
+    InitializeProject {
+        project_root: String,
+    },
+    /// Daemon-mediated removal of durable project state (ADR-026). Issued
+    /// before project binding and refused while another connection is
+    /// attached to that project's context.
+    UninitializeProject {
+        project_root: String,
+    },
     Status,
     IndexAll,
     Rebuild {
@@ -148,6 +159,16 @@ pub enum IpcResponse {
         protocol_version: u32,
         daemon_version: String,
         is_writer: bool,
+    },
+    InitializeProjectOk {
+        project_root: String,
+        db_path: String,
+        created: bool,
+        is_writer: bool,
+    },
+    UninitializeProjectOk {
+        project_root: String,
+        removed: bool,
     },
     StatusOk {
         graph_revision: Revision,

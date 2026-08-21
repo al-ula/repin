@@ -906,6 +906,7 @@ name = "repin-conformance"
 version = "0.1.0"
 dependencies = [
  "repin-core",
+ "repin-daemon",
  "repin-engine",
  "repin-fs",
  "repin-protocol",
@@ -949,6 +950,7 @@ dependencies = [
  "repin-core",
  "repin-engine",
  "repin-protocol",
+ "repin-store-sqlite",
  "serde",
  "serde_json",
  "tempfile",

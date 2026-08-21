@@ -71,6 +71,9 @@ fn test_impact_and_path_conformance() {
 
     // 3. Disconnected path query
     let disconnected_env = engine.trace_paths("helper_a", "nonexistent_symbol", 5);
-    assert_eq!(disconnected_env.status, repin_protocol::envelope::Status::Ok);
+    assert_eq!(
+        disconnected_env.status,
+        repin_protocol::envelope::Status::Ok
+    );
     assert!(disconnected_env.data.is_none());
 }

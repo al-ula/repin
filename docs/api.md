@@ -44,6 +44,22 @@ degraded client with explicit graph-unavailable status when safe, as specified
 in [Runtime and IPC — Initialization and graph capability](runtime.md#4-initialization-and-graph-capability).
 
 ```text
+uninitializeProject(selector: ProjectSelector, call?: CallOptions)
+  -> Result<Removed>
+
+Removed
+  removed: Bool          // false when the project was not initialized
+  root:    Path          // resolved project root
+```
+
+`uninitializeProject` removes a project's durable state through the daemon. It
+is not a `ProjectClient` method: no connection may be bound to the project
+being removed. The daemon unloads the project's context, closing the store and
+releasing the writer lease, before deleting the state directory. Removal is
+refused with `PROJECT_LEASE_UNAVAILABLE` while another connection is attached.
+Removing state that does not exist succeeds with `removed: false`.
+
+```text
 ProjectClient
   capabilities() -> Capabilities
   status()       -> IndexStatus
@@ -205,6 +221,7 @@ The CLI exposes these targets as `repin rebuild graph|lexical|vector|all`, and
 the daemon carries the same target over its negotiated IPC contract. When a
 derived-index adapter is unavailable, the operation returns an explicit
 capability error rather than reporting a successful rebuild.
+
 - `pause`/`resume` — bracket a known bulk operation.
 
 A rebuild never advances or rewrites the authoritative graph revision merely for reconstructing a derived index. Destructive replacement occurs only after cancellation-safe preparation where possible. Authoritative commits and individual product commits are non-cancellable atomic sections; cancellation stops before the next such section, preserves the last valid state, and reports any pending derived work. Long-running phases may report the bounded, best-effort progress events defined in [Progress events](#progress-events).

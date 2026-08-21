@@ -144,7 +144,6 @@ pub fn execute_impact(
                 );
                 println!("Total Impacted Symbols: {}", data.total_impacted);
 
-                // Group by depth
                 let mut by_depth: BTreeMap<usize, Vec<_>> = BTreeMap::new();
                 for item in data.items {
                     by_depth.entry(item.depth).or_default().push(item);

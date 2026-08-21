@@ -177,7 +177,6 @@ impl TsLanguagePack {
                         Attributes::default(),
                     ));
 
-                    // Recurse into class body
                     container_chain.push(format!("class {name}"));
                     parent_id_stack.push(class_id);
 

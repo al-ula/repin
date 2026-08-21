@@ -11,6 +11,7 @@ readme = "README.md"
 repin-core.workspace = true
 repin-protocol.workspace = true
 repin-engine.workspace = true
+repin-store-sqlite.workspace = true
 fs4.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

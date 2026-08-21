@@ -58,6 +58,7 @@
   - [ADR-023 — Reusable capability crates and runtime facade](decisions/ADR-023-reusable-library-crates.md)
   - [ADR-024 — Compatibility versioning and conservative state replacement](decisions/ADR-024-compatibility-versioning.md)
   - [ADR-025 — Graph impact analysis and dependency path traversal](decisions/ADR-025-graph-impact-and-path-traversal.md)
+  - [ADR-026 — Daemon-mediated state lifecycle and database identity](decisions/ADR-026-daemon-mediated-state-lifecycle.md)
 
 # Part VI: Subsystem Specifications
 

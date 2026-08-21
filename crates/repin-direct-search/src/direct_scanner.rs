@@ -23,7 +23,6 @@ impl DirectScanner {
 
             let span = ByteSpan::new(start, end);
             if let Ok(range) = line_index.span_to_range(bytes, span) {
-                // Generate bounded preview snippet
                 let line_start_offset = line_index.line_starts[(range.start.line as usize) - 1];
                 let line_end_offset = line_index
                     .line_starts
@@ -34,7 +33,6 @@ impl DirectScanner {
                 let preview_bytes = &bytes[line_start_offset..line_end_offset];
                 let preview_text = String::from_utf8_lossy(preview_bytes).trim().to_string();
 
-                // Basic credential/token redaction
                 let redacted = Self::redact_sensitive(&preview_text);
 
                 results.push(
@@ -49,7 +47,6 @@ impl DirectScanner {
     }
 
     fn redact_sensitive(text: &str) -> String {
-        // Redact typical API key or token assignments
         let sensitive_keys = ["api_key", "secret", "password", "token", "auth"];
         let mut out = text.to_string();
         for key in &sensitive_keys {

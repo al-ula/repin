@@ -7,7 +7,12 @@ pub mod provider;
 
 pub const BOOTSTRAP_VERSION: u32 = 1;
 pub const PROTOCOL_MIN: u32 = 1;
-pub const PROTOCOL_MAX: u32 = 1;
+/// Protocol 2 adds the daemon-mediated project lifecycle requests
+/// (`InitializeProject`, `UninitializeProject`) accepted by ADR-026.
+pub const PROTOCOL_MAX: u32 = 2;
+/// Lowest protocol version carrying the state lifecycle requests. A client
+/// negotiating below this must not send them.
+pub const PROTOCOL_STATE_LIFECYCLE: u32 = 2;
 pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
 pub const MAX_BOOTSTRAP_FRAME_BYTES: usize = 64 * 1024;
 pub const BOOTSTRAP_DEADLINE_MS: u64 = 2_000;

@@ -1,80 +1,121 @@
 use crate::client::DaemonClient;
 use repin_protocol::ipc::{IpcRequest, IpcResponse};
 
-pub fn execute_init(project_dir: &std::path::Path) -> Result<(), String> {
-    let repin_dir = project_dir.join(".repin");
-    std::fs::create_dir_all(&repin_dir)
-        .map_err(|e| format!("Failed to create .repin directory: {e}"))?;
+/// Daemon-mediated project initialization (ADR-026). The daemon creates the
+/// state directory, database, and writer lease, then binds this connection to
+/// the initialized project so indexing can follow on the same connection.
+pub fn execute_init(project_dir: &std::path::Path) -> Result<DaemonClient, String> {
+    std::fs::create_dir_all(project_dir)
+        .map_err(|e| format!("Failed to create project directory: {e}"))?;
+    let canonical = project_dir
+        .canonicalize()
+        .map_err(|e| format!("Failed to resolve project directory: {e}"))?;
 
-    let gitignore_path = repin_dir.join(".gitignore");
-    if !gitignore_path.exists() {
-        std::fs::write(&gitignore_path, "*\n")
-            .map_err(|e| format!("Failed to create .repin/.gitignore: {e}"))?;
+    let mut client = DaemonClient::connect_or_start_unbound()
+        .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
+    require_state_lifecycle(&client)?;
+
+    match client.send_request(IpcRequest::InitializeProject {
+        project_root: canonical.display().to_string(),
+    })? {
+        IpcResponse::InitializeProjectOk {
+            project_root,
+            created,
+            ..
+        } => {
+            if created {
+                println!("Initialized empty Repin workspace in {project_root}/.repin");
+            } else {
+                println!("Repin workspace already initialized in {project_root}/.repin");
+            }
+            Ok(client)
+        }
+        IpcResponse::Error { code, message } => Err(format!("Init failed: {code:?}: {message}")),
+        _ => Err("Unexpected init response".to_string()),
     }
-
-    let db_path = repin_dir.join("graph.sqlite3");
-    if !db_path.exists() {
-        let _ = repin_engine::Engine::open(repin_engine::EngineOptions {
-            root_id: "root".to_string(),
-            root_path: project_dir.to_path_buf(),
-            db_path: Some(db_path),
-        });
-    }
-
-    println!(
-        "Initialized empty Repin workspace in {}",
-        repin_dir.display()
-    );
-    Ok(())
 }
 
+/// Daemon-mediated project removal (ADR-026). The daemon unloads the project
+/// context — closing the store and releasing the writer lease — before the
+/// state directory is deleted. With no reachable daemon there is no context to
+/// unload, so the unattached state directory is removed locally.
 pub fn execute_uninit(project_dir: &std::path::Path, force: bool) -> Result<(), String> {
-    let repin_dir = if project_dir.join(".repin").exists() {
-        project_dir.join(".repin")
-    } else {
-        let mut ancestor = project_dir.to_path_buf();
-        let mut found = None;
-        while let Some(parent) = ancestor.parent() {
-            let candidate = parent.join(".repin");
-            if candidate.is_dir() {
-                found = Some(candidate);
-                break;
-            }
-            ancestor = parent.to_path_buf();
-        }
-        found.unwrap_or_else(|| project_dir.join(".repin"))
+    let layout = repin_daemon::discover_state_layout(project_dir);
+    let Some(layout) = layout else {
+        println!("No Repin workspace found in {}", project_dir.display());
+        return Ok(());
     };
 
-    if !repin_dir.exists() {
-        println!("No Repin workspace found in {}", project_dir.display());
+    if !force && !confirm_removal(&layout.state_dir)? {
+        println!("Uninit aborted.");
         return Ok(());
     }
 
-    if !force {
-        use std::io::{self, Write};
-        print!(
-            "Are you sure you want to uninitialize Repin workspace in {}? [y/N]: ",
-            repin_dir.display()
-        );
-        io::stdout().flush().map_err(|e| e.to_string())?;
-
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .map_err(|e| format!("Failed to read confirmation: {e}"))?;
-
-        let trimmed = input.trim().to_lowercase();
-        if trimmed != "y" && trimmed != "yes" {
-            println!("Uninit aborted.");
-            return Ok(());
+    match DaemonClient::connect_existing_unbound(None) {
+        Ok(mut client) => {
+            require_state_lifecycle(&client)?;
+            match client.send_request(IpcRequest::UninitializeProject {
+                project_root: layout.project_root.display().to_string(),
+            })? {
+                IpcResponse::UninitializeProjectOk {
+                    project_root,
+                    removed,
+                } => {
+                    if removed {
+                        println!("Uninitialized Repin workspace in {project_root}/.repin");
+                    } else {
+                        println!("No Repin workspace found in {project_root}");
+                    }
+                    Ok(())
+                }
+                IpcResponse::Error { code, message } => {
+                    Err(format!("Uninit failed: {code:?}: {message}"))
+                }
+                _ => Err("Unexpected uninit response".to_string()),
+            }
+        }
+        Err(_) => {
+            // No daemon owns this state; remove it directly.
+            std::fs::remove_dir_all(&layout.state_dir)
+                .map_err(|e| format!("Failed to remove {}: {e}", layout.state_dir.display()))?;
+            println!(
+                "Uninitialized Repin workspace in {}",
+                layout.state_dir.display()
+            );
+            Ok(())
         }
     }
+}
 
-    std::fs::remove_dir_all(&repin_dir)
-        .map_err(|e| format!("Failed to remove {}: {e}", repin_dir.display()))?;
+/// State lifecycle requests exist only from protocol 2 (ADR-026). A daemon
+/// still serving protocol 1 negotiates successfully but cannot mediate them,
+/// and creating or deleting state behind its back is the stale-context fault
+/// the decision closes. Refuse with the bounded recovery instead.
+fn require_state_lifecycle(client: &DaemonClient) -> Result<(), String> {
+    if client.supports_state_lifecycle() {
+        return Ok(());
+    }
+    Err(format!(
+        "PROTOCOL_MISMATCH: the running daemon negotiated protocol {} and cannot mediate project state. Run `repin daemon restart` and retry.",
+        client.selected_protocol()
+    ))
+}
 
-    println!("Uninitialized Repin workspace in {}", repin_dir.display());
-    Ok(())
+fn confirm_removal(state_dir: &std::path::Path) -> Result<bool, String> {
+    use std::io::{self, Write};
+    print!(
+        "Are you sure you want to uninitialize Repin workspace in {}? [y/N]: ",
+        state_dir.display()
+    );
+    io::stdout().flush().map_err(|e| e.to_string())?;
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .map_err(|e| format!("Failed to read confirmation: {e}"))?;
+
+    let trimmed = input.trim().to_lowercase();
+    Ok(trimmed == "y" || trimmed == "yes")
 }
 
 pub fn execute_index(client: &mut DaemonClient) -> Result<(), String> {
@@ -96,87 +137,5 @@ pub fn execute_index(client: &mut DaemonClient) -> Result<(), String> {
             Err(format!("Index failed: {:?}: {}", code, message))
         }
         _ => Err("Unexpected response".to_string()),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_execute_init_creates_dir_and_gitignore() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let project_path = temp_dir.path();
-
-        let res = execute_init(project_path);
-        assert!(res.is_ok());
-
-        let repin_dir = project_path.join(".repin");
-        assert!(repin_dir.exists());
-        assert!(repin_dir.is_dir());
-
-        let gitignore_path = repin_dir.join(".gitignore");
-        assert!(gitignore_path.exists());
-        let content = std::fs::read_to_string(&gitignore_path).unwrap();
-        assert_eq!(content, "*\n");
-
-        let db_path = repin_dir.join("graph.sqlite3");
-        assert!(db_path.exists());
-    }
-
-    #[test]
-    fn test_execute_init_preserves_existing_gitignore() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let project_path = temp_dir.path();
-        let repin_dir = project_path.join(".repin");
-        std::fs::create_dir_all(&repin_dir).unwrap();
-        let gitignore_path = repin_dir.join(".gitignore");
-        std::fs::write(&gitignore_path, "# custom\n*.db\n").unwrap();
-
-        let res = execute_init(project_path);
-        assert!(res.is_ok());
-
-        let content = std::fs::read_to_string(&gitignore_path).unwrap();
-        assert_eq!(content, "# custom\n*.db\n");
-    }
-
-    #[test]
-    fn test_execute_uninit_removes_dir() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let project_path = temp_dir.path();
-
-        execute_init(project_path).unwrap();
-        let repin_dir = project_path.join(".repin");
-        assert!(repin_dir.exists());
-
-        let res = execute_uninit(project_path, true);
-        assert!(res.is_ok());
-        assert!(!repin_dir.exists());
-    }
-
-    #[test]
-    fn test_execute_uninit_when_not_initialized() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let project_path = temp_dir.path();
-
-        let res = execute_uninit(project_path, true);
-        assert!(res.is_ok());
-    }
-
-    #[test]
-    fn test_execute_uninit_from_subdirectory() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let project_path = temp_dir.path();
-
-        execute_init(project_path).unwrap();
-        let subdir = project_path.join("src").join("nested");
-        std::fs::create_dir_all(&subdir).unwrap();
-
-        let repin_dir = project_path.join(".repin");
-        assert!(repin_dir.exists());
-
-        let res = execute_uninit(&subdir, true);
-        assert!(res.is_ok());
-        assert!(!repin_dir.exists());
     }
 }

@@ -47,7 +47,7 @@ or reset a project's `.repin` state.
 The two locks have different scopes:
 
 | Artifact | Scope | Owner | Purpose |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `daemon.lock` | one OS user | global daemon process | elect exactly one daemon candidate |
 | `.repin/writer.lock` | one project database | that project's active context | serialize authoritative graph and derived-index writes |
 
@@ -167,24 +167,59 @@ disappears or changes physical identity, its context fails closed and is
 marked closed; it is not silently rebound to a new file. Filesystem identity
 is never exposed as a stable logical project identifier.
 
+The recorded identity is revalidated on every registry lookup for a canonical
+path, before a cached context is handed to a new connection, and again before
+any project-bound domain request is dispatched. A missing database or an
+identity mismatch evicts the context from the registry and marks it closed. A
+subsequent lookup performs a fresh activation cycle against the current file;
+a request that reaches a closed context returns `PROJECT_STATE_INVALID` and
+the client reconnects. The registry never reuses a context across a physical
+identity change, even when the canonical path is unchanged.
+
 ## 4. Initialization and graph capability
 
-`repin init` is a daemon-mediated operation. It creates `.repin` with private
-permissions, acquires that project's writer lock, and creates `graph.sqlite3`.
-By default, `repin init` automatically triggers initial workspace indexing across
-all matching files unless explicitly skipped via `--no-index`.
-It MUST NOT overwrite an existing database. Creation and activation recheck
-the canonical paths and filesystem identity before publishing the initialized
-context.
+`repin init` is a daemon-mediated operation. The client sends an initialize
+request before project binding; the daemon creates `.repin` with private
+permissions, creates the ignore marker, acquires that project's writer lock,
+creates `graph.sqlite3` under that lock, publishes the context, and binds the
+requesting connection to it. The lock acquired for creation is the same handle
+the published context owns for its lifetime; it is not released and reacquired
+between creation and activation. By default, `repin init` automatically
+triggers initial workspace indexing across all matching files unless explicitly
+skipped via `--no-index`. It MUST NOT overwrite an existing database; an
+already initialized project binds its existing context instead. Creation and
+activation recheck the canonical paths and filesystem identity before
+publishing the initialized context.
 
-`repin uninit` removes the `.repin` metadata directory and uninitializes the
-repository workspace. Interactive confirmation is prompted before removing the
-directory unless bypassed via `--force` / `-f` / `-y`.
+Initialization classifies the state entry before reporting success. Creating
+the database stamps the store format and schema version, and a creation or
+validation failure is reported with the state class from the table below —
+`PROJECT_STATE_INVALID` or `PROJECT_STATE_NEWER`. A `graph.sqlite3` that
+exists but is not a regular file (a directory, symlink, or reparse point) is
+not a project marker under §3 and is rejected as `PROJECT_STATE_INVALID`.
+Initialization MUST NOT report success for state that cannot subsequently be
+activated.
+
+`repin uninit` is likewise daemon-mediated. It removes the `.repin` metadata
+directory and uninitializes the repository workspace. The client sends an
+uninitialize request before project binding; the daemon resolves the state
+directory, unloads that project's context — closing the graph store and
+releasing the writer lease — and only then removes the directory. Removal is
+refused with `PROJECT_LEASE_UNAVAILABLE` while another connection is attached
+to that context, and the durable state is left intact. When no daemon is
+reachable, the client may remove an unattached state directory itself; it MUST
+NOT start a daemon in order to uninitialize. Uninitializing a project that is
+not initialized succeeds and reports that nothing was removed. Interactive
+confirmation is prompted before removing the directory unless bypassed via
+`--force` / `-f` / `-y`.
+
+Both operations are accepted by
+[ADR-026](decisions/ADR-026-daemon-mediated-state-lifecycle.md).
 
 Project membership and graph capability are separate outcomes:
 
 | State | Connection outcome |
-|---|---|
+| --- | --- |
 | No `.repin/graph.sqlite3` pair | `PROJECT_NOT_INITIALIZED`; choose another root or initialize |
 | Pair exists and store validates | Attach normally; graph and available indexes may be used |
 | Pair exists but is invalid, corrupt, or unsupported | Attach in degraded mode with `PROJECT_STATE_INVALID`; preserve bounded direct working-tree retrieval |
@@ -304,7 +339,7 @@ These errors are part of the public status/error vocabulary in addition to the
 general taxonomy in [Results and Evidence](results.md):
 
 | Code | Meaning |
-|---|---|
+| --- | --- |
 | `PROJECT_NOT_INITIALIZED` | No valid `.repin/graph.sqlite3` pair was found for the selector. |
 | `PROJECT_STATE_INVALID` | A database exists but is invalid, corrupt, or unsupported. |
 | `PROJECT_STATE_NEWER` | The database schema is newer than this engine can read. |
@@ -340,6 +375,14 @@ The runtime implementation is conforming only if all of the following hold:
    and recovers each project independently.
 9. Deadlines, cancellation, progress, and protocol negotiation work across a
    bound connection without reintroducing project paths into domain requests.
+10. Initialization and removal of durable project state are daemon-mediated;
+    creation happens under the writer lock that the published context keeps,
+    initialization never reports success for state it cannot activate, and
+    removal unloads the context and releases the writer lease before the state
+    directory disappears, and is refused while another connection is attached.
+11. A database that disappears or changes physical identity evicts and closes
+    its context on the next lookup or request; a re-initialized database at
+    the same canonical path never serves the previous graph.
 
 ADR-015 accepts the runtime topology. The invariants above and its named fault
 cases remain required implementation validation and may reopen the decision if

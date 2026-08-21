@@ -126,7 +126,6 @@ impl Transaction for SqliteTransaction {
             )
             .map_err(|e| StoreError::Io(e.to_string()))?;
 
-            // Index in FTS5
             let _ = conn.execute(
                 "INSERT INTO fts_nodes (node_id, name, qualified_name, path, attributes)
                  VALUES (?1, ?2, ?3, ?4, ?5)",

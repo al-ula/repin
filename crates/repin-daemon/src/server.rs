@@ -266,6 +266,54 @@ impl DaemonServer {
                     code: ErrorCode::ProtocolMismatch,
                     message: "bootstrap negotiation is required before project binding".to_string(),
                 },
+                IpcRequest::InitializeProject { ref project_root } if negotiated => {
+                    match crate::state::initialize_state(Path::new(project_root)) {
+                        Ok(state) => match registry.publish_created(&state.layout.db_path, state.lease)
+                        {
+                            Ok(ctx) => {
+                                let is_writer = ctx.is_writer();
+                                bound_db_path = Some(ctx.canonical_db_path().to_path_buf());
+                                bound_context = Some(ctx);
+                                IpcResponse::InitializeProjectOk {
+                                    project_root: state.layout.project_root.display().to_string(),
+                                    db_path: state.layout.db_path.display().to_string(),
+                                    created: state.created,
+                                    is_writer,
+                                }
+                            }
+                            Err(message) => IpcResponse::Error {
+                                code: ErrorCode::ProjectStateInvalid,
+                                message,
+                            },
+                        },
+                        Err((code, message)) => IpcResponse::Error { code, message },
+                    }
+                }
+                IpcRequest::UninitializeProject { ref project_root } if negotiated => {
+                    if bound_context.is_some() {
+                        IpcResponse::Error {
+                            code: ErrorCode::ProjectLeaseUnavailable,
+                            message:
+                                "this connection is bound to a project; uninitialize before binding"
+                                    .to_string(),
+                        }
+                    } else {
+                        match crate::state::uninitialize_state(&registry, Path::new(project_root)) {
+                            Ok(removed) => IpcResponse::UninitializeProjectOk {
+                                project_root: removed.project_root.display().to_string(),
+                                removed: removed.removed,
+                            },
+                            Err((code, message)) => IpcResponse::Error { code, message },
+                        }
+                    }
+                }
+                IpcRequest::InitializeProject { .. } | IpcRequest::UninitializeProject { .. } => {
+                    IpcResponse::Error {
+                        code: ErrorCode::ProtocolMismatch,
+                        message: "bootstrap negotiation is required before state lifecycle requests"
+                            .to_string(),
+                    }
+                }
                 IpcRequest::Shutdown => {
                     running.store(false, Ordering::SeqCst);
                     IpcResponse::StatusOk {
@@ -276,7 +324,23 @@ impl DaemonServer {
                 }
                 other => {
                     if let Some(ref ctx) = bound_context {
-                        Self::dispatch_project_request(ctx, other)
+                        // Revalidate physical database identity before any
+                        // project-bound work: state removed or replaced under
+                        // an active context fails closed (ADR-026).
+                        if ctx.is_usable() {
+                            Self::dispatch_project_request(ctx, other)
+                        } else {
+                            let path = ctx.canonical_db_path().to_path_buf();
+                            bound_context = None;
+                            registry.unload(&path);
+                            bound_db_path = None;
+                            IpcResponse::Error {
+                                code: ErrorCode::ProjectStateInvalid,
+                                message:
+                                    "project state was removed or replaced; reconnect to recover"
+                                        .to_string(),
+                            }
+                        }
                     } else {
                         IpcResponse::Error {
                             code: ErrorCode::CapabilityUnavailable,

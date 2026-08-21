@@ -14,6 +14,7 @@ pub enum LeaseError {
     AlreadyHeld,
 }
 
+#[derive(Debug)]
 pub struct FileLease {
     path: PathBuf,
     file: Option<File>,

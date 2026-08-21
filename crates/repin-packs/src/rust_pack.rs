@@ -111,13 +111,11 @@ impl RustLanguagePack {
                         NodeKind::Function
                     };
 
-                    // Check visibility
                     if let Some(vis_node) = ts_node.child_by_field_name("visibility") {
                         let vis_text = node_text(&vis_node, source);
                         attrs.insert("visibility".to_string(), serde_json::json!(vis_text));
                     }
 
-                    // Extract doc comments
                     if let Some(doc) = Self::extract_doc_comment(ts_node, source) {
                         attrs.insert("doc_summary".to_string(), serde_json::json!(doc));
                     }
@@ -241,7 +239,6 @@ impl RustLanguagePack {
                         Attributes::default(),
                     ));
 
-                    // Recurse into trait methods
                     container_chain.push(format!("trait {name}"));
                     parent_id_stack.push(trait_id);
 

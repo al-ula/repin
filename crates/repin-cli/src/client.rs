@@ -1,7 +1,7 @@
 use repin_protocol::ipc::{
     BootstrapHandshake, IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope,
 };
-use repin_protocol::{BOOTSTRAP_VERSION, PROTOCOL_MAX, PROTOCOL_MIN};
+use repin_protocol::{BOOTSTRAP_VERSION, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE};
 use std::io::{BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
@@ -10,6 +10,7 @@ pub struct DaemonClient {
     stream: UnixStream,
     reader: BufReader<UnixStream>,
     next_req_id: u64,
+    selected_protocol: u32,
 }
 
 fn read_bounded_frame<R: Read>(reader: &mut R, max_bytes: usize) -> Result<Vec<u8>, String> {
@@ -65,19 +66,27 @@ impl DaemonClient {
             stream,
             reader: BufReader::new(reader_stream),
             next_req_id: 1,
+            selected_protocol: PROTOCOL_MIN,
         };
         client.negotiate_bootstrap()?;
         Ok(client)
     }
 
-    pub fn connect_or_start(db_path: &Path) -> Result<Self, String> {
+    /// Negotiated but unbound connection to an already-running daemon. Used by
+    /// state lifecycle requests, which precede project binding (ADR-026).
+    pub fn connect_existing_unbound(runtime_dir: Option<&Path>) -> Result<Self, String> {
+        Self::connect_existing(runtime_dir)
+    }
+
+    /// Negotiated but unbound connection, starting a daemon when none is
+    /// listening. State lifecycle requests are issued before project binding.
+    pub fn connect_or_start_unbound() -> Result<Self, String> {
         let runtime_dir = Self::default_runtime_dir();
         let socket_path = runtime_dir.join("daemon.sock");
 
         let stream = match UnixStream::connect(&socket_path) {
             Ok(s) => s,
             Err(_) => {
-                // Spawn persistent background daemon subprocess
                 let current_exe =
                     std::env::current_exe().unwrap_or_else(|_| PathBuf::from("repin"));
                 let _ = std::process::Command::new(&current_exe)
@@ -87,7 +96,6 @@ impl DaemonClient {
                     .stderr(std::process::Stdio::null())
                     .spawn();
 
-                // Bounded wait for socket
                 let mut connected = None;
                 for _ in 0..30 {
                     std::thread::sleep(std::time::Duration::from_millis(50));
@@ -110,9 +118,14 @@ impl DaemonClient {
             stream,
             reader: BufReader::new(reader_stream),
             next_req_id: 1,
+            selected_protocol: PROTOCOL_MIN,
         };
-
         client.negotiate_bootstrap()?;
+        Ok(client)
+    }
+
+    pub fn connect_or_start(db_path: &Path) -> Result<Self, String> {
+        let mut client = Self::connect_or_start_unbound()?;
 
         // Project binding handshake follows successful bootstrap negotiation.
         let resp = client.send_request(IpcRequest::Handshake {
@@ -139,7 +152,9 @@ impl DaemonClient {
             replacement_request: false,
         }))?;
         match bootstrap {
-            IpcResponse::BootstrapOk(_) => {}
+            IpcResponse::BootstrapOk(ok) => {
+                self.selected_protocol = ok.selected_protocol;
+            }
             IpcResponse::BootstrapRejected(rejected) => {
                 return Err(format!(
                     "bootstrap negotiation failed: {} (daemon supports {}..={}, replacement_allowed={})",
@@ -155,6 +170,17 @@ impl DaemonClient {
             .set_read_timeout(None)
             .map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    pub fn selected_protocol(&self) -> u32 {
+        self.selected_protocol
+    }
+
+    /// Whether the negotiated protocol carries the daemon-mediated state
+    /// lifecycle requests (ADR-026). An older daemon still overlaps at
+    /// protocol 1, so a client must check before sending them.
+    pub fn supports_state_lifecycle(&self) -> bool {
+        self.selected_protocol >= PROTOCOL_STATE_LIFECYCLE
     }
 
     pub fn stop_daemon(runtime_dir: Option<&Path>) -> Result<(), String> {
@@ -185,7 +211,6 @@ impl DaemonClient {
         );
         let _ = client.send_request(IpcRequest::Shutdown);
 
-        // Bounded wait for socket removal
         for _ in 0..40 {
             if !socket_path.exists() {
                 println!("Daemon shut down successfully.");
@@ -194,7 +219,6 @@ impl DaemonClient {
             std::thread::sleep(std::time::Duration::from_millis(50));
         }
 
-        // Clean up socket if still lingering
         let _ = std::fs::remove_file(&socket_path);
         println!("Daemon stopped.");
         Ok(())
@@ -249,6 +273,7 @@ impl DaemonClient {
             stream,
             reader: BufReader::new(reader_stream),
             next_req_id: 1,
+            selected_protocol: PROTOCOL_MIN,
         };
         let accepted = match client.send_request(IpcRequest::Bootstrap(BootstrapHandshake {
             bootstrap_version: BOOTSTRAP_VERSION,

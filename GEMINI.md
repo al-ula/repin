@@ -8,6 +8,12 @@ The specification in `docs/` is the authoritative source of truth and normative 
 - **Contract Fidelity**: Code implementations and test suites must strictly adhere to the specification. Code must never silently diverge from, bypass, or invent new semantics without updating the authoritative specification first.
 - **Documentation Integrity**: Whenever changes affect architecture or design, ensure all cross-references remain valid, the table of contents (`docs/SUMMARY.md`) is maintained, and `mdbook build` compiles cleanly.
 
+## Writing Style
+
+- **Terse**: Say the minimum that conveys the meaning. No filler words, no restating the obvious.
+- **No Litotes**: Do not use understatement or denial of the opposite to imply a point (e.g. avoid "not bad", "not unimportant"). State directly.
+- **No Overcommenting**: Do not add comments that merely restate the code. Comment only for non-obvious intent, invariants, or rationale.
+
 ## Autonomous Goal Execution
 
 When performing autonomous work for a `/goal`:

@@ -8,9 +8,7 @@ use repin_cli::commands::daemon::{
     execute_daemon_restart, execute_daemon_run, execute_daemon_status, execute_daemon_stop,
 };
 use repin_cli::commands::eval::execute_eval;
-use repin_cli::commands::graph::{
-    execute_entity, execute_impact, execute_neighbors, execute_path,
-};
+use repin_cli::commands::graph::{execute_entity, execute_impact, execute_neighbors, execute_path};
 use repin_cli::commands::index::{execute_index, execute_init, execute_uninit};
 use repin_cli::commands::inspect::{execute_at_position, execute_inspect};
 use repin_cli::commands::rebuild::execute_rebuild;
@@ -188,9 +186,7 @@ enum Commands {
         json: bool,
     },
 
-    #[command(
-        about = "Trace shortest dependency or call path connecting two symbols (ADR-025)"
-    )]
+    #[command(about = "Trace shortest dependency or call path connecting two symbols (ADR-025)")]
     Path {
         from: String,
         to: String,
@@ -474,18 +470,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Commands::Init { path, no_index } = cli.command {
         let target_path = path.unwrap_or(start_path);
-        execute_init(&target_path)?;
+        let mut client = execute_init(&target_path)?;
         if !no_index {
-            let discovered = discover_project_from(&target_path).unwrap_or_else(|| {
-                let default_repin = target_path.join(".repin");
-                let default_db = default_repin.join("graph.sqlite3");
-                repin_cli::discovery::DiscoveredProject {
-                    root_dir: target_path.clone(),
-                    db_path: default_db,
-                }
-            });
-            let mut client = DaemonClient::connect_or_start(&discovered.db_path)
-                .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
             execute_index(&mut client).map_err(|e| format!("Index error: {e}"))?;
         }
         return Ok(());
