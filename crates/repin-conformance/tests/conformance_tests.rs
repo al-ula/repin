@@ -33,7 +33,8 @@ fn test_replay_harness_convergence() {
 #[test]
 fn test_impact_and_path_conformance() {
     let dir = tempdir().unwrap();
-    let src = dir.path().join("src");
+    let project_root = dir.path().join("project");
+    let src = project_root.join("src");
     fs::create_dir_all(&src).unwrap();
 
     fs::write(src.join("a.rs"), b"pub fn helper_a() {}\n").unwrap();
@@ -48,10 +49,12 @@ fn test_impact_and_path_conformance() {
     )
     .unwrap();
 
-    let db_path = dir.path().join(".repin/graph.sqlite3");
+    let state_dir = dir.path().join("state");
+    fs::create_dir_all(&state_dir).unwrap();
+    let db_path = state_dir.join("graph.sqlite3");
     let engine = Engine::open(EngineOptions {
         root_id: "root".to_string(),
-        root_path: dir.path().to_path_buf(),
+        root_path: project_root,
         db_path: Some(db_path),
     })
     .unwrap();

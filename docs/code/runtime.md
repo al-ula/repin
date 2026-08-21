@@ -251,6 +251,13 @@ the project path. Request IDs permit concurrent operations, progress,
 deadlines, and cancellation within the bound project. To change projects, a
 client closes the connection and establishes another one.
 
+The host-resolved configuration is an optional field on the project activation
+request. The daemon passes it to the context and runtime; runtime construction
+does not discover or read configuration files. An older client may omit the
+field, in which case the daemon uses conservative defaults. A detached cached
+context may be reopened with a new resolved configuration; an attached context
+rejects a conflicting configuration until its clients detach.
+
 Multiple connections may bind to the same canonical database path and share
 the same warm context. They observe the same committed revision and status;
 they do not each open a store or watcher. A connection bound to one project

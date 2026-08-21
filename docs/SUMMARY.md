@@ -72,6 +72,8 @@
   - [ADR-024 — Compatibility versioning and conservative state replacement](code/decisions/ADR-024-compatibility-versioning.md)
   - [ADR-025 — Graph impact analysis and dependency path traversal](code/decisions/ADR-025-graph-impact-and-path-traversal.md)
   - [ADR-026 — Daemon-mediated state lifecycle and database identity](code/decisions/ADR-026-daemon-mediated-state-lifecycle.md)
+  - [ADR-027 — CLI flag overrides](code/decisions/ADR-027-cli-override-flags.md)
+  - [ADR-028 — Centralized product layout](code/decisions/ADR-028-centralized-path-layout.md)
 
 ## Subsystem Specifications
 

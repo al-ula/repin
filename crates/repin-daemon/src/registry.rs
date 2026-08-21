@@ -1,4 +1,5 @@
 use crate::context_handle::{ProjectContext, WriterLease};
+use repin_core::config::RepinConfig;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -8,6 +9,7 @@ use std::time::{Duration, Instant};
 pub struct ContextRegistry {
     contexts: Arc<Mutex<HashMap<PathBuf, Arc<ProjectContext>>>>,
     idle_since: Arc<Mutex<HashMap<PathBuf, Instant>>>,
+    idle_timeout: Duration,
 }
 
 impl ContextRegistry {
@@ -15,10 +17,24 @@ impl ContextRegistry {
         Self {
             contexts: Arc::new(Mutex::new(HashMap::new())),
             idle_since: Arc::new(Mutex::new(HashMap::new())),
+            idle_timeout: Duration::from_millis(600_000),
         }
     }
 
+    /// Override the idle reap threshold (ADR-027: `repin daemon run --idle-timeout`).
+    pub fn set_idle_timeout(&mut self, timeout: Duration) {
+        self.idle_timeout = timeout;
+    }
+
     pub fn get_or_load<P: AsRef<Path>>(&self, db_path: P) -> Result<Arc<ProjectContext>, String> {
+        self.get_or_load_with_config(db_path, RepinConfig::default())
+    }
+
+    pub fn get_or_load_with_config<P: AsRef<Path>>(
+        &self,
+        db_path: P,
+        config: RepinConfig,
+    ) -> Result<Arc<ProjectContext>, String> {
         let canonical = db_path
             .as_ref()
             .canonicalize()
@@ -30,16 +46,21 @@ impl ContextRegistry {
             // the physical identity recorded at open time (ADR-026). A removed
             // or replaced database fails that context closed and a fresh
             // activation cycle runs against the current file.
-            if ctx.is_usable() {
+            if ctx.is_usable() && ctx.config() == &config {
                 self.idle_since.lock().unwrap().remove(&canonical);
                 return Ok(ctx.clone());
+            }
+            if ctx.is_usable() && Arc::strong_count(ctx) > 1 {
+                return Err(
+                    "project is attached with a different resolved configuration; close clients before reconnecting with another configuration".to_string(),
+                );
             }
             ctx.mark_closed();
             lock.remove(&canonical);
             self.idle_since.lock().unwrap().remove(&canonical);
         }
 
-        let ctx = Arc::new(ProjectContext::open(canonical.clone())?);
+        let ctx = Arc::new(ProjectContext::open_with_config(canonical.clone(), config)?);
         lock.insert(canonical, ctx.clone());
         Ok(ctx)
     }
@@ -53,6 +74,15 @@ impl ContextRegistry {
         db_path: P,
         lease: WriterLease,
     ) -> Result<Arc<ProjectContext>, String> {
+        self.publish_created_with_config(db_path, lease, RepinConfig::default())
+    }
+
+    pub fn publish_created_with_config<P: AsRef<Path>>(
+        &self,
+        db_path: P,
+        lease: WriterLease,
+        config: RepinConfig,
+    ) -> Result<Arc<ProjectContext>, String> {
         let canonical = db_path
             .as_ref()
             .canonicalize()
@@ -60,7 +90,7 @@ impl ContextRegistry {
 
         let mut lock = self.contexts.lock().unwrap();
         if let Some(ctx) = lock.get(&canonical) {
-            if ctx.is_usable() {
+            if ctx.is_usable() && ctx.config() == &config {
                 // Another connection already activated this project; its
                 // context owns the authoritative handle. Release ours rather
                 // than holding a second lease for the same database.
@@ -68,12 +98,22 @@ impl ContextRegistry {
                 self.idle_since.lock().unwrap().remove(&canonical);
                 return Ok(ctx.clone());
             }
+            if ctx.is_usable() {
+                drop(lease);
+                return Err(
+                    "project is already active with a different resolved configuration".to_string(),
+                );
+            }
             ctx.mark_closed();
             lock.remove(&canonical);
             self.idle_since.lock().unwrap().remove(&canonical);
         }
 
-        let ctx = Arc::new(ProjectContext::open_with_lease(canonical.clone(), lease)?);
+        let ctx = Arc::new(ProjectContext::open_with_lease_and_config(
+            canonical.clone(),
+            lease,
+            config,
+        )?);
         lock.insert(canonical, ctx.clone());
         Ok(ctx)
     }
@@ -111,8 +151,7 @@ impl ContextRegistry {
     }
 
     pub fn reap_idle(&self) {
-        const IDLE_TIMEOUT: Duration = Duration::from_millis(600_000);
-        self.reap_idle_after(IDLE_TIMEOUT);
+        self.reap_idle_after(self.idle_timeout);
     }
 
     fn reap_idle_after(&self, idle_timeout: Duration) {
@@ -163,15 +202,16 @@ impl ContextRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use repin_product::ProjectLayout;
     use std::fs;
     use tempfile::tempdir;
 
     #[test]
     fn detached_context_is_reaped_only_after_idle_timeout() {
         let dir = tempdir().unwrap();
-        let repin_dir = dir.path().join(".repin");
-        fs::create_dir_all(&repin_dir).unwrap();
-        let db = repin_dir.join("graph.sqlite3");
+        let layout = ProjectLayout::at_root(dir.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
+        let db = layout.db_path;
         let registry = ContextRegistry::new();
         let context = registry.get_or_load(&db).unwrap();
         assert_eq!(registry.active_count(), 1);
@@ -186,9 +226,9 @@ mod tests {
     #[test]
     fn replaced_database_is_not_served_from_the_cached_context() {
         let dir = tempdir().unwrap();
-        let repin_dir = dir.path().join(".repin");
-        fs::create_dir_all(&repin_dir).unwrap();
-        let db = repin_dir.join("graph.sqlite3");
+        let layout = ProjectLayout::at_root(dir.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
+        let db = layout.db_path;
         let registry = ContextRegistry::new();
 
         let first = registry.get_or_load(&db).unwrap();
@@ -198,11 +238,11 @@ mod tests {
 
         // Simulate `uninit` followed by `init`: the canonical path is the same
         // but the inode is not.
-        fs::remove_dir_all(&repin_dir).unwrap();
+        fs::remove_dir_all(&layout.state_dir).unwrap();
         assert!(!first.is_usable());
         assert!(first.is_closed());
 
-        fs::create_dir_all(&repin_dir).unwrap();
+        fs::create_dir_all(&layout.state_dir).unwrap();
         let second = registry.get_or_load(&db).unwrap();
         assert_ne!(second.identity(), first_identity);
         assert!(second.is_usable());
@@ -212,9 +252,9 @@ mod tests {
     #[test]
     fn unload_closes_the_context_and_reports_attachment() {
         let dir = tempdir().unwrap();
-        let repin_dir = dir.path().join(".repin");
-        fs::create_dir_all(&repin_dir).unwrap();
-        let db = repin_dir.join("graph.sqlite3");
+        let layout = ProjectLayout::at_root(dir.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
+        let db = layout.db_path;
         let registry = ContextRegistry::new();
 
         let attached = registry.get_or_load(&db).unwrap();
@@ -225,5 +265,38 @@ mod tests {
         assert!(registry.unload(&db));
         assert_eq!(registry.active_count(), 0);
         assert!(!registry.unload(&db));
+    }
+
+    #[test]
+    fn resolved_configuration_is_injected_and_conflicts_are_scoped_to_attachments() {
+        let dir = tempdir().unwrap();
+        let layout = ProjectLayout::at_root(dir.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
+        let db = layout.db_path;
+        let registry = ContextRegistry::new();
+
+        let mut config = RepinConfig::default();
+        config
+            .indexing
+            .exclude_paths
+            .push("generated/**".to_string());
+        let context = registry
+            .get_or_load_with_config(&db, config.clone())
+            .unwrap();
+        assert_eq!(context.config(), &config);
+
+        let conflicting = RepinConfig::default();
+        assert!(
+            registry
+                .get_or_load_with_config(&db, conflicting.clone())
+                .is_err()
+        );
+
+        drop(context);
+        registry.mark_detached(&db);
+        let replacement = registry
+            .get_or_load_with_config(&db, conflicting.clone())
+            .unwrap();
+        assert_eq!(replacement.config(), &conflicting);
     }
 }

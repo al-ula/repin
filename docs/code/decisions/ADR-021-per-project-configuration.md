@@ -30,7 +30,7 @@ Repin adopts a deterministic, hierarchical configuration system based on TOML (`
 
 3. **Immutable Safety Floors**:
    - **Root Containment**: Project configuration cannot point to or read paths outside the project root.
-   - **Secret Exclusions**: Hardcoded security exclusions (`.git`, `.repin`, `.env`, `id_rsa`, `*.pem`, `*.key`) are merged via set union and can never be disabled by project configuration.
+   - **Secret Exclusions**: Hardcoded security exclusions (`.git`, `.env`, `id_rsa`, `*.pem`, `*.key`) are merged via set union and can never be disabled by project configuration. The product composition adds its private `.repin` metadata directory as an explicit immutable exclusion.
    - **No Arbitrary Execution**: External callback commands (e.g. `intelligence.rerank.agent_cmd`) require host trust and explicit invocation.
 
 4. **CLI Ergonomics & Subcommands**:

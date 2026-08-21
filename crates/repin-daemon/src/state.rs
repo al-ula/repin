@@ -1,32 +1,13 @@
 use crate::context_handle::WriterLease;
 use crate::registry::ContextRegistry;
 use repin_core::ports::store::StoreError;
+pub use repin_product::{GRAPH_DB_FILE, STATE_DIR};
 use repin_protocol::errors::ErrorCode;
 use repin_store_sqlite::SqliteStore;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub const STATE_DIR: &str = ".repin";
-pub const GRAPH_DB_FILE: &str = "graph.sqlite3";
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StateLayout {
-    pub project_root: PathBuf,
-    pub state_dir: PathBuf,
-    pub db_path: PathBuf,
-}
-
-impl StateLayout {
-    pub fn at_root(project_root: &Path) -> Self {
-        let state_dir = project_root.join(STATE_DIR);
-        let db_path = state_dir.join(GRAPH_DB_FILE);
-        Self {
-            project_root: project_root.to_path_buf(),
-            state_dir,
-            db_path,
-        }
-    }
-}
+pub type StateLayout = repin_product::ProjectLayout;
 
 /// Resolve the state directory that an uninitialize request addresses. The
 /// supplied root wins when it carries a state directory; otherwise the nearest
@@ -40,9 +21,9 @@ pub fn discover_state_layout(start: &Path) -> Option<StateLayout> {
     };
 
     loop {
-        let candidate = current.join(STATE_DIR);
-        if candidate.is_dir() {
-            return Some(StateLayout::at_root(&current));
+        let layout = StateLayout::at_root(&current);
+        if layout.state_dir.is_dir() {
+            return Some(layout);
         }
         current = current.parent()?.to_path_buf();
     }
@@ -109,9 +90,8 @@ pub fn initialize_state(project_root: &Path) -> Result<InitializedState, (ErrorC
     })?;
     apply_private_permissions(&layout.state_dir)?;
 
-    let gitignore = layout.state_dir.join(".gitignore");
-    if !gitignore.exists() {
-        fs::write(&gitignore, "*\n").map_err(|error| {
+    if !layout.ignore_marker.exists() {
+        fs::write(&layout.ignore_marker, "*\n").map_err(|error| {
             (
                 ErrorCode::StatePermissions,
                 format!("failed to create ignore marker: {error}"),
@@ -121,7 +101,7 @@ pub fn initialize_state(project_root: &Path) -> Result<InitializedState, (ErrorC
 
     // Lease before create: the handle guarding creation is the handle the
     // published context keeps for its lifetime.
-    let lease = WriterLease::acquire(&layout.state_dir);
+    let lease = WriterLease::acquire(&layout.writer_lock);
 
     // Creating the store stamps the application id and schema version, and
     // classifies an existing database without overwriting it. Only the lease
@@ -224,7 +204,7 @@ mod tests {
         assert!(state.created);
         assert!(state.layout.state_dir.is_dir());
         assert_eq!(
-            fs::read_to_string(state.layout.state_dir.join(".gitignore")).unwrap(),
+            fs::read_to_string(&state.layout.ignore_marker).unwrap(),
             "*\n"
         );
         let mode = fs::metadata(&state.layout.state_dir)
@@ -242,7 +222,7 @@ mod tests {
         // Create a real, valid database and record its identity.
         let first = initialize_state(dir.path()).unwrap();
         assert!(first.created);
-        fs::write(layout.state_dir.join(".gitignore"), "# custom\n").unwrap();
+        fs::write(&layout.ignore_marker, "# custom\n").unwrap();
         let before = fs::metadata(&layout.db_path).unwrap().len();
         drop(first);
 
@@ -251,7 +231,7 @@ mod tests {
         assert!(!state.created);
         assert_eq!(fs::metadata(&layout.db_path).unwrap().len(), before);
         assert_eq!(
-            fs::read_to_string(layout.state_dir.join(".gitignore")).unwrap(),
+            fs::read_to_string(&layout.ignore_marker).unwrap(),
             "# custom\n"
         );
     }

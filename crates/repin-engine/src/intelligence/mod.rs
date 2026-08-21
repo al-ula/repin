@@ -12,12 +12,12 @@ mod tests {
     fn provider_registry_defaults_to_absence() {
         let config = RepinConfig::default();
         assert!(
-            IntelligenceRegistry::build_embedding_model(&config)
+            IntelligenceRegistry::build_embedding_model(&config, std::path::Path::new("/tmp"))
                 .unwrap()
                 .is_none()
         );
         assert!(
-            IntelligenceRegistry::build_reranker(&config)
+            IntelligenceRegistry::build_reranker(&config, std::path::Path::new("/tmp"))
                 .unwrap()
                 .is_none()
         );

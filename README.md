@@ -15,9 +15,13 @@ For the full scope, agnosticism, the workspace crate layout, and reading convent
 ### Build & Test
 
 ```bash
-cargo build --release
-cargo test
+just release
+just test
 ```
+
+The `just` build recipes embed the current Git commit in the binary identity
+(`v<package>-<commit>`, showing the first 12 characters). Direct Cargo builds
+remain supported and use `v<package>-unknown`.
 
 ### Initialize, Index & Search
 

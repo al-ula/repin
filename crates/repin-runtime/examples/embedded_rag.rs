@@ -100,7 +100,7 @@ fn run_rag<E: EmbeddingModel, I: CallerInference>(
     let view = store.read_view().map_err(|error| error.to_string())?;
     let lexical = StoreLexical { store: &store };
     let ranked =
-        HybridRetriever::search(view.as_ref(), Some(&lexical), "answer", 16, None).candidates;
+        HybridRetriever::search(view.as_ref(), Some(&lexical), "answer", 16, None, None).candidates;
 
     let query_vector = embedder
         .embed(&["answer".to_string()])
@@ -185,7 +185,12 @@ fn main() -> Result<(), String> {
     println!("vector hits: {}", output.vector_hits);
 
     if let Some(model_id) = local_model {
-        let model = EmbeddedOnnxModel::new(model_id, Some(32), allow_download);
+        let model = EmbeddedOnnxModel::new(
+            directory.path().join("model-cache"),
+            model_id,
+            Some(32),
+            allow_download,
+        );
         let vectors = model
             .embed(&["opt-in local model smoke".to_string()])
             .map_err(|error| error.to_string())?;

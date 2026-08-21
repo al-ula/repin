@@ -7,6 +7,8 @@ pub fn execute_rerank(
     query: &str,
     candidates: Vec<String>,
     agent_cmd: &str,
+    top_n: Option<usize>,
+    deadline_ms: Option<u64>,
 ) -> Result<(), String> {
     let trimmed_cmd = agent_cmd.trim();
     if trimmed_cmd.is_empty() {
@@ -34,6 +36,8 @@ pub fn execute_rerank(
         query: query.to_string(),
         candidates,
         agent_cmd: trimmed_cmd.to_string(),
+        top_n,
+        deadline_ms,
     })?;
 
     match resp {

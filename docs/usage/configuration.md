@@ -53,6 +53,27 @@ default_limit = 50
 
 Use `repin config validate` after editing. Invalid schema versions, escaping roots, and unsafe project-level credential settings are rejected.
 
+## CLI flag overrides
+
+A bounded set of behavior keys may be overridden per invocation through CLI flags without editing `config.toml`. Flags never persist; they apply only to the single command. The following keys accept overrides (see the [CLI Reference](cli.md) for flag names):
+
+| Config key | Flag |
+| --- | --- |
+| `retrieval.default_mode` | `repin search --mode` |
+| `retrieval.centrality_boost` | `repin search --boost` |
+| `retrieval.default_limit` | `repin search --limit` |
+| `context.padding_lines` | `repin context --padding-lines` |
+| `context.include_blast_radius` | `repin context --no-blast-radius` |
+| `context.include_verbatim_source` | `repin context --no-verbatim-source` |
+| `context.default_token_budget` | `repin context --budget` |
+| `intelligence.rerank.top_n` | `repin rerank --top-n` |
+| `intelligence.rerank.deadline_ms` | `repin rerank --deadline-ms` |
+| `intelligence.rerank.agent_cmd` | `repin rerank --agent-cmd` |
+| `daemon.idle_timeout_secs` | `repin daemon run --idle-timeout` |
+| `daemon.watch_debounce_ms` | `repin watch --interval` |
+
+Structural and secret-bearing keys (`project.*`, `storage.*`, `indexing.*`, `intelligence.providers`, `*.endpoint`, `*.api_key_env`) remain file-only and are intentionally not exposed as flags.
+
 ## Provider credentials
 
 Project configuration may select a provider, but provider profiles and `api_key_env` entries belong in the user-global file. Keep secrets in environment variables; do not place secret values in TOML.

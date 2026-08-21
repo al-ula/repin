@@ -1,3 +1,4 @@
+use repin_product::ProjectLayout;
 use std::process::Command;
 use tempfile::tempdir;
 
@@ -10,6 +11,24 @@ fn repin(runtime_dir: &std::path::Path, project: &std::path::Path) -> Command {
         .arg("--project")
         .arg(project);
     command
+}
+
+#[test]
+fn test_version_uses_package_and_commit_identity() {
+    let output = Command::new(env!("CARGO_BIN_EXE_repin"))
+        .arg("--version")
+        .output()
+        .expect("Failed to execute repin --version");
+
+    assert!(output.status.success());
+    let version = String::from_utf8_lossy(&output.stdout);
+    let prefix = format!("repin v{}-", env!("CARGO_PKG_VERSION"));
+    assert!(
+        version.starts_with(&prefix),
+        "unexpected version: {version}"
+    );
+    let suffix = version.trim().strip_prefix(&prefix).unwrap();
+    assert!(suffix == "unknown" || (1..=12).contains(&suffix.len()));
 }
 
 #[test]
@@ -102,7 +121,7 @@ fn test_uninit_then_reinit_does_not_serve_the_removed_graph() {
         .output()
         .expect("repin uninit");
     assert!(uninit.status.success(), "repin uninit should succeed");
-    assert!(!project_path.join(".repin").exists());
+    assert!(!ProjectLayout::at_root(project_path).state_dir.exists());
 
     let reinit = repin(runtime.path(), project_path)
         .args(["init", "--no-index"])

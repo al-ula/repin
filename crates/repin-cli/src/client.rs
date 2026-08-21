@@ -1,3 +1,5 @@
+use repin_core::config::RepinConfig;
+use repin_product::{RuntimeLayout, default_runtime_layout};
 use repin_protocol::ipc::{
     BootstrapHandshake, IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope,
 };
@@ -33,18 +35,14 @@ fn read_bounded_frame<R: Read>(reader: &mut R, max_bytes: usize) -> Result<Vec<u
 
 impl DaemonClient {
     pub fn default_runtime_dir() -> PathBuf {
-        if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
-            PathBuf::from(xdg).join("repin")
-        } else {
-            std::env::temp_dir().join("repin-runtime")
-        }
+        default_runtime_layout().base
     }
 
     pub fn connect_existing(runtime_dir: Option<&Path>) -> Result<Self, String> {
         let rt_dir = runtime_dir
             .map(|p| p.to_path_buf())
             .unwrap_or_else(Self::default_runtime_dir);
-        let socket_path = rt_dir.join("daemon.sock");
+        let socket_path = RuntimeLayout::at_base(&rt_dir).socket_path;
 
         if !socket_path.exists() {
             return Err(format!(
@@ -82,7 +80,7 @@ impl DaemonClient {
     /// listening. State lifecycle requests are issued before project binding.
     pub fn connect_or_start_unbound() -> Result<Self, String> {
         let runtime_dir = Self::default_runtime_dir();
-        let socket_path = runtime_dir.join("daemon.sock");
+        let socket_path = RuntimeLayout::at_base(&runtime_dir).socket_path;
 
         let stream = match UnixStream::connect(&socket_path) {
             Ok(s) => s,
@@ -124,13 +122,14 @@ impl DaemonClient {
         Ok(client)
     }
 
-    pub fn connect_or_start(db_path: &Path) -> Result<Self, String> {
+    pub fn connect_or_start(db_path: &Path, resolved_config: &RepinConfig) -> Result<Self, String> {
         let mut client = Self::connect_or_start_unbound()?;
 
         // Project binding handshake follows successful bootstrap negotiation.
         let resp = client.send_request(IpcRequest::Handshake {
             client_version: env!("CARGO_PKG_VERSION").to_string(),
             project_db_path: db_path.display().to_string(),
+            resolved_config: Some(resolved_config.clone()),
         })?;
 
         match resp {
@@ -187,7 +186,7 @@ impl DaemonClient {
         let rt_dir = runtime_dir
             .map(|p| p.to_path_buf())
             .unwrap_or_else(Self::default_runtime_dir);
-        let socket_path = rt_dir.join("daemon.sock");
+        let socket_path = RuntimeLayout::at_base(&rt_dir).socket_path;
 
         if !socket_path.exists() {
             println!("No active daemon found at {}", socket_path.display());
@@ -224,7 +223,11 @@ impl DaemonClient {
         Ok(())
     }
 
-    pub fn restart_daemon(runtime_dir: Option<&Path>, db_path: &Path) -> Result<Self, String> {
+    pub fn restart_daemon(
+        runtime_dir: Option<&Path>,
+        db_path: &Path,
+        resolved_config: &RepinConfig,
+    ) -> Result<Self, String> {
         let rt_dir = runtime_dir
             .map(|p| p.to_path_buf())
             .unwrap_or_else(Self::default_runtime_dir);
@@ -235,7 +238,7 @@ impl DaemonClient {
         std::thread::sleep(std::time::Duration::from_millis(100));
 
         println!("Starting new daemon instance...");
-        let client = Self::connect_or_start(db_path)?;
+        let client = Self::connect_or_start(db_path, resolved_config)?;
         println!("Daemon restarted and connection established.");
         Ok(client)
     }
@@ -260,7 +263,7 @@ impl DaemonClient {
         let rt_dir = runtime_dir
             .map(Path::to_path_buf)
             .unwrap_or_else(Self::default_runtime_dir);
-        let socket_path = rt_dir.join("daemon.sock");
+        let socket_path = RuntimeLayout::at_base(&rt_dir).socket_path;
         let stream = UnixStream::connect(&socket_path)
             .map_err(|e| format!("failed to connect to daemon endpoint: {e}"))?;
         stream

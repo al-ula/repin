@@ -19,7 +19,7 @@ Rejection over correction is deliberate: a "corrected" path silently answers a d
 
 Two independent mechanisms that are frequently confused:
 
-**Selection rules** decide what may be read at all. They are a safety boundary. Secret-bearing patterns, dependency directories, build outputs, and version-control internals are excluded here, in the engine's own defaults.
+**Selection rules** decide what may be read at all. They are a safety boundary. Secret-bearing patterns, dependency directories, build outputs, and version-control internals are excluded here, in the engine's own defaults. Product composition adds private metadata directories such as `.repin` explicitly.
 
 **Scope** decides what a given query looks at within what is readable. It is a filter, not a boundary.
 

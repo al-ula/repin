@@ -1,5 +1,6 @@
 use crate::envelope::ResultEnvelope;
 use crate::errors::ErrorCode;
+use repin_core::config::RepinConfig;
 use repin_core::model::provenance::Revision;
 use repin_core::ports::fs::FileChange;
 use serde::{Deserialize, Serialize};
@@ -73,11 +74,15 @@ pub enum IpcRequest {
     Handshake {
         client_version: String,
         project_db_path: String,
+        #[serde(default)]
+        resolved_config: Option<RepinConfig>,
     },
     /// Daemon-mediated creation of durable project state (ADR-026). Issued
     /// before project binding; a successful response binds the connection.
     InitializeProject {
         project_root: String,
+        #[serde(default)]
+        resolved_config: Option<RepinConfig>,
     },
     /// Daemon-mediated removal of durable project state (ADR-026). Issued
     /// before project binding and refused while another connection is
@@ -103,6 +108,8 @@ pub enum IpcRequest {
     SearchHybrid {
         query: String,
         max_results: Option<usize>,
+        #[serde(default)]
+        centrality_boost: Option<f64>,
     },
     InspectFile {
         path: String,
@@ -131,6 +138,12 @@ pub enum IpcRequest {
     Context {
         query: String,
         budget_bytes: Option<usize>,
+        #[serde(default)]
+        padding_lines: Option<usize>,
+        #[serde(default)]
+        include_blast_radius: Option<bool>,
+        #[serde(default)]
+        include_verbatim_source: Option<bool>,
     },
     ReviewContext {
         changed_since: Option<Revision>,
@@ -144,6 +157,10 @@ pub enum IpcRequest {
         query: String,
         candidates: Vec<String>,
         agent_cmd: String,
+        #[serde(default)]
+        top_n: Option<usize>,
+        #[serde(default)]
+        deadline_ms: Option<u64>,
     },
     Eval,
     Shutdown,

@@ -52,7 +52,7 @@ mod tests {
         let runtime = Runtime::open(RuntimeOptions {
             root_id: "root".to_string(),
             root_path: directory.path().to_path_buf(),
-            db_path: Some(blocked_parent.join("graph.sqlite3")),
+            db_path: Some(blocked_parent.join("state.sqlite3")),
         })
         .unwrap();
         let result = runtime.search_direct("answer", false, 10);

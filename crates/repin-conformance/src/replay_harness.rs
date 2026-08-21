@@ -21,7 +21,12 @@ impl ReplayHarness {
             .map_err(|e| e.to_string())?;
         fs::write(&md_file, b"# Documentation\n\nIntro section.\n").map_err(|e| e.to_string())?;
 
-        let db_path = clean_root.join(".repin/graph.sqlite3");
+        let state_dir = clean_root
+            .parent()
+            .unwrap_or(clean_root)
+            .join(format!("repin-replay-state-{}", std::process::id()));
+        fs::create_dir_all(&state_dir).map_err(|e| e.to_string())?;
+        let db_path = state_dir.join("graph.sqlite3");
         let engine = Engine::open(EngineOptions {
             root_id: "root".to_string(),
             root_path: clean_root.to_path_buf(),

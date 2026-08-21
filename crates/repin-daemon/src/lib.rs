@@ -16,12 +16,16 @@ pub use state::{
 #[cfg(test)]
 mod tests {
     use super::*;
+    use repin_product::RuntimeLayout;
     use tempfile::tempdir;
 
     #[test]
     fn test_daemon_binding_and_lease() {
         let dir = tempdir().unwrap();
-        let daemon = DaemonServer::bind(dir.path()).unwrap();
-        assert!(daemon.socket_path().ends_with("daemon.sock"));
+        let daemon = DaemonServer::bind(dir.path(), None).unwrap();
+        assert_eq!(
+            daemon.socket_path(),
+            RuntimeLayout::at_base(dir.path()).socket_path
+        );
     }
 }

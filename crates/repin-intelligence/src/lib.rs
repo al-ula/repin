@@ -44,6 +44,7 @@ mod tests {
     #[test]
     fn embedded_model_absence_is_explicit_and_offline() {
         let model = EmbeddedOnnxModel::new(
+            std::path::Path::new("/tmp"),
             format!("repin-test-missing-{}", std::process::id()),
             Some(8),
             false,

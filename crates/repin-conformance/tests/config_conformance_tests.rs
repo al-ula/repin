@@ -102,7 +102,6 @@ fn test_conformance_immutable_safety_floors() {
 
     // Hardcoded safety floors cannot be un-excluded
     assert!(filter.is_excluded(".git/HEAD"));
-    assert!(filter.is_excluded(".repin/graph.sqlite3"));
     assert!(filter.is_excluded(".env"));
     assert!(filter.is_excluded(".env.production"));
     assert!(filter.is_excluded("keys/id_rsa"));

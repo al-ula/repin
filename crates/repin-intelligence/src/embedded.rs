@@ -12,10 +12,11 @@ pub struct LocalModelAssets {
 }
 
 pub fn ensure_hf_model_assets(
+    cache_root: &Path,
     model_id: &str,
     auto_download: bool,
 ) -> Result<LocalModelAssets, ModelError> {
-    let cache_dir = get_model_cache_dir(model_id)?;
+    let cache_dir = get_model_cache_dir(cache_root, model_id)?;
     let model_onnx = cache_dir.join("model.onnx");
     let tokenizer_json = cache_dir.join("tokenizer.json");
     let config_json = cache_dir.join("config.json");
@@ -82,15 +83,7 @@ pub fn ensure_hf_model_assets(
     })
 }
 
-pub fn get_model_cache_dir(model_id: &str) -> Result<PathBuf, ModelError> {
-    let home =
-        std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .ok_or_else(|| ModelError::ProviderError {
-                provider: "embedded".to_string(),
-                message: "HOME environment variable not set".to_string(),
-            })?;
-
+pub fn get_model_cache_dir(cache_root: &Path, model_id: &str) -> Result<PathBuf, ModelError> {
     let mut safe_components = Vec::new();
     for component in model_id.split(['/', '\\']) {
         if component.is_empty() || component == "." || component == ".." {
@@ -104,22 +97,15 @@ pub fn get_model_cache_dir(model_id: &str) -> Result<PathBuf, ModelError> {
         });
     }
 
-    let mut path = home.join(".cache").join("repin").join("models");
+    let mut path = cache_root.to_path_buf();
     for component in safe_components {
         path.push(component);
     }
     Ok(path)
 }
 
-pub fn list_cached_models() -> Result<Vec<(String, PathBuf, u64)>, ModelError> {
-    let home =
-        std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .ok_or_else(|| ModelError::ProviderError {
-                provider: "embedded".to_string(),
-                message: "HOME environment variable not set".to_string(),
-            })?;
-    let root = home.join(".cache").join("repin").join("models");
+pub fn list_cached_models(cache_root: &Path) -> Result<Vec<(String, PathBuf, u64)>, ModelError> {
+    let root = cache_root.to_path_buf();
     let mut results = Vec::new();
     if !root.is_dir() {
         return Ok(results);
@@ -169,6 +155,7 @@ fn directory_size(path: &Path) -> u64 {
 #[derive(Debug, Clone)]
 pub struct EmbeddedOnnxModel {
     pub model_id: String,
+    pub cache_root: PathBuf,
     pub dimension: usize,
     pub auto_download: bool,
     pub pooling: PoolingMode,
@@ -181,7 +168,12 @@ pub enum PoolingMode {
 }
 
 impl EmbeddedOnnxModel {
-    pub fn new(model_id: impl Into<String>, dimension: Option<usize>, auto_download: bool) -> Self {
+    pub fn new(
+        cache_root: impl AsRef<Path>,
+        model_id: impl Into<String>,
+        dimension: Option<usize>,
+        auto_download: bool,
+    ) -> Self {
         let model_id = model_id.into();
         let pooling = if model_id.contains("jina") && model_id.contains("v5") {
             PoolingMode::LastToken
@@ -190,6 +182,7 @@ impl EmbeddedOnnxModel {
         };
         Self {
             model_id,
+            cache_root: cache_root.as_ref().to_path_buf(),
             dimension: dimension.unwrap_or(256),
             auto_download,
             pooling,
@@ -212,7 +205,7 @@ impl EmbeddingModel for EmbeddedOnnxModel {
     }
 
     fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, ModelError> {
-        let _assets = ensure_hf_model_assets(&self.model_id, self.auto_download)?;
+        let _assets = ensure_hf_model_assets(&self.cache_root, &self.model_id, self.auto_download)?;
         let mut embeddings = Vec::with_capacity(texts.len());
         for text in texts {
             let hash = blake3::hash(text.as_bytes());
@@ -232,14 +225,21 @@ impl EmbeddingModel for EmbeddedOnnxModel {
 #[derive(Debug, Clone)]
 pub struct EmbeddedOnnxReranker {
     pub model_id: String,
+    pub cache_root: PathBuf,
     pub auto_download: bool,
     pub deadline_ms: u64,
 }
 
 impl EmbeddedOnnxReranker {
-    pub fn new(model_id: impl Into<String>, auto_download: bool, deadline_ms: u64) -> Self {
+    pub fn new(
+        cache_root: impl AsRef<Path>,
+        model_id: impl Into<String>,
+        auto_download: bool,
+        deadline_ms: u64,
+    ) -> Self {
         Self {
             model_id: model_id.into(),
+            cache_root: cache_root.as_ref().to_path_buf(),
             auto_download,
             deadline_ms: if deadline_ms == 0 { 100 } else { deadline_ms },
         }
@@ -261,7 +261,7 @@ impl Reranker for EmbeddedOnnxReranker {
         query: &str,
         candidates: &[RerankCandidate],
     ) -> Result<Vec<RerankHit>, ModelError> {
-        let _assets = ensure_hf_model_assets(&self.model_id, self.auto_download)?;
+        let _assets = ensure_hf_model_assets(&self.cache_root, &self.model_id, self.auto_download)?;
         let query_lower = query.to_lowercase();
         let mut hits = candidates
             .iter()

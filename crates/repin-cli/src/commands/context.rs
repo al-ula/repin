@@ -7,10 +7,14 @@ pub fn execute_context(
     client: &mut DaemonClient,
     query: &str,
     budget_bytes: usize,
+    context_override: Option<repin_core::config::ContextConfig>,
 ) -> Result<(), String> {
     let resp = client.send_request(IpcRequest::Context {
         query: query.to_string(),
         budget_bytes: Some(budget_bytes),
+        padding_lines: context_override.as_ref().map(|c| c.padding_lines),
+        include_blast_radius: context_override.as_ref().map(|c| c.include_blast_radius),
+        include_verbatim_source: context_override.as_ref().map(|c| c.include_verbatim_source),
     })?;
 
     match resp {

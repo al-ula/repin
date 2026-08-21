@@ -1,4 +1,5 @@
 use repin_core::config::{ConfigError, RepinConfig};
+use repin_product::{ProjectLayout, default_user_layout};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -16,12 +17,11 @@ pub fn discover_project_from<P: AsRef<Path>>(start_path: P) -> Option<Discovered
     };
 
     loop {
-        let repin_dir = current.join(".repin");
-        let db_path = repin_dir.join("graph.sqlite3");
-        if repin_dir.is_dir() && db_path.is_file() {
+        let layout = ProjectLayout::at_root(&current);
+        if layout.state_dir.is_dir() && layout.db_path.is_file() {
             return Some(DiscoveredProject {
                 root_dir: current,
-                db_path,
+                db_path: layout.db_path,
             });
         }
 
@@ -36,13 +36,12 @@ pub fn discover_project_from<P: AsRef<Path>>(start_path: P) -> Option<Discovered
 }
 
 pub fn find_project_config_path(root_dir: &Path) -> Option<PathBuf> {
-    let meta_config = root_dir.join(".repin").join("config.toml");
-    if meta_config.is_file() {
-        return Some(meta_config);
+    let layout = ProjectLayout::at_root(root_dir);
+    if layout.project_config.is_file() {
+        return Some(layout.project_config);
     }
-    let root_config = root_dir.join("config.toml");
-    if root_config.is_file() {
-        return Some(root_config);
+    if layout.root_config.is_file() {
+        return Some(layout.root_config);
     }
     None
 }
@@ -53,14 +52,12 @@ pub fn load_effective_config(
 ) -> Result<RepinConfig, ConfigError> {
     let mut config = RepinConfig::default();
 
-    // 1. User global config (~/.config/repin/config.toml)
-    if let Some(home_dir) = std::env::var_os("HOME").map(PathBuf::from) {
-        let user_config = home_dir.join(".config").join("repin").join("config.toml");
-        if user_config.is_file()
-            && let Ok(content) = fs::read_to_string(&user_config)
-        {
-            let _ = config.merge_toml_str(&content);
-        }
+    // 1. User global configuration
+    if let Ok(user_layout) = default_user_layout()
+        && user_layout.global_config.is_file()
+        && let Ok(content) = fs::read_to_string(&user_layout.global_config)
+    {
+        let _ = config.merge_toml_str(&content);
     }
 
     // 2. Project config or explicit override
@@ -177,23 +174,23 @@ mod tests {
     #[test]
     fn test_discover_project_initialized_returns_some() {
         let temp = tempdir().unwrap();
-        let repin_dir = temp.path().join(".repin");
-        fs::create_dir_all(&repin_dir).unwrap();
-        fs::write(repin_dir.join("graph.sqlite3"), b"").unwrap();
+        let layout = ProjectLayout::at_root(temp.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
+        fs::write(&layout.db_path, b"").unwrap();
 
         let discovered = discover_project_from(temp.path());
         assert!(discovered.is_some());
         let proj = discovered.unwrap();
         assert_eq!(proj.root_dir, temp.path());
-        assert_eq!(proj.db_path, repin_dir.join("graph.sqlite3"));
+        assert_eq!(proj.db_path, layout.db_path);
     }
 
     #[test]
     fn test_discover_project_from_subdirectory() {
         let temp = tempdir().unwrap();
-        let repin_dir = temp.path().join(".repin");
-        fs::create_dir_all(&repin_dir).unwrap();
-        fs::write(repin_dir.join("graph.sqlite3"), b"").unwrap();
+        let layout = ProjectLayout::at_root(temp.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
+        fs::write(&layout.db_path, b"").unwrap();
 
         let sub_dir = temp.path().join("src").join("commands");
         fs::create_dir_all(&sub_dir).unwrap();
@@ -207,8 +204,8 @@ mod tests {
     #[test]
     fn test_discover_project_without_graph_sqlite3_returns_none() {
         let temp = tempdir().unwrap();
-        let repin_dir = temp.path().join(".repin");
-        fs::create_dir_all(&repin_dir).unwrap();
+        let layout = ProjectLayout::at_root(temp.path());
+        fs::create_dir_all(&layout.state_dir).unwrap();
 
         let discovered = discover_project_from(temp.path());
         assert!(discovered.is_none());

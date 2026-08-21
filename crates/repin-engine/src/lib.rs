@@ -60,14 +60,17 @@ mod tests {
     #[test]
     fn test_engine_graph_indexing_and_search() {
         let dir = tempdir().unwrap();
-        let src_dir = dir.path().join("src");
+        let project_root = dir.path().join("project");
+        let src_dir = project_root.join("src");
         fs::create_dir_all(&src_dir).unwrap();
         fs::write(src_dir.join("lib.rs"), b"pub fn compute_sum() {}\n").unwrap();
 
-        let db_path = dir.path().join(".repin/graph.sqlite3");
+        let state_dir = dir.path().join("state");
+        fs::create_dir_all(&state_dir).unwrap();
+        let db_path = state_dir.join("graph.sqlite3");
         let engine = Engine::open(EngineOptions {
             root_id: "root".to_string(),
-            root_path: dir.path().to_path_buf(),
+            root_path: project_root,
             db_path: Some(db_path),
         })
         .unwrap();

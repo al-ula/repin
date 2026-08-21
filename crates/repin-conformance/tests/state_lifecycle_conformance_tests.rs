@@ -21,6 +21,7 @@ fn state_lifecycle_requests_are_carried_by_the_negotiated_protocol() {
     for request in [
         IpcRequest::InitializeProject {
             project_root: "/tmp/project".to_string(),
+            resolved_config: None,
         },
         IpcRequest::UninitializeProject {
             project_root: "/tmp/project".to_string(),

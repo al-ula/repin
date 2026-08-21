@@ -107,28 +107,28 @@ impl RepinConfig {
                 && !providers.is_empty()
             {
                 return Err(ConfigError::ValidationError(
-                    "Safety violation: [intelligence.providers] cannot be declared in project configuration. Define API providers in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                    "Safety violation: [intelligence.providers] cannot be declared in project configuration. Define API providers in user-global configuration only.".to_string(),
                 ));
             }
             if let Some(embedding) = &intelligence.embedding
                 && embedding.api_key_env.is_some()
             {
                 return Err(ConfigError::ValidationError(
-                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user-global configuration only.".to_string(),
                 ));
             }
             if let Some(rerank) = &intelligence.rerank
                 && rerank.api_key_env.is_some()
             {
                 return Err(ConfigError::ValidationError(
-                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user-global configuration only.".to_string(),
                 ));
             }
             if let Some(enrichment) = &intelligence.enrichment
                 && enrichment.api_key_env.is_some()
             {
                 return Err(ConfigError::ValidationError(
-                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user global configuration (~/.config/repin/config.toml) only.".to_string(),
+                    "Safety violation: api_key_env cannot be declared in project configuration. Define credentials in user-global configuration only.".to_string(),
                 ));
             }
         }
@@ -223,7 +223,7 @@ idle_timeout_secs = 3600
 # deadline_ms = 5000
 
 # --- Example Tier 3: Standard APIs (OpenAI, Ollama, Google Gemini) ---
-# NOTE: [intelligence.providers] must be declared in ~/.config/repin/config.toml
+# NOTE: [intelligence.providers] belongs in user-global configuration.
 # [intelligence.embedding]
 # provider = "openai"
 # model = "text-embedding-3-small"

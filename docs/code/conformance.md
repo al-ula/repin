@@ -270,7 +270,9 @@ operation. Deterministic median and p95 regressions are compared with the
 baseline under the 5% ADR-023 budget after variance analysis.
 # Compatibility versioning (ADR-024)
 
-The conformance suite MUST verify owning-crate constants and JSON diagnostics;
+The conformance suite MUST verify the `v<package>-<commit>` CLI identity with a
+12-character commit suffix, including the `unknown` fallback, owning-crate
+constants, and JSON diagnostics;
 highest-common protocol selection and bounded bootstrap handling; SQLite
 identity inspection before DDL, empty-versus-existing version-zero
 classification, unrelated/newer/corrupt/contradictory state handling, and

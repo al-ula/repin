@@ -482,12 +482,15 @@ If both timeout and absolute deadline are supplied, the earlier bound wins. The 
 
 Semantic versioning applies to this document, not to any implementation's internals.
 
-`repin --version` prints the conventional package identity. `repin version
---json` reports package version, optional commit and build ID, target, protocol
-range, store format/schema, and core semantic component versions. Missing
-release provenance is JSON `null`. Package and build identity are diagnostic
-only; protocol, store, and semantic versions determine compatibility and
-invalidation according to [ADR-024](decisions/ADR-024-compatibility-versioning.md).
+`repin --version` prints the binary identity `v<package>-<commit>`, using the
+first 12 characters of the full commit; direct builds without Git provenance
+use `v<package>-unknown`. `repin version --json` reports that identity plus
+package version, the full optional commit and build ID, target, protocol range,
+store format/schema, and core semantic component versions. Missing release
+provenance is JSON `null`. Package and build identity are diagnostic only;
+protocol, store, and semantic versions determine compatibility and invalidation
+according to
+[ADR-024](decisions/ADR-024-compatibility-versioning.md).
 
 Operational state inspection is available without graph activation through
 `repin db inspect [PATH]` (add `--json` for structured output). `repin db

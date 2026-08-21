@@ -5,6 +5,7 @@ use crate::inspect::{FileOutline, Inspector};
 use crate::invalidation::{IndexingCoordinator, InvalidationCoordinator, InvalidationScope};
 use crate::ranking::{DeterministicRanker, RankReason, RankedCandidate};
 use crate::traversal::{GraphTraversal, ImpactData, NeighborsData, PathTraceData};
+use repin_core::config::RepinConfig;
 use repin_core::line_index::Position;
 use repin_core::model::node::Node;
 use repin_core::model::provenance::Revision;
@@ -38,6 +39,7 @@ pub struct Runtime {
     store: Option<SqliteStore>,
     store_error: Option<StoreError>,
     packs: Vec<Box<dyn LanguagePack>>,
+    config: RepinConfig,
 }
 
 #[derive(Default)]
@@ -49,53 +51,26 @@ struct VersionInvalidationResult {
 
 impl Runtime {
     pub fn open(options: RuntimeOptions) -> Result<Self, String> {
-        let filter = if let Some(ref db_path) = options.db_path {
-            let mut config = repin_core::config::RepinConfig::default();
-            if let Some(parent) = db_path.parent() {
-                let meta_config = parent.join("config.toml");
-                let root_config = options.root_path.join("config.toml");
-                let repin_config = options.root_path.join("repin.toml");
-                if meta_config.is_file() {
-                    if let Ok(content) = std::fs::read_to_string(&meta_config) {
-                        let _ = config.merge_toml_str(&content);
-                    }
-                } else if repin_config.is_file() {
-                    if let Ok(content) = std::fs::read_to_string(&repin_config) {
-                        let _ = config.merge_toml_str(&content);
-                    }
-                } else if root_config.is_file() {
-                    if let Ok(content) = std::fs::read_to_string(&root_config) {
-                        let _ = config.merge_toml_str(&content);
-                    }
-                }
-            }
-            repin_fs::ExclusionFilter::with_config(&config.indexing)
-        } else {
-            let mut config = repin_core::config::RepinConfig::default();
-            let repin_config = options.root_path.join("repin.toml");
-            let root_config = options.root_path.join("config.toml");
-            if repin_config.is_file() {
-                if let Ok(content) = std::fs::read_to_string(&repin_config) {
-                    let _ = config.merge_toml_str(&content);
-                }
-            } else if root_config.is_file() {
-                if let Ok(content) = std::fs::read_to_string(&root_config) {
-                    let _ = config.merge_toml_str(&content);
-                }
-            }
-            repin_fs::ExclusionFilter::with_config(&config.indexing)
-        };
+        Self::open_with_config_and_exclusions(options, RepinConfig::default(), &[])
+    }
+
+    pub fn open_with_config(options: RuntimeOptions, config: RepinConfig) -> Result<Self, String> {
+        Self::open_with_config_and_exclusions(options, config, &[])
+    }
+
+    pub fn open_with_config_and_exclusions(
+        options: RuntimeOptions,
+        config: RepinConfig,
+        additional_exclusions: &[String],
+    ) -> Result<Self, String> {
+        let filter = repin_fs::ExclusionFilter::with_config_and_exclusions(
+            &config.indexing,
+            additional_exclusions,
+        );
 
         let fs = CapabilityFs::open_with_filter(&options.root_id, &options.root_path, filter)
             .map_err(|error| format!("failed to open root filesystem: {error}"))?;
         let (store, store_error) = if let Some(ref db_path) = options.db_path {
-            if let Some(parent) = db_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-                let gitignore = parent.join(".gitignore");
-                if !gitignore.exists() {
-                    let _ = std::fs::write(gitignore, "*\n");
-                }
-            }
             match SqliteStore::open(db_path) {
                 Ok(store) => (Some(store), None),
                 Err(error) => {
@@ -116,6 +91,7 @@ impl Runtime {
             store,
             store_error,
             packs: default_packs(),
+            config,
         })
     }
 
@@ -135,6 +111,7 @@ impl Runtime {
             store: Some(store),
             store_error: None,
             packs: default_packs(),
+            config: RepinConfig::default(),
         })
     }
 
@@ -148,6 +125,10 @@ impl Runtime {
 
     pub fn store_error(&self) -> Option<&StoreError> {
         self.store_error.as_ref()
+    }
+
+    pub fn config(&self) -> &RepinConfig {
+        &self.config
     }
 
     pub fn pending_version_invalidations(&self) -> Vec<InvalidationScope> {
@@ -330,6 +311,7 @@ impl Runtime {
         &self,
         query: &str,
         max_results: usize,
+        centrality_boost: Option<f64>,
     ) -> ResultEnvelope<Vec<RankedCandidate>> {
         let Some(store) = self.store.as_ref() else {
             return unavailable_graph(self.store_error.as_ref());
@@ -338,8 +320,15 @@ impl Runtime {
             return ResultEnvelope::not_found(Vec::new());
         };
         let lexical = SqliteLexical { store };
-        let ranked =
-            HybridRetriever::search(&*view, Some(&lexical), query, max_results, None).candidates;
+        let ranked = HybridRetriever::search(
+            &*view,
+            Some(&lexical),
+            query,
+            max_results,
+            None,
+            centrality_boost,
+        )
+        .candidates;
         let mut envelope = ResultEnvelope::ok(ranked);
         envelope.provenance.sources.push(SourceKind::Graph);
         envelope.freshness = graph_freshness(&*view);
@@ -351,6 +340,8 @@ impl Runtime {
         query: &str,
         candidates: &[String],
         agent_cmd: &str,
+        top_n: Option<usize>,
+        deadline_ms: Option<u64>,
     ) -> ResultEnvelope<Vec<RankedCandidate>> {
         let Some(store) = self.store.as_ref() else {
             let mut envelope = ResultEnvelope::not_found(Vec::new());
@@ -360,8 +351,9 @@ impl Runtime {
         let Ok(view) = store.read_view() else {
             return ResultEnvelope::not_found(Vec::new());
         };
+        let seed_limit = top_n.unwrap_or(20);
         let ranked = if candidates.is_empty() {
-            self.search_hybrid(query, 20).data
+            self.search_hybrid(query, seed_limit, None).data
         } else {
             let mut nodes = candidates
                 .iter()
@@ -375,21 +367,30 @@ impl Runtime {
             envelope.provenance.sources.push(SourceKind::Graph);
             return envelope;
         }
-        let final_ranked =
-            match AgentReranker::rerank_with_shell_callback(query, ranked.clone(), agent_cmd) {
-                Ok(reordered) => reordered,
-                Err(error) => {
-                    let mut envelope = ResultEnvelope::ok(ranked);
-                    envelope.provenance.sources.push(SourceKind::Graph);
-                    envelope.warnings.push(repin_protocol::envelope::Warning {
-                        code: repin_protocol::errors::ErrorCode::CapabilityUnavailable,
-                        message: format!("Agent reranker callback failed: {error}"),
-                        detail: None,
-                    });
-                    return envelope;
-                }
-            };
-        let mut envelope = ResultEnvelope::ok(final_ranked);
+        let final_ranked = match AgentReranker::rerank_with_shell_callback(
+            query,
+            ranked.clone(),
+            agent_cmd,
+            deadline_ms,
+        ) {
+            Ok(reordered) => reordered,
+            Err(error) => {
+                let mut envelope = ResultEnvelope::ok(ranked);
+                envelope.provenance.sources.push(SourceKind::Graph);
+                envelope.warnings.push(repin_protocol::envelope::Warning {
+                    code: repin_protocol::errors::ErrorCode::CapabilityUnavailable,
+                    message: format!("Agent reranker callback failed: {error}"),
+                    detail: None,
+                });
+                return envelope;
+            }
+        };
+        let truncated = if let Some(top_n) = top_n {
+            final_ranked[..final_ranked.len().min(top_n)].to_vec()
+        } else {
+            final_ranked
+        };
+        let mut envelope = ResultEnvelope::ok(truncated);
         envelope.provenance.sources.push(SourceKind::Graph);
         envelope
     }
@@ -409,7 +410,7 @@ impl Runtime {
             return ResultEnvelope::not_found(Vec::new());
         };
         let ranked = if candidates.is_empty() {
-            self.search_hybrid(query, 20).data
+            self.search_hybrid(query, 20, None).data
         } else {
             let nodes = candidates
                 .iter()
@@ -562,6 +563,7 @@ impl Runtime {
         &self,
         query: &str,
         budget_bytes: usize,
+        context_override: Option<repin_core::config::ContextConfig>,
     ) -> ResultEnvelope<AssembledContext> {
         let Some(store) = self.store.as_ref() else {
             return unavailable_context();
@@ -575,10 +577,17 @@ impl Runtime {
             .into_iter()
             .map(|candidate| candidate.node)
             .collect::<Vec<_>>();
-        let assembled = ContextBuilder::assemble_neighborhood_with_fs(
+        let config = context_override.unwrap_or(repin_core::config::ContextConfig {
+            default_token_budget: budget_bytes / 4,
+            padding_lines: 0,
+            include_blast_radius: true,
+            include_verbatim_source: true,
+        });
+        let assembled = ContextBuilder::assemble_neighborhood_with_config(
             &*view,
             Some(&self.fs),
             &primary_nodes,
+            &config,
             budget_bytes,
         );
         let mut envelope = ResultEnvelope::ok(assembled);

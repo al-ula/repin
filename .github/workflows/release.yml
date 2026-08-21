@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [ "Test" ]
+    types: [ "completed" ]
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install just
+        uses: extractions/setup-just@v4
+
+      - name: Build & package release
+        run: just dist
+        env:
+          GITHUB_REF_NAME: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "repin-*.tar.gz"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,10 +1,15 @@
 use crate::client::DaemonClient;
+use repin_core::config::RepinConfig;
+use repin_product::ProjectLayout;
 use repin_protocol::ipc::{IpcRequest, IpcResponse};
 
 /// Daemon-mediated project initialization (ADR-026). The daemon creates the
 /// state directory, database, and writer lease, then binds this connection to
 /// the initialized project so indexing can follow on the same connection.
-pub fn execute_init(project_dir: &std::path::Path) -> Result<DaemonClient, String> {
+pub fn execute_init(
+    project_dir: &std::path::Path,
+    resolved_config: Option<RepinConfig>,
+) -> Result<DaemonClient, String> {
     std::fs::create_dir_all(project_dir)
         .map_err(|e| format!("Failed to create project directory: {e}"))?;
     let canonical = project_dir
@@ -17,16 +22,24 @@ pub fn execute_init(project_dir: &std::path::Path) -> Result<DaemonClient, Strin
 
     match client.send_request(IpcRequest::InitializeProject {
         project_root: canonical.display().to_string(),
+        resolved_config,
     })? {
         IpcResponse::InitializeProjectOk {
             project_root,
             created,
             ..
         } => {
+            let state_dir = ProjectLayout::at_root(&project_root).state_dir;
             if created {
-                println!("Initialized empty Repin workspace in {project_root}/.repin");
+                println!(
+                    "Initialized empty Repin workspace in {}",
+                    state_dir.display()
+                );
             } else {
-                println!("Repin workspace already initialized in {project_root}/.repin");
+                println!(
+                    "Repin workspace already initialized in {}",
+                    state_dir.display()
+                );
             }
             Ok(client)
         }
@@ -62,7 +75,8 @@ pub fn execute_uninit(project_dir: &std::path::Path, force: bool) -> Result<(), 
                     removed,
                 } => {
                     if removed {
-                        println!("Uninitialized Repin workspace in {project_root}/.repin");
+                        let state_dir = ProjectLayout::at_root(&project_root).state_dir;
+                        println!("Uninitialized Repin workspace in {}", state_dir.display());
                     } else {
                         println!("No Repin workspace found in {project_root}");
                     }

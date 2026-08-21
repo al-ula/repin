@@ -44,6 +44,7 @@ impl HybridRetriever {
         query: &str,
         limit: usize,
         vector_hits: Option<&[VectorHit]>,
+        centrality_boost: Option<f64>,
     ) -> RetrievalResult {
         if limit == 0 {
             return RetrievalResult {
@@ -99,8 +100,13 @@ impl HybridRetriever {
             }
         }
 
-        let mut ranked =
-            DeterministicRanker::rank_fusion(query, candidates, &lexical_scores, &in_degrees);
+        let mut ranked = DeterministicRanker::rank_fusion_with_boost(
+            query,
+            candidates,
+            &lexical_scores,
+            &in_degrees,
+            centrality_boost.unwrap_or(0.15),
+        );
         if let Some(vector_hits) = vector_hits {
             let max_score = vector_hits
                 .iter()
@@ -226,6 +232,7 @@ mod tests {
                 node_id: alpha.id,
                 score: 1.0,
             }]),
+            None,
         );
 
         assert!(result.metadata.lexical_available);

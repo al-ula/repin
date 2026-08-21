@@ -14,7 +14,6 @@ impl Default for ExclusionFilter {
         Self {
             safety_names: vec![
                 ".git",
-                ".repin",
                 ".env",
                 ".env.local",
                 ".env.production",
@@ -39,6 +38,13 @@ impl ExclusionFilter {
     }
 
     pub fn with_config(config: &IndexingConfig) -> Self {
+        Self::with_config_and_exclusions(config, &[])
+    }
+
+    pub fn with_config_and_exclusions(
+        config: &IndexingConfig,
+        additional_paths: &[String],
+    ) -> Self {
         let mut custom_extensions = config.exclude_extensions.clone();
         if !config.index_docs {
             custom_extensions.push("md".to_string());
@@ -57,6 +63,7 @@ impl ExclusionFilter {
         };
 
         let mut paths = config.exclude_paths.clone();
+        paths.extend(additional_paths.iter().cloned());
         if !config.index_docs {
             paths.push("docs/**".to_string());
             paths.push("book/**".to_string());

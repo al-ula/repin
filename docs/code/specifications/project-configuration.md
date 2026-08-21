@@ -169,7 +169,7 @@ Specifies the configuration schema format version. Must be `1` for the current s
 
 ## 4. Safety Floors and Security Invariants
 
-1. **Immutable Exclusions**: Hardcoded safety exclusions (`.git`, `.repin`, `.env`, `.env.*`, `id_rsa*`, `*.pem`, `*.key`) are merged via **set union**. A project configuration cannot override or remove these entries.
+1. **Immutable Exclusions**: Hardcoded safety exclusions (`.git`, `.env`, `.env.*`, `id_rsa*`, `*.pem`, `*.key`) are merged via **set union**. The Repin product composition adds `.repin` as an immutable private metadata exclusion. A project configuration cannot override or remove these entries.
 2. **Root Containment**: All relative paths (`roots`, `exclude_paths`) are validated using capability-relative filesystem semantics (`cap-std`). Path traversal sequences (`../`) that escape the repository root are rejected.
 3. **No Code Execution on Parse**: Loading `config.toml` is strictly a pure data deserialization step. Callback shell commands (`agent_cmd`) are never executed automatically on configuration load.
 4. **Global-Only Credential Isolation**: Project-level configurations (`<root>/.repin/config.toml`, `<root>/config.toml`) are rejected by `repin config validate` if they attempt to define `[intelligence.providers]` or `api_key_env`. All provider endpoints and API credential references reside exclusively in the User Global Configuration (`~/.config/repin/config.toml`).
@@ -201,4 +201,3 @@ Both project-level and user-global initialization generate the complete starter 
 1. **Tier 1: Embedded Local ONNX** (`gte-modernbert-base`, `gte-reranker-modernbert-base`)
 2. **Tier 2: Agent-Powered Pipelines** (`agent_cmd` with JSON-RPC over stdin/stdout)
 3. **Tier 3: Standard APIs & Shared Profiles** (`openai`, `ollama`, `google` with `api_key_env`)
-

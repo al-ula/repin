@@ -890,6 +890,7 @@ dependencies = [
  "repin-core",
  "repin-daemon",
  "repin-engine",
+ "repin-product",
  "repin-protocol",
  "repin-store-sqlite",
  "serde",
@@ -949,6 +950,7 @@ dependencies = [
  "fs4",
  "repin-core",
  "repin-engine",
+ "repin-product",
  "repin-protocol",
  "repin-store-sqlite",
  "serde",
@@ -1029,6 +1031,10 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-typescript",
 ]
+
+[[package]]
+name = "repin-product"
+version = "0.1.0"
 
 [[package]]
 name = "repin-protocol"

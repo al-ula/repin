@@ -57,7 +57,8 @@ mod tests {
     fn test_ipc_serde_roundtrip() {
         let req = IpcRequest::Handshake {
             client_version: "0.1.0".to_string(),
-            project_db_path: "/test/.repin/graph.sqlite3".to_string(),
+            project_db_path: "/test/project/state.sqlite3".to_string(),
+            resolved_config: None,
         };
         let msg = IpcMessage {
             request_id: 42,

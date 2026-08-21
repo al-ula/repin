@@ -1,6 +1,7 @@
 use crate::lease::FileLease;
 use repin_core::config::RepinConfig;
 use repin_engine::{Engine, EngineOptions};
+use repin_product::ProjectLayout;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -41,8 +42,8 @@ impl WriterLease {
     /// Acquire the lease for a project state directory. Non-blocking: a lease
     /// held elsewhere yields `Observer` rather than an error, because observer
     /// attachment is a conforming outcome.
-    pub fn acquire(repin_dir: &Path) -> Self {
-        match FileLease::try_acquire(repin_dir.join("writer.lock")) {
+    pub fn acquire(lock_path: &Path) -> Self {
+        match FileLease::try_acquire(lock_path) {
             Ok(lease) => Self::Owned(lease),
             Err(_) => Self::Observer,
         }
@@ -72,9 +73,16 @@ pub struct ProjectContext {
 
 impl ProjectContext {
     pub fn open(canonical_db_path: PathBuf) -> Result<Self, String> {
-        let repin_dir = canonical_db_path.parent().ok_or("invalid db path")?;
-        let lease = WriterLease::acquire(repin_dir);
-        Self::open_with_lease(canonical_db_path, lease)
+        Self::open_with_config(canonical_db_path, RepinConfig::default())
+    }
+
+    pub fn open_with_config(
+        canonical_db_path: PathBuf,
+        config: RepinConfig,
+    ) -> Result<Self, String> {
+        let layout = layout_for_database(&canonical_db_path)?;
+        let lease = WriterLease::acquire(&layout.writer_lock);
+        Self::open_with_lease_and_config(canonical_db_path, lease, config)
     }
 
     /// Activate a context around a lease the caller already holds. Initialization
@@ -82,33 +90,29 @@ impl ProjectContext {
     /// that same handle, so ownership is never dropped and reacquired between
     /// creation and activation (ADR-026).
     pub fn open_with_lease(canonical_db_path: PathBuf, lease: WriterLease) -> Result<Self, String> {
-        let repin_dir = canonical_db_path.parent().ok_or("invalid db path")?;
-        let project_root = repin_dir
-            .parent()
-            .ok_or("invalid project root")?
-            .to_path_buf();
+        Self::open_with_lease_and_config(canonical_db_path, lease, RepinConfig::default())
+    }
+
+    pub fn open_with_lease_and_config(
+        canonical_db_path: PathBuf,
+        lease: WriterLease,
+        config: RepinConfig,
+    ) -> Result<Self, String> {
+        let layout = layout_for_database(&canonical_db_path)?;
+        let project_root = layout.project_root.clone();
 
         let writer_lease = lease.into_handle();
 
-        let mut config = RepinConfig::default();
-        let meta_config = repin_dir.join("config.toml");
-        let root_config = project_root.join("config.toml");
-
-        if meta_config.is_file() {
-            if let Ok(content) = fs::read_to_string(&meta_config) {
-                let _ = config.merge_toml_str(&content);
-            }
-        } else if root_config.is_file()
-            && let Ok(content) = fs::read_to_string(&root_config)
-        {
-            let _ = config.merge_toml_str(&content);
-        }
-
-        let engine = Engine::open(EngineOptions {
-            root_id: "root".to_string(),
-            root_path: project_root.clone(),
-            db_path: Some(canonical_db_path.clone()),
-        })?;
+        let product_exclusions = [repin_product::STATE_DIR.to_string()];
+        let engine = Engine::open_with_config_and_exclusions(
+            EngineOptions {
+                root_id: "root".to_string(),
+                root_path: project_root.clone(),
+                db_path: Some(canonical_db_path.clone()),
+            },
+            config.clone(),
+            &product_exclusions,
+        )?;
 
         let identity = DatabaseIdentity::read(&canonical_db_path);
 
@@ -176,4 +180,10 @@ impl ProjectContext {
         }
         true
     }
+}
+
+fn layout_for_database(db_path: &Path) -> Result<ProjectLayout, String> {
+    let state_dir = db_path.parent().ok_or("invalid db path")?;
+    let project_root = state_dir.parent().ok_or("invalid project root")?;
+    Ok(ProjectLayout::at_root(project_root))
 }

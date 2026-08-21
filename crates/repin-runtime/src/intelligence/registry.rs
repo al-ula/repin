@@ -1,5 +1,6 @@
 use repin_core::config::RepinConfig;
 use repin_core::ports::model::{EmbeddingModel, ModelError, Reranker, TextModel};
+use std::path::Path;
 
 use repin_intelligence::{
     AgentRunnerReranker, EmbeddedOnnxModel, EmbeddedOnnxReranker, GoogleGeminiProvider,
@@ -12,6 +13,7 @@ pub struct IntelligenceRegistry;
 impl IntelligenceRegistry {
     pub fn build_embedding_model(
         config: &RepinConfig,
+        model_cache_root: &Path,
     ) -> Result<Option<Box<dyn EmbeddingModel>>, ModelError> {
         let embedding = &config.intelligence.embedding;
         if !embedding.is_enabled() {
@@ -19,6 +21,7 @@ impl IntelligenceRegistry {
         }
         match embedding.provider.as_str() {
             "embedded" => Ok(Some(Box::new(EmbeddedOnnxModel::new(
+                model_cache_root,
                 &embedding.model,
                 embedding.dimension,
                 embedding.auto_download,
@@ -53,13 +56,17 @@ impl IntelligenceRegistry {
         }
     }
 
-    pub fn build_reranker(config: &RepinConfig) -> Result<Option<Box<dyn Reranker>>, ModelError> {
+    pub fn build_reranker(
+        config: &RepinConfig,
+        model_cache_root: &Path,
+    ) -> Result<Option<Box<dyn Reranker>>, ModelError> {
         let rerank = &config.intelligence.rerank;
         if !rerank.is_enabled() {
             return Ok(None);
         }
         match rerank.provider.as_str() {
             "embedded" => Ok(Some(Box::new(EmbeddedOnnxReranker::new(
+                model_cache_root,
                 &rerank.model,
                 true,
                 rerank.deadline_ms,

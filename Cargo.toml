@@ -15,6 +15,7 @@ members = [
     "crates/repin-engine",
     "crates/repin-daemon",
     "crates/repin-cli",
+    "crates/repin-product",
     "crates/repin-conformance",
 ]
 
@@ -41,6 +42,7 @@ repin-intelligence = { path = "crates/repin-intelligence", version = "0.1.0" }
 repin-runtime = { path = "crates/repin-runtime", version = "0.1.0" }
 repin-engine = { path = "crates/repin-engine", version = "0.1.0" }
 repin-daemon = { path = "crates/repin-daemon", version = "0.1.0" }
+repin-product = { path = "crates/repin-product", version = "0.1.0" }
 repin-conformance = { path = "crates/repin-conformance", version = "0.1.0" }
 
 # Serialization & encoding

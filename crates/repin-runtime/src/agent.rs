@@ -1,6 +1,8 @@
 use crate::ranking::{RankReason, RankedCandidate};
 use std::io::Write;
 use std::process::{Command, Stdio};
+use std::sync::mpsc;
+use std::time::Duration;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct AgentReranker;
@@ -10,6 +12,7 @@ impl AgentReranker {
         query: &str,
         candidates: Vec<RankedCandidate>,
         shell_cmd: &str,
+        deadline_ms: Option<u64>,
     ) -> Result<Vec<RankedCandidate>, String> {
         if candidates.is_empty() {
             return Ok(candidates);
@@ -56,9 +59,23 @@ impl AgentReranker {
         if let Some(mut stdin) = child.stdin.take() {
             let _ = stdin.write_all(prompt.as_bytes());
         }
-        let output = child
-            .wait_with_output()
-            .map_err(|error| format!("error waiting on shell callback: {error}"))?;
+        let output = if let Some(deadline) = deadline_ms {
+            let (tx, rx) = mpsc::channel();
+            let _waiter = std::thread::spawn(move || tx.send(child.wait_with_output()));
+            match rx.recv_timeout(Duration::from_millis(deadline)) {
+                Ok(Ok(out)) => out,
+                Ok(Err(error)) => return Err(format!("error waiting on shell callback: {error}")),
+                Err(_) => {
+                    return Err(format!(
+                        "agent shell callback exceeded deadline of {deadline} ms"
+                    ));
+                }
+            }
+        } else {
+            child
+                .wait_with_output()
+                .map_err(|error| format!("error waiting on shell callback: {error}"))?
+        };
         if !output.status.success() {
             return Err(format!(
                 "agent shell callback exited with error code {:?}: {}",

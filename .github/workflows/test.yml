@@ -3,6 +3,7 @@ name: Test
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -18,25 +19,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: extractions/setup-just@v4
+
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
 
       - name: Check code formatting
-        run: cargo fmt -- --check
+        run: just fmt
 
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: just clippy
 
       - name: Run workspace test suite
-        run: cargo test --all-targets --all-features
+        run: just test
 
       - name: Run documentation tests
-        run: cargo test --doc
+        run: just doc-test
 
       - name: Verify release build
-        run: cargo build --release
+        run: just release
+
+      - name: Verify Git-derived binary version
+        shell: bash
+        run: |
+          package_version="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(next(package["version"] for package in json.load(sys.stdin)["packages"] if package["name"] == "repin-cli"))')"
+          expected="repin v${package_version}-$(git rev-parse --short=12 HEAD)"
+          test "$(target/release/repin --version)" = "$expected"
 
   docs:
     name: Documentation Build & Verification

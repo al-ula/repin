@@ -1,30 +1,28 @@
 use crate::discovery::{find_project_config_path, load_effective_config};
 use anyhow::{Context, Result};
 use repin_core::config::RepinConfig;
+use repin_product::{ProjectLayout, default_user_layout};
 use std::fs;
 use std::path::PathBuf;
 
 pub fn execute_config_init(project_path: Option<PathBuf>, global: bool, force: bool) -> Result<()> {
     let target_file = if global {
-        let home_dir = std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .ok_or_else(|| anyhow::anyhow!("HOME environment variable not set"))?;
-        let repin_global_dir = home_dir.join(".config").join("repin");
-        if !repin_global_dir.exists() {
-            fs::create_dir_all(&repin_global_dir)
-                .with_context(|| format!("failed to create directory {:?}", repin_global_dir))?;
+        let layout = default_user_layout().map_err(|error| anyhow::anyhow!(error.to_string()))?;
+        if !layout.global_config.exists() {
+            fs::create_dir_all(layout.global_config.parent().unwrap_or(&layout.config_base))
+                .with_context(|| format!("failed to create directory {:?}", layout.config_base))?;
         }
-        repin_global_dir.join("config.toml")
+        layout.global_config
     } else {
         let root_dir = project_path
             .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
-        let repin_dir = root_dir.join(".repin");
-        if !repin_dir.exists() {
-            fs::create_dir_all(&repin_dir)
-                .with_context(|| format!("failed to create directory {:?}", repin_dir))?;
+        let layout = ProjectLayout::at_root(root_dir);
+        if !layout.state_dir.exists() {
+            fs::create_dir_all(&layout.state_dir)
+                .with_context(|| format!("failed to create directory {:?}", layout.state_dir))?;
         }
-        repin_dir.join("config.toml")
+        layout.project_config
     };
 
     if target_file.exists() && !force {
@@ -115,7 +113,7 @@ mod tests {
         let path = dir.path().to_path_buf();
 
         execute_config_init(Some(path.clone()), false, false).expect("init should succeed");
-        let config_file = path.join(".repin").join("config.toml");
+        let config_file = ProjectLayout::at_root(&path).project_config;
         assert!(config_file.is_file());
 
         let content = fs::read_to_string(&config_file).unwrap();
@@ -132,7 +130,7 @@ mod tests {
         assert!(execute_config_validate(Some(path.clone()), None).is_ok());
 
         // Write invalid schema version
-        let config_file = path.join(".repin").join("config.toml");
+        let config_file = ProjectLayout::at_root(&path).project_config;
         fs::write(&config_file, "schema_version = 999").unwrap();
         assert!(execute_config_validate(Some(path), None).is_err());
     }

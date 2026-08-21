@@ -4,7 +4,7 @@ Repin is a standalone, deterministic knowledge-graph engine for repositories. It
 
 ## Status
 
-**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 26 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (15 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
+**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 28 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (16 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
 
 ## What Repin is
 
@@ -30,7 +30,7 @@ Two independent axes, both required:
 
 ## Workspace Crates
 
-The implementation is organized into 15 focused Rust crates in a single workspace:
+The implementation is organized into 16 focused Rust crates in a single workspace:
 
 | Crate | Purpose | Key Responsibilities |
 |---|---|---|
@@ -48,6 +48,7 @@ The implementation is organized into 15 focused Rust crates in a single workspac
 | [`repin-engine`](../../crates/repin-engine) | Compatibility engine facade | High-level engine API facade preserving backwards compatibility |
 | [`repin-daemon`](../../crates/repin-daemon) | User daemon server | Background daemon runtime, Unix domain socket rendezvous, per-project writer lease coordination |
 | [`repin-cli`](../../crates/repin-cli) | CLI frontend | Project discovery, daemon auto-connect, rich developer and agent commands (`repin`) |
+| [`repin-product`](../../crates/repin-product) | Product composition policy | Repin-specific project, user, runtime, and model path layouts |
 | [`repin-conformance`](../../crates/repin-conformance) | Conformance & verification | Automated port conformance tests, replay convergence harness, property test fixtures |
 
 ## How to read this book
@@ -58,7 +59,7 @@ The specification is organized into seven logical parts:
 - **Part II: Core Domain & Data Model** ([Graph Model](graph-model.md), [Extraction](extraction.md), [Incremental Updates](incremental.md), [Storage](storage.md)) specifies what the engine stores, how facts are extracted and resolved, and how transactions and revisions guarantee convergence.
 - **Part III: Query & Integration Surfaces** ([Retrieval](retrieval.md), [Public API](api.md), [Runtime & IPC](runtime.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md)) covers search channels, client contracts, daemon rendezvous, and host seams.
 - **Part IV: Quality, Conformance & Implementation** ([Conformance](conformance.md), [Technology Selections & Implementation Profile](technology-candidates.md), [Roadmap](roadmap.md)) defines mechanical invariants, the accepted Rust/SQLite profile, and milestone delivery criteria.
-- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 26 accepted ADRs documenting the design rationale and constraints.
+- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 28 accepted ADRs documenting the design rationale and constraints.
 - **Part VI: Subsystem Specifications** ([Line Index](specifications/sparse-line-index.md), [Native Parsers](specifications/native-parsers-tree-sitter-fallback.md), [Vector Baseline](specifications/vector-search-rust-friendly.md), [Agent Context](specifications/agent-inspection-and-review-context.md)) provides deep normative algorithmic specifications.
 - **Part VII: Concluded Research & Trade Studies** ([redb vs SQLite](research/redb-tantivy-vs-sqlite.md), [libSQL](research/libsql-embedded-local.md)) documents research and candidate evaluations.
 

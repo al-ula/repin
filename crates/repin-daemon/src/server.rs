@@ -1,6 +1,7 @@
 use crate::lease::FileLease;
 use crate::registry::ContextRegistry;
 use repin_core::ports::store::Store;
+use repin_product::RuntimeLayout;
 use repin_protocol::errors::ErrorCode;
 use repin_protocol::ipc::{IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope};
 use repin_protocol::{
@@ -55,21 +56,27 @@ pub struct DaemonServer {
 }
 
 impl DaemonServer {
-    pub fn bind<P: AsRef<Path>>(runtime_dir: P) -> Result<Self, String> {
-        let runtime_dir_buf = runtime_dir.as_ref().to_path_buf();
-        let _ = std::fs::create_dir_all(&runtime_dir_buf);
+    pub fn bind<P: AsRef<Path>>(
+        runtime_dir: P,
+        idle_timeout_ms: Option<u64>,
+    ) -> Result<Self, String> {
+        let layout = RuntimeLayout::at_base(runtime_dir);
+        let _ = std::fs::create_dir_all(&layout.base);
 
-        let lock_path = runtime_dir_buf.join("daemon.lock");
-        let lease = FileLease::try_acquire(&lock_path)
+        let lease = FileLease::try_acquire(&layout.daemon_lock)
             .map_err(|e| format!("failed to acquire daemon singleton lease: {e}"))?;
 
-        let socket_path = runtime_dir_buf.join("daemon.sock");
-        let _ = std::fs::remove_file(&socket_path);
+        let _ = std::fs::remove_file(&layout.socket_path);
+
+        let mut registry = ContextRegistry::new();
+        if let Some(ms) = idle_timeout_ms {
+            registry.set_idle_timeout(std::time::Duration::from_millis(ms));
+        }
 
         Ok(Self {
-            socket_path,
+            socket_path: layout.socket_path,
             lease,
-            registry: ContextRegistry::new(),
+            registry,
             running: Arc::new(AtomicBool::new(true)),
         })
     }
@@ -243,10 +250,14 @@ impl DaemonServer {
                     code: ErrorCode::ProtocolMismatch,
                     message: "daemon is busy; retry after contexts and connections are closed, or run `repin daemon restart`".to_string(),
                 },
-                IpcRequest::Handshake {
-                    client_version: _,
-                    project_db_path,
-                } if negotiated => match registry.get_or_load(project_db_path) {
+            IpcRequest::Handshake {
+                client_version: _,
+                project_db_path,
+                resolved_config,
+            } if negotiated => match registry.get_or_load_with_config(
+                project_db_path,
+                resolved_config.unwrap_or_default(),
+            ) {
                     Ok(ctx) => {
                         let is_writer = ctx.is_writer();
                         bound_db_path = Some(ctx.canonical_db_path().to_path_buf());
@@ -266,10 +277,16 @@ impl DaemonServer {
                     code: ErrorCode::ProtocolMismatch,
                     message: "bootstrap negotiation is required before project binding".to_string(),
                 },
-                IpcRequest::InitializeProject { ref project_root } if negotiated => {
+                IpcRequest::InitializeProject {
+                    ref project_root,
+                    resolved_config,
+                } if negotiated => {
                     match crate::state::initialize_state(Path::new(project_root)) {
-                        Ok(state) => match registry.publish_created(&state.layout.db_path, state.lease)
-                        {
+                        Ok(state) => match registry.publish_created_with_config(
+                            &state.layout.db_path,
+                            state.lease,
+                            resolved_config.unwrap_or_default(),
+                        ) {
                             Ok(ctx) => {
                                 let is_writer = ctx.is_writer();
                                 bound_db_path = Some(ctx.canonical_db_path().to_path_buf());
@@ -450,9 +467,13 @@ impl DaemonServer {
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::SearchResult(deserialized)
             }
-            IpcRequest::SearchHybrid { query, max_results } => {
+            IpcRequest::SearchHybrid {
+                query,
+                max_results,
+                centrality_boost,
+            } => {
                 let limit = max_results.unwrap_or(50);
-                let env = engine.search_hybrid(&query, limit);
+                let env = engine.search_hybrid(&query, limit, centrality_boost);
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::SearchResult(deserialized)
@@ -510,10 +531,26 @@ impl DaemonServer {
             IpcRequest::Context {
                 query,
                 budget_bytes,
+                padding_lines,
+                include_blast_radius,
+                include_verbatim_source,
             } => {
                 let budget =
                     budget_bytes.unwrap_or(repin_engine::ContextBuilder::DEFAULT_BYTE_BUDGET);
-                let env = engine.assemble_context(&query, budget);
+                let context_override = if padding_lines.is_some()
+                    || include_blast_radius.is_some()
+                    || include_verbatim_source.is_some()
+                {
+                    Some(repin_core::config::ContextConfig {
+                        default_token_budget: budget / 4,
+                        padding_lines: padding_lines.unwrap_or(0),
+                        include_blast_radius: include_blast_radius.unwrap_or(true),
+                        include_verbatim_source: include_verbatim_source.unwrap_or(true),
+                    })
+                } else {
+                    None
+                };
+                let env = engine.assemble_context(&query, budget, context_override);
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::ContextResult(deserialized)
@@ -548,8 +585,11 @@ impl DaemonServer {
                 query,
                 candidates,
                 agent_cmd,
+                top_n,
+                deadline_ms,
             } => {
-                let env = engine.rerank_candidates(&query, &candidates, &agent_cmd);
+                let env =
+                    engine.rerank_candidates(&query, &candidates, &agent_cmd, top_n, deadline_ms);
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();
                 IpcResponse::RerankResult(deserialized)

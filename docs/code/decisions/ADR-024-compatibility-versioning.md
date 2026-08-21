@@ -35,9 +35,13 @@ participates in compatibility decisions. Ordinary local builds must succeed
 without either value. Reusable crates do not read a downstream project's VCS
 environment.
 
-The CLI keeps conventional `repin --version` output and additionally exposes
-`repin version --json`, which reports all compatibility dimensions and emits
-`null` for absent optional provenance.
+The CLI binary identity is `v<package>-<commit>`, where `<package>` is the
+Cargo package version and `<commit>` is the first 12 characters of the full
+Git commit supplied through `REPIN_GIT_COMMIT`. Builds without provenance use
+`v<package>-unknown`. `repin --version` and the JSON `version` field use this
+identity. `repin version --json` also reports the decomposed package, full
+commit, and build fields plus all compatibility dimensions; absent optional
+provenance remains JSON `null`.
 
 ## 3. Bootstrap and daemon replacement
 

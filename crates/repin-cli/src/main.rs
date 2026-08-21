@@ -21,6 +21,7 @@ use repin_cli::discovery::{discover_project_from, load_effective_config};
 use repin_core::versions::{
     ATTRIBUTE_REGISTRY_VERSION, CLASSIFICATION_VERSION, KIND_REGISTRY_VERSION, RESOLUTION_VERSION,
 };
+use repin_product::ProjectLayout;
 use repin_protocol::{PROTOCOL_MAX, PROTOCOL_MIN, ipc::RebuildTarget};
 use repin_store_sqlite::SqliteStore;
 use repin_store_sqlite::{STORE_FORMAT_ID, STORE_SCHEMA_VERSION};
@@ -30,7 +31,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(
     name = "repin",
-    version,
+    version = env!("REPIN_DISPLAY_VERSION"),
     about = "Repin — Fast, deterministic repository intelligence engine"
 )]
 struct Cli {
@@ -132,6 +133,17 @@ enum Commands {
         #[arg(long, help = "Hybrid multi-channel search (FTS + Symbol graph)")]
         hybrid: bool,
         #[arg(
+            long,
+            value_enum,
+            help = "Search channel: direct, regex, graph, or hybrid (overrides config default_mode)"
+        )]
+        mode: Option<SearchModeArg>,
+        #[arg(
+            long,
+            help = "Graph degree-centrality boost applied in hybrid ranking (overrides config centrality_boost)"
+        )]
+        boost: Option<f64>,
+        #[arg(
             short,
             long,
             help = "Maximum matches to return (defaults to config limit)"
@@ -149,6 +161,16 @@ enum Commands {
             help = "Shell callback command to invoke for AI reranking (defaults to config agent_cmd)"
         )]
         agent_cmd: Option<String>,
+        #[arg(
+            long,
+            help = "Maximum number of candidates to send/return (overrides config rerank.top_n)"
+        )]
+        top_n: Option<usize>,
+        #[arg(
+            long,
+            help = "Hard deadline in milliseconds for the agent callback (overrides config rerank.deadline_ms)"
+        )]
+        deadline_ms: Option<u64>,
         #[arg(
             help = "Optional candidate symbol names or entity IDs. If omitted, top candidates are automatically retrieved from search"
         )]
@@ -205,6 +227,15 @@ enum Commands {
             help = "Maximum context budget in bytes (defaults to config token budget)"
         )]
         budget: Option<usize>,
+        #[arg(
+            long,
+            help = "Padding lines around each source range (overrides config padding_lines)"
+        )]
+        padding_lines: Option<usize>,
+        #[arg(long, help = "Disable blast-radius neighbor expansion in context")]
+        no_blast_radius: bool,
+        #[arg(long, help = "Disable verbatim source inclusion in context")]
+        no_verbatim_source: bool,
     },
 
     #[command(about = "Construct review context focused on changed files and impact (ADR-016)")]
@@ -318,7 +349,13 @@ pub enum ModelAction {
 #[derive(Subcommand, Debug, Clone)]
 enum DaemonAction {
     #[command(about = "Run daemon server in foreground")]
-    Run,
+    Run {
+        #[arg(
+            long,
+            help = "Idle timeout in seconds before a detached context is reaped (overrides config idle_timeout_secs)"
+        )]
+        idle_timeout: Option<u64>,
+    },
     #[command(about = "Stop/kill running background daemon")]
     Stop,
     #[command(about = "Alias for stop")]
@@ -348,6 +385,44 @@ impl From<RebuildTargetArg> for RebuildTarget {
     }
 }
 
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum SearchModeArg {
+    Direct,
+    Regex,
+    Graph,
+    Hybrid,
+}
+
+/// Resolve the three search-channel booleans from an explicit `--mode`, the
+/// legacy channel flags, or the configured `retrieval.default_mode`.
+fn resolve_search_mode(
+    mode: Option<SearchModeArg>,
+    regex: bool,
+    graph: bool,
+    hybrid: bool,
+    default_mode: &str,
+) -> (bool, bool, bool) {
+    if regex {
+        return (true, false, false);
+    }
+    if graph && !hybrid {
+        return (false, true, false);
+    }
+    if hybrid {
+        return (false, false, true);
+    }
+    match mode {
+        Some(SearchModeArg::Direct) | Some(SearchModeArg::Regex) => (true, false, false),
+        Some(SearchModeArg::Graph) => (false, true, false),
+        Some(SearchModeArg::Hybrid) => (false, false, true),
+        None => match default_mode {
+            "graph" => (false, true, false),
+            "regex" | "direct" => (true, false, false),
+            _ => (false, false, true),
+        },
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
@@ -363,7 +438,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Commands::Db { ref action } = cli.command {
-        let default_db = start_path.join(".repin/graph.sqlite3");
+        let default_db = ProjectLayout::at_root(&start_path).db_path;
         match action {
             DbAction::Inspect { path, json } => {
                 let db_path = path.clone().unwrap_or(default_db);
@@ -436,8 +511,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
                     .to_string()
             })?;
-            return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
-                .map_err(|e| format!("Restart error: {e}").into());
+            let resolved_config =
+                load_effective_config(&discovered.root_dir, cli.config.as_deref())
+                    .unwrap_or_default();
+            return execute_daemon_restart(
+                runtime_dir.as_deref(),
+                &discovered.db_path,
+                &resolved_config,
+            )
+            .map_err(|e| format!("Restart error: {e}").into());
         }
         Commands::Daemon {
             action,
@@ -454,15 +536,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "Repin workspace is not initialized (PROJECT_NOT_INITIALIZED). Run `repin init` first."
                         .to_string()
                 })?;
-                return execute_daemon_restart(runtime_dir.as_deref(), &discovered.db_path)
-                    .map_err(|e| format!("Restart error: {e}").into());
+                let resolved_config =
+                    load_effective_config(&discovered.root_dir, cli.config.as_deref())
+                        .unwrap_or_default();
+                return execute_daemon_restart(
+                    runtime_dir.as_deref(),
+                    &discovered.db_path,
+                    &resolved_config,
+                )
+                .map_err(|e| format!("Restart error: {e}").into());
             }
             if matches!(action, Some(DaemonAction::Status)) {
                 return execute_daemon_status(runtime_dir.as_deref())
                     .map_err(|e| format!("Status error: {e}").into());
             }
 
-            return execute_daemon_run(runtime_dir)
+            let idle_timeout = match &action {
+                Some(DaemonAction::Run { idle_timeout }) => *idle_timeout,
+                _ => None,
+            };
+            return execute_daemon_run(runtime_dir, idle_timeout)
                 .map_err(|e| format!("Daemon error: {e}").into());
         }
         _ => {}
@@ -470,7 +563,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Commands::Init { path, no_index } = cli.command {
         let target_path = path.unwrap_or(start_path);
-        let mut client = execute_init(&target_path)?;
+        let resolved_config =
+            load_effective_config(&target_path, cli.config.as_deref()).unwrap_or_default();
+        let mut client = execute_init(&target_path, Some(resolved_config))?;
         if !no_index {
             execute_index(&mut client).map_err(|e| format!("Index error: {e}"))?;
         }
@@ -491,7 +586,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let effective_config =
         load_effective_config(&discovered.root_dir, cli.config.as_deref()).unwrap_or_default();
 
-    let mut client = DaemonClient::connect_or_start(&discovered.db_path)
+    let mut client = DaemonClient::connect_or_start(&discovered.db_path, &effective_config)
         .map_err(|e| format!("Failed to connect to daemon: {e}"))?;
 
     match cli.command {
@@ -514,34 +609,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .map_err(|e| format!("Rebuild error: {e}").into()),
         Commands::Search {
             pattern,
-            mut regex,
-            mut graph,
-            mut hybrid,
+            regex,
+            graph,
+            hybrid,
+            mode,
+            boost,
             limit,
         } => {
-            if !regex && !graph && !hybrid {
-                match effective_config.retrieval.default_mode.as_str() {
-                    "graph" => graph = true,
-                    "regex" | "direct" => regex = true,
-                    _ => hybrid = true,
-                }
-            }
+            let (is_regex, use_graph, use_hybrid) = resolve_search_mode(
+                mode,
+                regex,
+                graph,
+                hybrid,
+                &effective_config.retrieval.default_mode,
+            );
             let eff_limit = limit.unwrap_or(effective_config.retrieval.default_limit);
-            execute_search(&mut client, &pattern, regex, graph, hybrid, eff_limit)
-                .map_err(|e| format!("Search error: {e}").into())
+            execute_search(
+                &mut client,
+                &pattern,
+                is_regex,
+                use_graph,
+                use_hybrid,
+                eff_limit,
+                boost,
+            )
+            .map_err(|e| format!("Search error: {e}").into())
         }
         Commands::Rerank {
             query,
             candidates,
             agent_cmd,
+            top_n,
+            deadline_ms,
         } => {
             let eff_cmd =
                 agent_cmd.unwrap_or_else(|| effective_config.intelligence.rerank.agent_cmd.clone());
             if eff_cmd.is_empty() {
                 return Err("Missing agent callback command. Specify --agent-cmd or configure intelligence.rerank.agent_cmd in config.toml".into());
             }
-            execute_rerank(&mut client, &query, candidates, &eff_cmd)
-                .map_err(|e| format!("Rerank error: {e}").into())
+            execute_rerank(
+                &mut client,
+                &query,
+                candidates,
+                &eff_cmd,
+                top_n,
+                deadline_ms,
+            )
+            .map_err(|e| format!("Rerank error: {e}").into())
         }
         Commands::Inspect { path } => {
             execute_inspect(&mut client, &path).map_err(|e| format!("Inspect error: {e}").into())
@@ -570,9 +684,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             json,
         } => execute_path(&mut client, &from, &to, max_depth, json)
             .map_err(|e| format!("Path error: {e}").into()),
-        Commands::Context { query, budget } => {
+        Commands::Context {
+            query,
+            budget,
+            padding_lines,
+            no_blast_radius,
+            no_verbatim_source,
+        } => {
             let eff_budget = budget.unwrap_or(effective_config.context.default_token_budget * 4);
-            execute_context(&mut client, &query, eff_budget)
+            let ctx_override = if padding_lines.is_some() || no_blast_radius || no_verbatim_source {
+                Some(repin_core::config::ContextConfig {
+                    default_token_budget: eff_budget / 4,
+                    padding_lines: padding_lines.unwrap_or(0),
+                    include_blast_radius: !no_blast_radius,
+                    include_verbatim_source: !no_verbatim_source,
+                })
+            } else {
+                None
+            };
+            execute_context(&mut client, &query, eff_budget, ctx_override)
                 .map_err(|e| format!("Context error: {e}").into())
         }
         Commands::ReviewContext { since, budget } => {
@@ -593,6 +723,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[derive(Debug, Serialize)]
 struct VersionDiagnostics {
+    version: &'static str,
     package_version: &'static str,
     commit: Option<&'static str>,
     build_id: Option<&'static str>,
@@ -609,10 +740,11 @@ struct VersionDiagnostics {
 
 fn print_version(json: bool) -> Result<(), Box<dyn std::error::Error>> {
     if !json {
-        println!("repin {}", env!("CARGO_PKG_VERSION"));
+        println!("repin {}", env!("REPIN_DISPLAY_VERSION"));
         return Ok(());
     }
     let diagnostics = VersionDiagnostics {
+        version: env!("REPIN_DISPLAY_VERSION"),
         package_version: env!("CARGO_PKG_VERSION"),
         commit: option_env!("REPIN_GIT_COMMIT"),
         build_id: option_env!("REPIN_BUILD_ID"),

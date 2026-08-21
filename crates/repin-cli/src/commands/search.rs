@@ -10,6 +10,7 @@ pub fn execute_search(
     use_graph: bool,
     use_hybrid: bool,
     limit: usize,
+    centrality_boost: Option<f64>,
 ) -> Result<(), String> {
     let req = if is_regex {
         IpcRequest::SearchDirect {
@@ -28,6 +29,7 @@ pub fn execute_search(
         IpcRequest::SearchHybrid {
             query: pattern.to_string(),
             max_results: Some(limit),
+            centrality_boost,
         }
     };
 
