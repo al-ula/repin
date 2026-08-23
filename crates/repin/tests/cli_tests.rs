@@ -33,14 +33,12 @@ fn test_version_uses_package_and_commit_identity() {
 
 #[test]
 fn test_index_on_uninitialized_project_fails() {
+    let runtime = tempdir().unwrap();
     let temp_dir = tempdir().unwrap();
     let uninit_path = temp_dir.path();
 
     // Run the repin binary directly with index command on the uninitialized directory
-    let bin_path = env!("CARGO_BIN_EXE_repin");
-    let output = Command::new(bin_path)
-        .arg("--project")
-        .arg(uninit_path)
+    let output = repin(runtime.path(), uninit_path)
         .arg("index")
         .output()
         .expect("Failed to execute repin binary");
@@ -61,33 +59,33 @@ fn test_index_on_uninitialized_project_fails() {
 
 #[test]
 fn test_init_then_index_succeeds() {
+    let runtime = tempdir().unwrap();
     let temp_dir = tempdir().unwrap();
     let project_path = temp_dir.path();
 
-    let bin_path = env!("CARGO_BIN_EXE_repin");
-
     // Initialize the project with --no-index
-    let init_output = Command::new(bin_path)
-        .arg("--project")
-        .arg(project_path)
+    let init_output = repin(runtime.path(), project_path)
         .arg("init")
         .arg("--no-index")
         .output()
         .expect("Failed to execute repin init");
 
-    assert!(init_output.status.success(), "repin init should succeed");
+    assert!(
+        init_output.status.success(),
+        "repin init should succeed: {}",
+        String::from_utf8_lossy(&init_output.stderr)
+    );
 
     // Now index the initialized project
-    let index_output = Command::new(bin_path)
-        .arg("--project")
-        .arg(project_path)
+    let index_output = repin(runtime.path(), project_path)
         .arg("index")
         .output()
         .expect("Failed to execute repin index");
 
     assert!(
         index_output.status.success(),
-        "repin index should succeed on initialized project"
+        "repin index should succeed on initialized project: {}",
+        String::from_utf8_lossy(&index_output.stderr)
     );
 }
 
@@ -186,9 +184,9 @@ fn test_cli_install_command() {
 
 #[test]
 fn test_cli_sync_command() {
+    let runtime = tempdir().unwrap();
     let temp_dir = tempdir().unwrap();
     let project_path = temp_dir.path();
-    let bin_path = env!("CARGO_BIN_EXE_repin");
 
     Command::new("git")
         .args(["init"])
@@ -196,17 +194,17 @@ fn test_cli_sync_command() {
         .output()
         .expect("git init");
 
-    let init_output = Command::new(bin_path)
-        .arg("--project")
-        .arg(project_path)
+    let init_output = repin(runtime.path(), project_path)
         .arg("init")
         .output()
         .expect("Failed to execute repin init");
-    assert!(init_output.status.success());
+    assert!(
+        init_output.status.success(),
+        "repin init should succeed: {}",
+        String::from_utf8_lossy(&init_output.stderr)
+    );
 
-    let sync_output = Command::new(bin_path)
-        .arg("--project")
-        .arg(project_path)
+    let sync_output = repin(runtime.path(), project_path)
         .arg("sync")
         .output()
         .expect("Failed to execute repin sync");

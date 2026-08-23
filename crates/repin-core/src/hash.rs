@@ -38,7 +38,7 @@ impl fmt::Display for ContentHash {
 }
 
 mod hex_bytes {
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S>(bytes: &[u8; 32], serializer: S) -> Result<S::Ok, S::Error>
     where
