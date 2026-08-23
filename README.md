@@ -12,8 +12,18 @@ For the full scope, agnosticism, the workspace crate layout, and reading convent
 
 ## Install
 
+### CLI
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/al-ula/repin/main/setup.sh | bash
+```
+
+### Agent Skill
+
+Install the Repin skill for AI coding agents (Claude Code, Cursor, Codex, Pi, OpenCode, etc.):
+
+```bash
+npx skills add al-ula/repin -g -y
 ```
 
 ## Quick Start

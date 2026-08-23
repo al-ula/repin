@@ -2,6 +2,20 @@
 
 Repin can be used as a CLI by an agent. Library embedding is outside this guide; see `crates/repin-core/examples/embedded_rag.rs` for an in-process example.
 
+## Install the agent skill
+
+Install the Repin skill across your AI coding agents (Claude Code, Cursor, Codex, Pi, OpenCode, etc.) using `npx skills`:
+
+```bash
+# Global installation for all agents
+npx skills add al-ula/repin -g -y
+
+# Or install for specific agents
+npx skills add al-ula/repin -g -a claude-code -a cursor
+```
+
+The skill definition lives in `skills/repin/SKILL.md` and provides guidance for symbol navigation, blast-radius impact analysis, call path tracing, and budgeted context packing.
+
 ## Agent workflows
 
 Use bounded commands that return source-backed evidence:
