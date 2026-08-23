@@ -19,6 +19,11 @@ pub const IGNORE_MARKER_FILE: &str = ".gitignore";
 pub const DAEMON_SOCKET_FILE: &str = "daemon.sock";
 pub const DAEMON_LOCK_FILE: &str = "daemon.lock";
 pub const MODEL_ROOT_DIR: &str = "models";
+pub const GITHUB_BASE: &str = "https://github.com/al-ula/repin";
+pub const GITHUB_API_LATEST_RELEASE: &str =
+    "https://api.github.com/repos/al-ula/repin/releases/latest";
+pub const BINARY_NAME: &str = "repin";
+pub const DOCS_DIR_NAME: &str = "docs";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectLayout {
@@ -81,26 +86,51 @@ pub fn default_runtime_layout() -> RuntimeLayout {
 pub struct UserLayout {
     pub config_base: PathBuf,
     pub cache_base: PathBuf,
+    pub data_base: PathBuf,
+    pub bin_base: PathBuf,
     pub global_config: PathBuf,
     pub model_root: PathBuf,
+    pub install_dir: PathBuf,
+    pub install_bin: PathBuf,
+    pub install_docs: PathBuf,
+    pub bin_link: PathBuf,
 }
 
 impl UserLayout {
     #[must_use]
-    pub fn at_bases(config_base: impl AsRef<Path>, cache_base: impl AsRef<Path>) -> Self {
+    pub fn at_bases(
+        config_base: impl AsRef<Path>,
+        cache_base: impl AsRef<Path>,
+        data_base: impl AsRef<Path>,
+        bin_base: impl AsRef<Path>,
+    ) -> Self {
         let config_base = config_base.as_ref().to_path_buf();
         let cache_base = cache_base.as_ref().to_path_buf();
+        let data_base = data_base.as_ref().to_path_buf();
+        let bin_base = bin_base.as_ref().to_path_buf();
+        let install_dir = data_base.join(PRODUCT_DIR);
         Self {
             global_config: config_base.join(PRODUCT_DIR).join(PROJECT_CONFIG_FILE),
             model_root: cache_base.join(PRODUCT_DIR).join(MODEL_ROOT_DIR),
+            install_bin: install_dir.join(BINARY_NAME),
+            install_docs: install_dir.join(DOCS_DIR_NAME),
+            bin_link: bin_base.join(BINARY_NAME),
+            install_dir,
             config_base,
             cache_base,
+            data_base,
+            bin_base,
         }
     }
 
     pub fn from_home(home: impl AsRef<Path>) -> Self {
         let home = home.as_ref();
-        Self::at_bases(home.join(".config"), home.join(".cache"))
+        Self::at_bases(
+            home.join(".config"),
+            home.join(".cache"),
+            home.join(".local").join("share"),
+            home.join(".local").join("bin"),
+        )
     }
 }
 
@@ -116,9 +146,28 @@ impl fmt::Display for MissingHome {
 impl std::error::Error for MissingHome {}
 
 pub fn default_user_layout() -> Result<UserLayout, MissingHome> {
-    env::var_os("HOME")
-        .map(UserLayout::from_home)
-        .ok_or(MissingHome)
+    let home = env::var_os("HOME").ok_or(MissingHome)?;
+    let home_path = PathBuf::from(home);
+
+    let config_base = env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_path.join(".config"));
+    let cache_base = env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_path.join(".cache"));
+    let data_base = env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_path.join(".local").join("share"));
+    let bin_base = env::var_os("XDG_BIN_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_path.join(".local").join("bin"));
+
+    Ok(UserLayout::at_bases(
+        config_base,
+        cache_base,
+        data_base,
+        bin_base,
+    ))
 }
 
 #[cfg(test)]
@@ -161,5 +210,18 @@ mod tests {
             user.model_root,
             Path::new("/home/tester/.cache/repin/models")
         );
+        assert_eq!(
+            user.install_dir,
+            Path::new("/home/tester/.local/share/repin")
+        );
+        assert_eq!(
+            user.install_bin,
+            Path::new("/home/tester/.local/share/repin/repin")
+        );
+        assert_eq!(
+            user.install_docs,
+            Path::new("/home/tester/.local/share/repin/docs")
+        );
+        assert_eq!(user.bin_link, Path::new("/home/tester/.local/bin/repin"));
     }
 }

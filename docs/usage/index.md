@@ -2,7 +2,7 @@
 
 This guide explains how to build, configure, and use the `repin` command-line client.
 
-Architecture, contracts, and design decisions live in `docs/code/` and are not part of this book.
+Architecture, contracts, and design decisions live in [Architecture & Specification](../code/index.html).
 
 ## Start here
 

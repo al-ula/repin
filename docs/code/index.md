@@ -33,4 +33,4 @@ Start with [Introduction](introduction.md), then read [Architecture and Layers](
 - [Architectural Decision Records](decisions/index.md)
 - [Concluded Research](research/index.md)
 
-Operator instructions live in `docs/usage/` and are not part of this book.
+Operator instructions and user guides live in [User Guide](../usage/index.html).

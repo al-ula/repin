@@ -2,6 +2,14 @@
 
 Run `repin --help` for the complete generated synopsis. The commands below are grouped by the task they perform.
 
+## Installation and updates
+
+| Command | Purpose |
+| --- | --- |
+| `repin install [SOURCE]` | Install Repin and bundled documentation into `~/.local/share/repin` with symlink at `~/.local/bin/repin`. |
+| `repin update [--check] [--force]` | Check for or install the latest release from GitHub. |
+| `repin check-update` | Check if a newer version is available from GitHub. |
+
 ## Project lifecycle
 
 | Command | Purpose |
@@ -9,7 +17,7 @@ Run `repin --help` for the complete generated synopsis. The commands below are g
 | `repin init [PATH]` | Create `.repin` metadata and index the repository. Add `--no-index` to defer indexing. |
 | `repin uninit [PATH]` | Remove `.repin` metadata. Add `--force` or `-y` to skip confirmation. |
 | `repin index` | Build the authoritative graph and derived indexes from the selected repository. |
-| `repin update` | Apply worktree changes incrementally. |
+| `repin sync` | Apply worktree changes incrementally. |
 | `repin rebuild graph\|lexical\|vector\|all` | Rebuild the selected authoritative or derived index. |
 | `repin status` | Show daemon connection, graph revision, and index status. |
 

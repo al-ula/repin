@@ -142,3 +142,77 @@ fn test_uninit_then_reinit_does_not_serve_the_removed_graph() {
         "re-initialized empty graph must not serve the removed database, got: {stale_stdout}"
     );
 }
+
+#[test]
+fn test_cli_install_command() {
+    let temp = tempdir().unwrap();
+    let source_dir = temp.path().join("pkg");
+    let data_dir = temp.path().join("share");
+    let bin_dir = temp.path().join("bin");
+
+    std::fs::create_dir_all(&source_dir).unwrap();
+    let bin_path = env!("CARGO_BIN_EXE_repin");
+    std::fs::copy(bin_path, source_dir.join("repin")).unwrap();
+    let docs_dir = source_dir.join("docs");
+    std::fs::create_dir_all(&docs_dir).unwrap();
+    std::fs::write(docs_dir.join("guide.html"), "<p>Guide</p>").unwrap();
+
+    let output = Command::new(bin_path)
+        .env("HOME", temp.path())
+        .env("XDG_DATA_HOME", &data_dir)
+        .env("XDG_BIN_HOME", &bin_dir)
+        .arg("install")
+        .arg(&source_dir)
+        .output()
+        .expect("Failed to execute repin install");
+
+    assert!(
+        output.status.success(),
+        "repin install should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Repin installed successfully"));
+
+    let installed_bin = data_dir.join("repin").join("repin");
+    let installed_link = bin_dir.join("repin");
+    let installed_docs = data_dir.join("repin").join("docs").join("guide.html");
+
+    assert!(installed_bin.is_file());
+    assert!(installed_docs.is_file());
+    assert!(installed_link.is_symlink());
+    assert_eq!(std::fs::read_link(installed_link).unwrap(), installed_bin);
+}
+
+#[test]
+fn test_cli_sync_command() {
+    let temp_dir = tempdir().unwrap();
+    let project_path = temp_dir.path();
+    let bin_path = env!("CARGO_BIN_EXE_repin");
+
+    Command::new("git")
+        .args(["init"])
+        .current_dir(project_path)
+        .output()
+        .expect("git init");
+
+    let init_output = Command::new(bin_path)
+        .arg("--project")
+        .arg(project_path)
+        .arg("init")
+        .output()
+        .expect("Failed to execute repin init");
+    assert!(init_output.status.success());
+
+    let sync_output = Command::new(bin_path)
+        .arg("--project")
+        .arg(project_path)
+        .arg("sync")
+        .output()
+        .expect("Failed to execute repin sync");
+    assert!(
+        sync_output.status.success(),
+        "repin sync should succeed: {}",
+        String::from_utf8_lossy(&sync_output.stderr)
+    );
+}

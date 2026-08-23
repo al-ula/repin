@@ -8,10 +8,12 @@ use crate::commands::eval::execute_eval;
 use crate::commands::graph::{execute_entity, execute_impact, execute_neighbors, execute_path};
 use crate::commands::index::{execute_index, execute_init, execute_uninit};
 use crate::commands::inspect::{execute_at_position, execute_inspect};
+use crate::commands::install::execute_install;
 use crate::commands::rebuild::execute_rebuild;
 use crate::commands::rerank::execute_rerank;
 use crate::commands::search::execute_search;
 use crate::commands::status::execute_status;
+use crate::commands::sync::execute_sync;
 use crate::commands::update::execute_update;
 use crate::commands::watch::execute_watch;
 use crate::discovery::{discover_project_from, load_effective_config};
@@ -30,7 +32,7 @@ use std::path::PathBuf;
 #[command(
     name = "repin",
     version = env!("REPIN_DISPLAY_VERSION"),
-    about = "Repin — Fast, deterministic repository intelligence engine"
+    about = "Repin — Fast repository intelligence engine"
 )]
 struct Cli {
     #[arg(
@@ -105,11 +107,37 @@ enum Commands {
         action: ModelAction,
     },
 
-    #[command(about = "Index all repository files deterministically")]
+    #[command(about = "Index all repository files")]
     Index,
 
     #[command(about = "Incrementally update graph from VCS worktree changes")]
-    Update,
+    Sync,
+
+    #[command(about = "Install Repin and bundled documentation into ~/.local/share/repin")]
+    Install {
+        #[arg(help = "Optional source directory containing repin binary and bundled assets")]
+        source: Option<PathBuf>,
+    },
+
+    #[command(about = "Check for or install the latest Repin release from GitHub")]
+    Update {
+        #[arg(
+            long,
+            short,
+            help = "Only check if an update is available without downloading or installing"
+        )]
+        check: bool,
+
+        #[arg(
+            long,
+            short,
+            help = "Force reinstall even if already on the latest version"
+        )]
+        force: bool,
+    },
+
+    #[command(about = "Check if an update is available from GitHub")]
+    CheckUpdate,
 
     #[command(about = "Rebuild authoritative graph or a derived index")]
     Rebuild {
@@ -117,9 +145,7 @@ enum Commands {
         target: RebuildTargetArg,
     },
 
-    #[command(
-        about = "Search the repository using text, regex, graph symbols, or deterministic hybrid fusion"
-    )]
+    #[command(about = "Search the repository using text, regex, graph symbols, or hybrid fusion")]
     Search {
         pattern: String,
         #[arg(short, long, help = "Direct regular expression worktree search")]
@@ -557,6 +583,22 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         _ => {}
     }
 
+    // Installation and updater commands (do not require project initialization)
+    if let Commands::Install { source } = cli.command {
+        execute_install(source).map_err(|e| format!("Install error: {e}"))?;
+        return Ok(());
+    }
+
+    if let Commands::CheckUpdate = cli.command {
+        execute_update(true, false).map_err(|e| format!("Update error: {e}"))?;
+        return Ok(());
+    }
+
+    if let Commands::Update { check, force } = cli.command {
+        execute_update(check, force).map_err(|e| format!("Update error: {e}"))?;
+        return Ok(());
+    }
+
     if let Commands::Init { path, no_index } = cli.command {
         let target_path = path.unwrap_or(start_path);
         let resolved_config =
@@ -588,6 +630,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Version { .. }
         | Commands::Db { .. }
+        | Commands::Install { .. }
+        | Commands::Update { .. }
+        | Commands::CheckUpdate
         | Commands::Init { .. }
         | Commands::Uninit { .. }
         | Commands::Config { .. }
@@ -598,9 +643,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Index => {
             execute_index(&mut client).map_err(|e| format!("Index error: {e}").into())
         }
-        Commands::Update => {
-            execute_update(&mut client).map_err(|e| format!("Update error: {e}").into())
-        }
+        Commands::Sync => execute_sync(&mut client).map_err(|e| format!("Sync error: {e}").into()),
         Commands::Rebuild { target } => execute_rebuild(&mut client, target.into())
             .map_err(|e| format!("Rebuild error: {e}").into()),
         Commands::Search {

@@ -15,7 +15,7 @@ From another directory, select the repository explicitly with `repin --project /
 Apply worktree changes first:
 
 ```bash
-repin update
+repin sync
 repin status
 ```
 

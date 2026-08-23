@@ -61,11 +61,11 @@ repin review-context --since 1 --budget 65536
 ## Keep the index current
 
 ```bash
-repin update
+repin sync
 repin watch --interval 1000
 ```
 
-Use `update` after a batch of changes. Use `watch` while actively editing. Rebuild a specific derived view when needed:
+Use `sync` after a batch of changes. Use `watch` while actively editing. Rebuild a specific derived view when needed:
 
 ```bash
 repin rebuild graph

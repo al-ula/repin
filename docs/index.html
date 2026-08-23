@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repin — Fast Repository Intelligence Engine</title>
+    <meta
+      name="description"
+      content="A standalone knowledge-graph engine for repositories. Fast symbol search, dependency tracing, blast-radius impact analysis, and token-budgeted context packing."
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --card-bg: #161b22;
+        --card-border: #30363d;
+        --text: #c9d1d9;
+        --text-bright: #f0f6fc;
+        --text-muted: #8b949e;
+        --accent: #58a6ff;
+        --accent-hover: #79b8ff;
+        --green: #3fb950;
+        --font:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        --mono:
+          ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f8fa;
+          --card-bg: #ffffff;
+          --card-border: #d0d7de;
+          --text: #24292f;
+          --text-bright: #0969da;
+          --text-muted: #57606a;
+          --accent: #0969da;
+          --accent-hover: #0550ae;
+          --green: #1a7f37;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        line-height: 1.6;
+        padding: 0;
+        margin: 0;
+      }
+
+      header {
+        border-bottom: 1px solid var(--card-border);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--card-bg);
+      }
+
+      .brand {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-bright);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 1.25rem;
+        align-items: center;
+      }
+
+      nav a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      nav a:hover {
+        color: var(--accent);
+      }
+
+      .container {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+      }
+
+      .hero {
+        text-align: center;
+        padding: 2.5rem 0 3rem;
+      }
+
+      .hero h1 {
+        font-size: 3rem;
+        color: var(--text-bright);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 1rem;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        max-width: 680px;
+        margin: 0 auto 2rem;
+      }
+
+      .install-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem 0.6rem 1.25rem;
+        font-family: var(--mono);
+        font-size: 0.92rem;
+        color: var(--text-bright);
+        margin-bottom: 2.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+      }
+
+      .install-box code {
+        user-select: all;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .copy-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: transparent;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        padding: 0.35rem 0.65rem;
+        color: var(--text-muted);
+        font-family: var(--font);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .copy-btn:hover {
+        background: var(--card-border);
+        color: var(--text-bright);
+      }
+
+      .copy-btn.copied {
+        border-color: var(--green);
+        color: var(--green);
+      }
+
+      .books-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3.5rem;
+      }
+
+      .book-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition:
+          transform 0.2s,
+          border-color 0.2s,
+          box-shadow 0.2s;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .book-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      .book-card h2 {
+        font-size: 1.5rem;
+        color: var(--text-bright);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .book-card p {
+        color: var(--text-muted);
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+      }
+
+      .book-card ul {
+        list-style: none;
+        margin-bottom: 1.5rem;
+      }
+
+      .book-card ul li {
+        margin-bottom: 0.4rem;
+        color: var(--text);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .book-card ul li::before {
+        content: "•";
+        color: var(--accent);
+      }
+
+      .card-btn {
+        display: inline-block;
+        font-weight: 600;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3.5rem;
+      }
+
+      .feature-item {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 1.25rem;
+      }
+
+      .feature-item h3 {
+        font-size: 1.05rem;
+        color: var(--text-bright);
+        margin-bottom: 0.4rem;
+      }
+
+      .feature-item p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      footer {
+        border-top: 1px solid var(--card-border);
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        background: var(--card-bg);
+      }
+
+      footer a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="./index.html" class="brand">
+        <span>Repin</span>
+      </a>
+      <nav>
+        <a href="usage/index.html">User Guide</a>
+        <a href="code/index.html">Architecture & Spec</a>
+        <a href="https://github.com/al-ula/repin" target="_blank" rel="noopener"
+          >GitHub</a
+        >
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1>Repository Intelligence Engine</h1>
+        <p>
+          A standalone knowledge-graph engine for codebases. Fast symbol
+          navigation, dependency tracing, refactoring blast-radius analysis, and
+          token-budgeted prompt context.
+        </p>
+
+        <div class="install-box">
+          <code id="install-cmd"
+            >curl -fsSL
+            https://raw.githubusercontent.com/al-ula/repin/main/setup.sh |
+            bash</code
+          >
+          <button
+            id="copy-btn"
+            class="copy-btn"
+            aria-label="Copy install command"
+            title="Copy install command"
+          >
+            <svg
+              class="copy-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              ></path>
+            </svg>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="books-grid">
+        <a href="usage/index.html" class="book-card">
+          <div>
+            <h2>📖 User Guide</h2>
+            <p>
+              Practical operational guide for developers and autonomous coding
+              agents.
+            </p>
+            <ul>
+              <li>Quick Start & Installation</li>
+              <li>CLI Command Reference</li>
+              <li>Project & Global Configuration</li>
+              <li>Agent Integration & Workflows</li>
+              <li>Troubleshooting & Recovery</li>
+            </ul>
+          </div>
+          <span class="card-btn">Open User Guide →</span>
+        </a>
+
+        <a href="code/index.html" class="book-card">
+          <div>
+            <h2>📐 Architecture & Spec</h2>
+            <p>
+              Normative blueprint, data models, contracts, and design records.
+            </p>
+            <ul>
+              <li>System Layers & Invariants</li>
+              <li>Graph Model & Node Provenance</li>
+              <li>Incremental Update Protocol</li>
+              <li>Public API & Wire Contracts</li>
+              <li>Architectural Decision Records (ADRs)</li>
+            </ul>
+          </div>
+          <span class="card-btn">Open Architecture Spec →</span>
+        </a>
+      </section>
+
+      <section class="features">
+        <div class="feature-item">
+          <h3>Offline-First</h3>
+          <p>
+            Builds precise symbol and dependency graphs directly with zero
+            external network dependencies.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h3>Incremental</h3>
+          <p>
+            Persistent SQLite graph updated in place via VCS synchronization
+            without full rebuilds.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h3>Standalone</h3>
+          <p>
+            Every client is a thin adapter over one shared public API and local
+            daemon process.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h3>Agent-Ready</h3>
+          <p>
+            Packed, token-budgeted prompt context and blast-radius analysis for
+            autonomous workflows.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Repin is distributed under the terms of the
+        <a href="https://github.com/al-ula/repin/blob/main/LICENSE-MIT">MIT</a>
+        and
+        <a href="https://github.com/al-ula/repin/blob/main/LICENSE-APACHE"
+          >Apache-2.0</a
+        >
+        dual licenses.
+      </p>
+    </footer>
+
+    <script>
+      const copyBtn = document.querySelector("#copy-btn");
+      const installCmd = document.querySelector("#install-cmd");
+      const copyLabel = copyBtn.querySelector(".copy-label");
+
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(installCmd.textContent.trim());
+          copyBtn.classList.add("copied");
+          copyLabel.textContent = "Copied!";
+          setTimeout(() => {
+            copyBtn.classList.remove("copied");
+            copyLabel.textContent = "Copy";
+          }, 2000);
+        } catch (err) {
+          console.error("Failed to copy text: ", err);
+        }
+      });
+    </script>
+  </body>
+</html>
