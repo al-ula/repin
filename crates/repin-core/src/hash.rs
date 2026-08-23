@@ -37,25 +37,14 @@ impl fmt::Display for ContentHash {
     }
 }
 
-mod hex {
-    pub fn encode(bytes: [u8; 32]) -> String {
-        let mut s = String::with_capacity(64);
-        for b in bytes {
-            use std::fmt::Write;
-            let _ = write!(s, "{:02x}", b);
-        }
-        s
-    }
-}
-
 mod hex_bytes {
-    use serde::{Deserialize, Deserializer, Serializer, de};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(bytes: &[u8; 32], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&super::hex::encode(*bytes))
+        serializer.serialize_str(&hex::encode(bytes))
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<[u8; 32], D::Error>
@@ -63,14 +52,8 @@ mod hex_bytes {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        if s.len() != 64 {
-            return Err(de::Error::custom("expected 64 hex characters"));
-        }
         let mut out = [0u8; 32];
-        for (i, chunk) in s.as_bytes().chunks_exact(2).enumerate() {
-            let hex_str = std::str::from_utf8(chunk).map_err(de::Error::custom)?;
-            out[i] = u8::from_str_radix(hex_str, 16).map_err(de::Error::custom)?;
-        }
+        hex::decode_to_slice(&s, &mut out).map_err(de::Error::custom)?;
         Ok(out)
     }
 }
