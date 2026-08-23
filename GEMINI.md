@@ -37,6 +37,10 @@ contract actually breaks; additive growth stays version-compatible.
 Any version-boundary change MUST update the normative spec
 (`docs/code/storage.md`, `docs/code/api.md`, `docs/code/runtime.md`) and ADR-024 before code.
 
+## CI Verification (`act`)
+
+- Validate GitHub Actions workflows locally with `act push` (or `act -j <job>` for specific jobs like `test` or `docs`).
+
 ## Writing Style
 
 - **Terse**: Say the minimum that conveys the meaning. No filler words, no restating the obvious.

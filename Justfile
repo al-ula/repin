@@ -2,7 +2,7 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 # Optional provenance: plain Cargo builds remain valid without Git metadata.
 git_commit := `git rev-parse --verify HEAD 2>/dev/null || true`
-host_target := `rustc -vV | sed -n 's/^host: //p'`
+host_target := `rustc -vV 2>/dev/null | sed -n 's/^host: //p' || true`
 release_target := env_var_or_default("CARGO_BUILD_TARGET", host_target)
 target_dir := env_var_or_default("CARGO_TARGET_DIR", "target")
 
