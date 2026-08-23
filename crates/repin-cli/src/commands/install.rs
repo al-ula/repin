@@ -1,4 +1,4 @@
-use repin_product::default_user_layout;
+use repin_product::{default_user_layout, UserLayout};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -18,6 +18,14 @@ fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {
 }
 
 pub fn execute_install(source: Option<PathBuf>) -> Result<(), String> {
+    let layout = default_user_layout().map_err(|e| e.to_string())?;
+    execute_install_with_layout(source, &layout)
+}
+
+pub fn execute_install_with_layout(
+    source: Option<PathBuf>,
+    layout: &UserLayout,
+) -> Result<(), String> {
     let source_dir = if let Some(src) = source {
         if src.is_file() {
             src.parent()
@@ -44,7 +52,6 @@ pub fn execute_install(source: Option<PathBuf>) -> Result<(), String> {
         ));
     }
 
-    let layout = default_user_layout().map_err(|e| e.to_string())?;
     let install_dir = &layout.install_dir;
     let install_bin = &layout.install_bin;
     let install_docs = &layout.install_docs;
@@ -184,13 +191,14 @@ mod tests {
         fs::create_dir_all(&docs_dir).unwrap();
         fs::write(docs_dir.join("index.html"), "<h1>Docs</h1>").unwrap();
 
-        unsafe {
-            std::env::set_var("HOME", temp.path());
-            std::env::set_var("XDG_DATA_HOME", &data_dir);
-            std::env::set_var("XDG_BIN_HOME", &bin_dir);
-        }
+        let layout = UserLayout::at_bases(
+            temp.path().join("config"),
+            temp.path().join("cache"),
+            &data_dir,
+            &bin_dir,
+        );
 
-        let result = execute_install(Some(source_dir.clone()));
+        let result = execute_install_with_layout(Some(source_dir.clone()), &layout);
         assert!(result.is_ok());
 
         let target_bin = data_dir.join("repin").join("repin");
@@ -213,13 +221,14 @@ mod tests {
         fs::create_dir_all(&install_dir).unwrap();
         fs::write(install_dir.join("repin"), "already installed").unwrap();
 
-        unsafe {
-            std::env::set_var("HOME", temp.path());
-            std::env::set_var("XDG_DATA_HOME", &data_dir);
-            std::env::set_var("XDG_BIN_HOME", &bin_dir);
-        }
+        let layout = UserLayout::at_bases(
+            temp.path().join("config"),
+            temp.path().join("cache"),
+            &data_dir,
+            &bin_dir,
+        );
 
-        let error = execute_install(Some(install_dir.clone())).unwrap_err();
+        let error = execute_install_with_layout(Some(install_dir.clone()), &layout).unwrap_err();
         assert!(
             error.contains("already installed"),
             "unexpected error: {error}"
