@@ -10,6 +10,9 @@ Run `repin --help` for the complete generated synopsis. The commands below are g
 | `repin update [--check] [--force]` | Check for or install the latest release from GitHub. |
 | `repin check-update` | Check if a newer version is available from GitHub. |
 
+`repin install` rejects a source that resolves to the existing user install
+directory. Use an external build or `repin update` to replace an installation.
+
 ## Project lifecycle
 
 | Command | Purpose |

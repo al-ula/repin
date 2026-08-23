@@ -34,6 +34,7 @@ jobs:
         run: just dist
         env:
           GITHUB_REF_NAME: ${{ github.event.workflow_run.head_branch }}
+          CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2

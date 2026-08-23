@@ -787,9 +787,7 @@ fn print_version(json: bool) -> Result<(), Box<dyn std::error::Error>> {
         package_version: env!("CARGO_PKG_VERSION"),
         commit: option_env!("REPIN_GIT_COMMIT"),
         build_id: option_env!("REPIN_BUILD_ID"),
-        target: option_env!("TARGET")
-            .map(str::to_owned)
-            .unwrap_or_else(|| format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS)),
+        target: env!("REPIN_TARGET").to_owned(),
         protocol_min: PROTOCOL_MIN,
         protocol_max: PROTOCOL_MAX,
         store_format: STORE_FORMAT_ID,

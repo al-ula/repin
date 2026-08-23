@@ -35,6 +35,8 @@ just release
 just test
 ```
 
+Set `CARGO_BUILD_TARGET` when producing a release for a specific target.
+
 The `just` build recipes embed the current Git commit in the binary identity
 (`v<package>-<commit>`, showing the first 12 characters). Direct Cargo builds
 remain supported and use `v<package>-unknown`.

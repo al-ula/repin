@@ -11,6 +11,19 @@ cargo build --release
 cargo test
 ```
 
+For a target-specific release build and distribution archive, set Cargo's
+target explicitly:
+
+```bash
+CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu just dist
+```
+
+The binary is written to `target/<target>/release/repin` when
+`CARGO_BUILD_TARGET` is set.
+
+The setup script selects the host target automatically. Set `REPIN_TARGET`
+only when selecting a published compatible target archive explicitly.
+
 Use `target/release/repin` directly or put it on `PATH`:
 
 ```bash

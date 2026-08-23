@@ -8,17 +8,24 @@ GITHUB_API="https://api.github.com/repos/${REPO}/releases/latest"
 echo "Repin Installer & Setup"
 echo "======================="
 
-# Detect OS and Architecture
+# Detect the host target supported by the release channel.
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-if [ "$OS" != "Linux" ] || [ "$ARCH" != "x86_64" ]; then
-    echo "Error: Repin release binaries are currently built for Linux x86_64." >&2
-    echo "Detected platform: ${OS} ${ARCH}" >&2
-    exit 1
-fi
+detect_target() {
+    case "${OS}:${ARCH}" in
+        Linux:x86_64)
+            printf '%s\n' 'x86_64-unknown-linux-gnu'
+            ;;
+        *)
+            echo "Error: Repin has no default release target for ${OS} ${ARCH}." >&2
+            echo "Set REPIN_TARGET to a published compatible target archive." >&2
+            return 1
+            ;;
+    esac
+}
 
-TARGET="x86_64-unknown-linux-gnu"
+TARGET="${REPIN_TARGET:-$(detect_target)}"
 
 # Check required utilities
 for cmd in curl tar gzip; do
@@ -71,6 +78,16 @@ if [ -z "${NEW_BIN}" ] || [ ! -f "${NEW_BIN}" ]; then
 fi
 
 chmod +x "${NEW_BIN}"
+
+echo "Validating target ${TARGET}..."
+VERSION_INFO="$("${NEW_BIN}" version --json 2>/dev/null)" || {
+    echo "Error: Downloaded Repin binary cannot run on ${OS} ${ARCH}." >&2
+    exit 1
+}
+if ! grep -Fq "\"target\": \"${TARGET}\"" <<<"${VERSION_INFO}"; then
+    echo "Error: Downloaded binary target does not match ${TARGET}." >&2
+    exit 1
+fi
 
 # Stop active daemon if running
 if command -v repin >/dev/null 2>&1; then

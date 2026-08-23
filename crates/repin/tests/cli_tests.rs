@@ -32,6 +32,19 @@ fn test_version_uses_package_and_commit_identity() {
 }
 
 #[test]
+fn test_version_json_reports_cargo_target() {
+    let output = Command::new(env!("CARGO_BIN_EXE_repin"))
+        .args(["version", "--json"])
+        .output()
+        .expect("Failed to execute repin version --json");
+
+    assert!(output.status.success());
+    let json = String::from_utf8_lossy(&output.stdout);
+    let expected = format!("\"target\": \"{}\"", env!("REPIN_TARGET"));
+    assert!(json.contains(&expected), "unexpected diagnostics: {json}");
+}
+
+#[test]
 fn test_index_on_uninitialized_project_fails() {
     let runtime = tempdir().unwrap();
     let temp_dir = tempdir().unwrap();

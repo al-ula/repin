@@ -59,7 +59,16 @@ class BenchmarkSuite:
     def __init__(self, repo_dir: str, release_build: bool = True):
         self.repo_dir = os.path.abspath(repo_dir)
         self.release_build = release_build
-        self.repin_bin = os.path.join(self.repo_dir, "target", "release", "repin")
+        target_dir = os.environ.get("CARGO_TARGET_DIR", os.path.join(self.repo_dir, "target"))
+        if not os.path.isabs(target_dir):
+            target_dir = os.path.join(self.repo_dir, target_dir)
+        build_target = os.environ.get("CARGO_BUILD_TARGET")
+        release_dir = (
+            os.path.join(target_dir, build_target, "release")
+            if build_target
+            else os.path.join(target_dir, "release")
+        )
+        self.repin_bin = os.path.join(release_dir, "repin")
         self.available_engines = self._detect_engines()
 
     def _detect_engines(self) -> Dict[str, bool]:

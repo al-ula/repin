@@ -100,12 +100,13 @@ pub fn execute_update(check_only: bool, force: bool) -> Result<(), String> {
     let download_url = release
         .assets
         .iter()
-        .find(|asset| {
-            asset.name.contains("x86_64-unknown-linux-gnu") && asset.name.ends_with(".tar.gz")
-        })
+        .find(|asset| asset.name.contains(env!("REPIN_TARGET")) && asset.name.ends_with(".tar.gz"))
         .map(|asset| asset.browser_download_url.clone())
         .unwrap_or_else(|| {
-            format!("{GITHUB_BASE}/releases/download/{remote_tag}/repin-{remote_tag}-x86_64-unknown-linux-gnu.tar.gz")
+            format!(
+                "{GITHUB_BASE}/releases/download/{remote_tag}/repin-{remote_tag}-{}.tar.gz",
+                env!("REPIN_TARGET")
+            )
         });
 
     let temp_dir = tempfile::Builder::new()

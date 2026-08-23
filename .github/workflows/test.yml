@@ -10,6 +10,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-D warnings"
+  CARGO_BUILD_TARGET: x86_64-unknown-linux-gnu
 
 jobs:
   test:
@@ -55,7 +56,8 @@ jobs:
           )"
           commit="$(git rev-parse --short=12 HEAD)"
           expected="repin v${package_version}-${commit}"
-          test "$(target/release/repin --version)" = "$expected"
+          release_bin="target/${CARGO_BUILD_TARGET}/release/repin"
+          test "$("$release_bin" --version)" = "$expected"
 
   docs:
     name: Documentation Build & Verification

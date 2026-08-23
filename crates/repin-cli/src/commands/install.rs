@@ -51,7 +51,6 @@ pub fn execute_install(source: Option<PathBuf>) -> Result<(), String> {
     let bin_link = &layout.bin_link;
     let bin_dir = &layout.bin_base;
 
-    // Remove existing install directory if distinct from source directory
     let is_same_dir = source_dir
         .canonicalize()
         .ok()
@@ -59,7 +58,14 @@ pub fn execute_install(source: Option<PathBuf>) -> Result<(), String> {
         .map(|(a, b)| a == b)
         .unwrap_or(false);
 
-    if install_dir.exists() && !is_same_dir {
+    if is_same_dir {
+        return Err(format!(
+            "Repin is already installed in {}",
+            install_dir.display()
+        ));
+    }
+
+    if install_dir.exists() {
         fs::remove_dir_all(install_dir)
             .map_err(|e| format!("Failed to remove existing install directory: {e}"))?;
     }
@@ -71,11 +77,8 @@ pub fn execute_install(source: Option<PathBuf>) -> Result<(), String> {
         )
     })?;
 
-    // Copy repin binary
-    if !is_same_dir {
-        fs::copy(&source_binary, install_bin)
-            .map_err(|e| format!("Failed to copy binary to {}: {e}", install_bin.display()))?;
-    }
+    fs::copy(&source_binary, install_bin)
+        .map_err(|e| format!("Failed to copy binary to {}: {e}", install_bin.display()))?;
 
     // Ensure executable permissions on Unix
     #[cfg(unix)]
@@ -102,10 +105,8 @@ pub fn execute_install(source: Option<PathBuf>) -> Result<(), String> {
     let source_docs = source_dir.join(repin_product::DOCS_DIR_NAME);
     let mut docs_installed = false;
     if source_docs.is_dir() {
-        if !is_same_dir {
-            copy_dir_all(&source_docs, install_docs)
-                .map_err(|e| format!("Failed to copy documentation: {e}"))?;
-        }
+        copy_dir_all(&source_docs, install_docs)
+            .map_err(|e| format!("Failed to copy documentation: {e}"))?;
         docs_installed = true;
     }
 
@@ -200,5 +201,28 @@ mod tests {
         assert!(target_docs.is_file());
         assert!(target_link.is_symlink());
         assert_eq!(fs::read_link(target_link).unwrap(), target_bin);
+    }
+
+    #[test]
+    fn test_execute_install_rejects_existing_install_source() {
+        let temp = tempdir().unwrap();
+        let data_dir = temp.path().join("share");
+        let bin_dir = temp.path().join("bin");
+        let install_dir = data_dir.join("repin");
+
+        fs::create_dir_all(&install_dir).unwrap();
+        fs::write(install_dir.join("repin"), "already installed").unwrap();
+
+        unsafe {
+            std::env::set_var("HOME", temp.path());
+            std::env::set_var("XDG_DATA_HOME", &data_dir);
+            std::env::set_var("XDG_BIN_HOME", &bin_dir);
+        }
+
+        let error = execute_install(Some(install_dir.clone())).unwrap_err();
+        assert!(
+            error.contains("already installed"),
+            "unexpected error: {error}"
+        );
     }
 }
