@@ -1,4 +1,4 @@
-use repin_product::{default_user_layout, UserLayout};
+use repin_product::{UserLayout, default_user_layout};
 use std::fs;
 use std::path::{Path, PathBuf};
 
