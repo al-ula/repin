@@ -24,8 +24,8 @@ Repin adopts these independent authorities:
 | Boundary | Authority | Compatibility use |
 | --- | --- | --- |
 | Package/API | each Cargo package's `CARGO_PKG_VERSION` | diagnostics and published API identity |
-| IPC | `repin-protocol` protocol range | bootstrap negotiation and domain framing |
-| SQLite store | `repin-store-sqlite` format/application ID and schema version | inspect, open, migrate, or reject |
+| IPC | `repin-core` `protocol` module range | bootstrap negotiation and domain framing |
+| SQLite store | `repin-core` `store` module format/application ID and schema version | inspect, open, migrate, or reject |
 | Semantic facts | core registries, resolution/classification rules, packs, and extractors | scoped invalidation |
 | Build provenance | CLI/release metadata | diagnostics only |
 
@@ -129,6 +129,6 @@ Compatibility errors use the existing public vocabulary: `PROTOCOL_MISMATCH`,
 available when graph activation fails safely.
 
 Implementation may begin only after the normative updates in the backed
-documents compile with `mdbook build`. Conformance must cover protocol range
+documents compile with `mdbook build docs/code`. Conformance must cover protocol range
 selection, bootstrap bounds, store classification and transactional migration,
 version-record atomicity, scoped invalidation, and conservative replacement.

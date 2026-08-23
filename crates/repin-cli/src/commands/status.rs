@@ -1,5 +1,5 @@
 use crate::client::DaemonClient;
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
 
 pub fn execute_status(client: &mut DaemonClient) -> Result<(), String> {
     let resp = client.send_request(IpcRequest::Status)?;

@@ -1,6 +1,6 @@
 # Code and Architecture
 
-This section is the authoritative documentation for Repin's implementation: architecture, contracts, data models, algorithms, verification rules, decisions, and technology choices.
+This book is the authoritative documentation for Repin's implementation: architecture, contracts, data models, algorithms, verification rules, decisions, and technology choices.
 
 Start with [Introduction](introduction.md), then read [Architecture and Layers](architecture.md). The remaining documents use that vocabulary and define the behavior that implementations and tests must preserve.
 
@@ -33,4 +33,4 @@ Start with [Introduction](introduction.md), then read [Architecture and Layers](
 - [Architectural Decision Records](decisions/index.md)
 - [Concluded Research](research/index.md)
 
-Usage instructions belong in the [Usage Guide](../usage/index.md). They explain how to operate the current CLI without making the user read implementation contracts first.
+Operator instructions live in `docs/usage/` and are not part of this book.

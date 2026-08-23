@@ -1,10 +1,11 @@
 # ADR-023: Reusable capability crates and the runtime compatibility facade
 
 ```text
-Status: accepted architecture and library API decision
+Status: superseded for crate topology by ADR-029; capability contracts remain accepted
 Date: 2026-08-20
 Decision type: crate responsibilities, dependency direction, embedded API, and extraction sequence
 Builds on: ADR-002, ADR-003, ADR-005, ADR-009, ADR-012, ADR-013, ADR-015, ADR-017, ADR-018, ADR-022
+Superseded in part by: ADR-029 (workspace packages; modules retain these capability boundaries)
 Backs: docs/architecture.md, docs/api.md, docs/host-integration.md, docs/conformance.md
 ```
 

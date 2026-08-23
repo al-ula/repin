@@ -8,7 +8,7 @@ Repin builds and maintains a queryable graph of a repository — its files, symb
 
 Repin is **deterministic** (no model, embedding, or network call required to build or query), **incremental** (a persistent graph updated in place is the normal mode; full indexing is the exception), and **standalone** (every client — CLI, agent harness, MCP server, editor plugin — is a thin adapter over one public API).
 
-For the full scope, agnosticism, the workspace crate layout, and reading conventions, see the [Code and Architecture documentation](docs/code/introduction.md).
+For the full scope, agnosticism, the workspace crate layout, and reading conventions, see the [architecture specification](docs/code/introduction.md).
 
 ## Quick Start
 
@@ -37,9 +37,9 @@ Run `repin --help` for the full command reference.
 
 ## Documentation
 
-Documentation is split by audience:
+Two independent mdBooks:
 
-- [Usage Guide](docs/usage/index.md) — quick start, CLI reference, configuration, integrations, and troubleshooting.
-- [Code and Architecture](docs/code/index.md) — architecture, contracts, data models, decisions, specifications, and verification.
+- [User Guide](docs/usage/index.md) — quick start, CLI reference, configuration, agent workflows, and troubleshooting.
+- [Architecture & Design Specification](docs/code/index.md) — architecture, contracts, data models, decisions, specifications, and verification.
 
-The [`docs/SUMMARY.md`](docs/SUMMARY.md) is the mdBook navigation for both sections.
+Build them with `just docs`.

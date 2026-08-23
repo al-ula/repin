@@ -133,17 +133,16 @@ close()                      -> void
 ### Reusable library crates
 
 The same capability contracts are available without a daemon or CLI. An
-embedded consumer may compose `repin-context`, `repin-retrieval`, and
-`repin-indexing` over caller-selected `repin-core` ports, or use the default
-`repin_runtime::Runtime` composition. `repin_engine::Engine` remains a
-source-compatible facade over that runtime.
+embedded consumer depends on `repin-core` and may compose `context`,
+`retrieval`, and `indexing` over caller-selected ports, or use the default
+`repin_core::Runtime` composition. `Engine` / `EngineOptions` are public
+aliases of `Runtime` / `RuntimeOptions` ([ADR-029](decisions/ADR-029-consolidated-crate-topology.md)).
 
 ```text
-repin_context::ContextBuilder
-repin_retrieval::{DeterministicRanker, GraphTraversal, HybridRetriever, ExactVectorIndex}
-repin_indexing::IndexingCoordinator
-repin_runtime::Runtime
-repin_engine::{Engine, EngineOptions}       // compatibility surface
+repin_core::context::ContextBuilder
+repin_core::retrieval::{DeterministicRanker, GraphTraversal, HybridRetriever, ExactVectorIndex}
+repin_core::indexing::IndexingCoordinator
+repin_core::{Runtime, Engine, EngineOptions}
 ```
 
 These are in-process APIs. They return the same result values and retain
@@ -153,7 +152,7 @@ caller-owned; the library does not own prompts, conversations, or answers.
 Concrete stores, filesystems, packs, and providers are injected or selected
 only at the runtime composition boundary.
 
-`repin_context::ContextBudget` supports independent byte, line, and unit
+`repin_core::context::ContextBudget` supports independent byte, line, and unit
 limits. A unit limit requires a caller-supplied estimator; omission of that
 estimator is an explicit unsupported-budget error, never an approximation.
 

@@ -27,7 +27,13 @@ release:
     REPIN_GIT_COMMIT={{git_commit}} cargo build --workspace --release
 
 version:
-    REPIN_GIT_COMMIT={{git_commit}} cargo run -p repin-cli -- version --json
+    REPIN_GIT_COMMIT={{git_commit}} cargo run -p repin -- version --json
+
+docs:
+    mdbook build docs/code
+    mdbook test docs/code
+    mdbook build docs/usage
+    mdbook test docs/usage
 
 # Package the release binary into a versioned tarball.
 dist: release

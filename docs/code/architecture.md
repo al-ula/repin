@@ -71,27 +71,30 @@ Rule 5 is the one most easily violated in practice. The test is mechanical: if r
 
 ### Library crate topology
 
-The reusable capability implementation is split into cohesive Rust crates. The
-crate boundary follows the capability boundary; it does not change the layer
-rules above.
+Reusable capabilities live as modules of one public crate. The module
+boundary follows the capability boundary; it does not change the layer
+rules above. Workspace packaging is five crates ([ADR-029](decisions/ADR-029-consolidated-crate-topology.md)):
 
 ```text
-repin-core
-  ├─ protocol, direct-search, fs, store-sqlite, packs
-  ├─ context, retrieval, indexing, intelligence
-  └─ runtime ──> engine facade ──> daemon / CLI
+repin-core     public library (ports, adapters, algorithms, Runtime/Engine)
+repin-product  Repin path layout (std only)
+repin-cli      CLI adapter
+repin-daemon   daemon adapter
+repin          thin executable
 ```
 
-`repin-runtime` is the only default composition root. It selects concrete
-adapters and normalizes high-level results. `repin-engine` is a compatibility
-facade over that runtime, and the runtime MUST never depend on the facade.
-Capability crates remain usable without either daemon or CLI. The complete
-ownership and feature policy is normative in [ADR-023](decisions/ADR-023-reusable-library-crates.md).
+`repin-core::runtime` is the only default composition root. It selects
+concrete adapters and normalizes high-level results. `Engine` is a public
+alias of `Runtime`. Capability modules remain usable without either daemon
+or CLI. `repin-core` MUST NOT depend on `repin-product`, `repin-cli`,
+`repin-daemon`, or `repin`. Capability contracts remain those of
+[ADR-023](decisions/ADR-023-reusable-library-crates.md); the multi-crate
+extraction is withdrawn by ADR-029.
 
 ## 4. Ports
 
 | Port | Responsibility | Absence behavior |
-|---|---|---|
+| --- | --- | --- |
 | `Filesystem` | read, stat, enumerate, canonicalize | required |
 | `Vcs` | changed-set since a recorded point, current revision id, branch identity | full crawl instead |
 | `Watch` | normalized change events for roots | polling or explicit notification only |
@@ -121,7 +124,7 @@ The subsystem that answers from the working tree. It exists at L2 alongside grap
 ### Modes
 
 | Mode | Finds | Requires |
-|---|---|---|
+| --- | --- | --- |
 | `files` | paths matching a pattern | filesystem |
 | `text` | literal occurrences with location | filesystem |
 | `regex` | pattern occurrences with location | filesystem |

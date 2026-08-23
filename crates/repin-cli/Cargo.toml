@@ -7,15 +7,8 @@ license.workspace = true
 repository.workspace = true
 readme = "README.md"
 
-[[bin]]
-name = "repin"
-path = "src/main.rs"
-
 [dependencies]
 repin-core.workspace = true
-repin-protocol.workspace = true
-repin-store-sqlite.workspace = true
-repin-engine.workspace = true
 repin-daemon.workspace = true
 repin-product.workspace = true
 clap.workspace = true

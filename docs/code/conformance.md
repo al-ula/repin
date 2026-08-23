@@ -224,7 +224,7 @@ phase; Linux measurements do not imply portability to them.
 ## 7. Test taxonomy
 
 | Level | Scope | Requires |
-|---|---|---|
+| --- | --- | --- |
 | unit | identity, classification, coalescing, ranking, normalization, redaction | nothing |
 | port | one port against its suite | one implementation |
 | integration | full pipeline over fixtures | all required ports |
@@ -258,9 +258,9 @@ The crate extraction adds gates without weakening the existing product suites:
 - Intelligence tests use deterministic fake models, malformed responses,
   deadline timeouts, unavailable providers, and the recorded provider smoke
   commands. No credentials or network access are required by default.
-- Cargo metadata must show the dependency direction
-  `capability crates -> repin-runtime -> repin-engine -> product frontends`;
-  `repin-runtime -> repin-engine` is a failure.
+- Cargo metadata must list exactly `repin-core`, `repin-product`,
+  `repin-cli`, `repin-daemon`, and `repin`. `repin-core` MUST NOT depend on
+  any other workspace crate. `repin-daemon` MUST NOT depend on `repin-cli`.
 - Existing facade compile fixtures, daemon protocol snapshots, CLI contract
   tests, and serialized envelopes must remain unchanged.
 
@@ -268,6 +268,7 @@ The extraction is accepted only when these checks pass with no added
 in-process serialization, store round trips, or source reads in an existing
 operation. Deterministic median and p95 regressions are compared with the
 baseline under the 5% ADR-023 budget after variance analysis.
+
 # Compatibility versioning (ADR-024)
 
 The conformance suite MUST verify the `v<package>-<commit>` CLI identity with a

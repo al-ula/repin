@@ -1,5 +1,5 @@
 use crate::client::DaemonClient;
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
 
 pub fn execute_update(client: &mut DaemonClient) -> Result<(), String> {
     println!("Checking for VCS worktree changes and updating incrementally...");

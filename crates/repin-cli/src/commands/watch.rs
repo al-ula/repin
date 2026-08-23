@@ -1,5 +1,5 @@
 use crate::client::DaemonClient;
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
 use std::time::Duration;
 
 pub fn execute_watch(client: &mut DaemonClient, poll_interval_ms: u64) -> Result<(), String> {

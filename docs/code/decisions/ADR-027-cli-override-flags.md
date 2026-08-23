@@ -43,7 +43,7 @@ ADR-021 already established "Explicit CLI Arguments / API Request Overrides" as 
 
 1. `cargo test -p repin-protocol` verifies IPC serde round-trip with and without override fields.
 2. `cargo test -p repin-cli` verifies flag parsing and that `config show` is unaffected by flag invocation.
-3. `cargo build` across the workspace plus `mdbook build` for documentation.
+3. `cargo build` across the workspace plus `mdbook build docs/code` and `mdbook build docs/usage`.
 
 ## Reopen Triggers
 

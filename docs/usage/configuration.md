@@ -84,4 +84,11 @@ The supported capability tiers are:
 - `agent` for a shell callback, such as reranking;
 - configured remote providers such as OpenAI, Ollama, or Google.
 
-The full schema, precedence rules, and safety floors are specified in [Per-Project Configuration](../code/specifications/project-configuration.md).
+Safety floors that configuration cannot weaken:
+
+- hardcoded exclusions (`.git`, `.env`, `*.pem`, `*.key`, and `.repin`) stay in force;
+- `roots` and `exclude_paths` that escape the repository are rejected;
+- loading configuration never executes `agent_cmd`;
+- `[intelligence.providers]` and `api_key_env` belong only in the user-global file.
+
+`schema_version` must be `1`. Unknown fields and invalid types fail validation.

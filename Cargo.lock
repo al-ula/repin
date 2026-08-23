@@ -882,6 +882,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
+name = "repin"
+version = "0.1.0"
+dependencies = [
+ "repin-cli",
+ "repin-product",
+ "tempfile",
+]
+
+[[package]]
 name = "repin-cli"
 version = "0.1.0"
 dependencies = [
@@ -889,10 +898,7 @@ dependencies = [
  "clap",
  "repin-core",
  "repin-daemon",
- "repin-engine",
  "repin-product",
- "repin-protocol",
- "repin-store-sqlite",
  "serde",
  "serde_json",
  "tempfile",
@@ -903,44 +909,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "repin-conformance"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "repin-daemon",
- "repin-engine",
- "repin-fs",
- "repin-protocol",
- "repin-store-sqlite",
- "serde_json",
- "tempfile",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "repin-context"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "repin-store-sqlite",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
-]
-
-[[package]]
 name = "repin-core"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "cap-std",
+ "globset",
+ "hex",
+ "ignore",
  "proptest",
+ "regex",
+ "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "toml",
  "tracing",
+ "tree-sitter",
+ "tree-sitter-md",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+ "ureq",
 ]
 
 [[package]]
@@ -949,147 +939,17 @@ version = "0.1.0"
 dependencies = [
  "fs4",
  "repin-core",
- "repin-engine",
  "repin-product",
- "repin-protocol",
- "repin-store-sqlite",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror",
  "tracing",
-]
-
-[[package]]
-name = "repin-direct-search"
-version = "0.1.0"
-dependencies = [
- "regex",
- "repin-core",
- "repin-protocol",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "repin-engine"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "repin-protocol",
- "repin-runtime",
- "tempfile",
-]
-
-[[package]]
-name = "repin-fs"
-version = "0.1.0"
-dependencies = [
- "cap-std",
- "globset",
- "ignore",
- "repin-core",
- "tempfile",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "repin-indexing"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "repin-fs",
- "repin-packs",
- "repin-store-sqlite",
- "tempfile",
-]
-
-[[package]]
-name = "repin-intelligence"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "repin-core",
- "serde",
- "serde_json",
- "ureq",
-]
-
-[[package]]
-name = "repin-packs"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tracing",
- "tree-sitter",
- "tree-sitter-md",
- "tree-sitter-rust",
- "tree-sitter-typescript",
 ]
 
 [[package]]
 name = "repin-product"
 version = "0.1.0"
-
-[[package]]
-name = "repin-protocol"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "repin-retrieval"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "hex",
- "repin-core",
- "repin-store-sqlite",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "repin-runtime"
-version = "0.1.0"
-dependencies = [
- "repin-context",
- "repin-core",
- "repin-direct-search",
- "repin-fs",
- "repin-indexing",
- "repin-intelligence",
- "repin-packs",
- "repin-protocol",
- "repin-retrieval",
- "repin-store-sqlite",
- "serde",
- "serde_json",
- "tempfile",
- "tracing",
-]
-
-[[package]]
-name = "repin-store-sqlite"
-version = "0.1.0"
-dependencies = [
- "repin-core",
- "rusqlite",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tracing",
-]
 
 [[package]]
 name = "ring"

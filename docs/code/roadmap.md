@@ -56,32 +56,35 @@ All decisions blocking deterministic implementation are resolved. The implementa
 
 Implementation builds and validates the product according to the finalized plan. The core implementation profile is validated with conformance suites, replay convergence testing, and the CLI frontend. Capability milestones below describe the product capability profile; the reusable-library extraction is governed by the M0–M10 sequence below.
 
-## Stage 5 — Reusable library extraction *(ADR-023 accepted)*
+## Stage 5 — Reusable library extraction *(ADR-023 delivered; packaging superseded by ADR-029)*
 
-The extraction preserves the existing product and protocol while making
+The extraction preserved the existing product and protocol while making
 indexing, retrieval, context construction, and optional intelligence usable by
-embedded Rust applications. It follows the required Plan → Evaluate →
-Implement → Review cycle for every milestone.
+embedded Rust applications. Capability contracts remain those of
+[ADR-023](decisions/ADR-023-reusable-library-crates.md). Workspace packaging
+was later collapsed by [ADR-029](decisions/ADR-029-consolidated-crate-topology.md):
+capability modules live in `repin-core`; CLI, daemon, product layout, and the
+executable remain separate crates.
 
 | Milestone | Deliverable | Exit evidence |
 | --- | --- | --- |
 | M0 | Stabilized ADR-022 provider contracts and failure taxonomy | offline tests plus recorded tier smoke results |
 | M1 | Correctness, ordering, I/O, allocation, and latency baselines | reproducible fixtures, commands, and snapshots |
-| M2 | Accepted [ADR-023](decisions/ADR-023-reusable-library-crates.md) and cross-referenced docs | `mdbook build` and link checks |
+| M2 | Accepted [ADR-023](decisions/ADR-023-reusable-library-crates.md) and cross-referenced docs | `mdbook build docs/code` and link checks |
 | M3 | Reusable source/snapshot filesystem contract | source conformance and graph-free direct retrieval |
-| M4 | `repin-context` | graph-free/enriched golden context and exact budgets |
-| M5 | `repin-retrieval` | SQLite/test-store retrieval and unchanged canonical ordering |
-| M6 | `repin-indexing` | clean/incremental replay convergence and atomic updates |
-| M7 | `repin-intelligence` | provider contract tests and explicit offline absence |
-| M8 | `repin-runtime` plus `repin-engine` compatibility facade | no Cargo cycle and unchanged daemon/CLI behavior |
+| M4 | context module | graph-free/enriched golden context and exact budgets |
+| M5 | retrieval module | SQLite/test-store retrieval and unchanged canonical ordering |
+| M6 | indexing module | clean/incremental replay convergence and atomic updates |
+| M7 | intelligence module | provider contract tests and explicit offline absence |
+| M8 | `Runtime` composition with `Engine` alias | unchanged daemon/CLI behavior |
 | M9 | embedded RAG proof with caller-owned inference | offline fake-model test and opt-in local smoke |
 | M10 | publication readiness | workspace, conformance, docs, feature, and benchmark gates |
+| M11 | [ADR-029](decisions/ADR-029-consolidated-crate-topology.md) five-crate workspace | `cargo metadata` lists only the five members; `cargo test --workspace` |
 
-New crates remain unpublished until their public APIs and feature sets are
-stable. The default build remains offline and deterministic. The extraction
-acceptance budget is at most 5% median and p95 regression after variance
-analysis, with zero added in-process serialization, store round trips, or
-source reads.
+The public library is `repin-core`. The default build remains offline and
+deterministic. The extraction acceptance budget is at most 5% median and p95
+regression after variance analysis, with zero added in-process serialization,
+store round trips, or source reads.
 
 ## Implementation capability milestones
 

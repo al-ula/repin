@@ -1,7 +1,7 @@
 use crate::client::DaemonClient;
 use repin_core::model::node::Node;
-use repin_engine::inspect::FileOutline;
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::runtime::inspect::FileOutline;
 
 pub fn execute_inspect(client: &mut DaemonClient, path: &str) -> Result<(), String> {
     let resp = client.send_request(IpcRequest::InspectFile {

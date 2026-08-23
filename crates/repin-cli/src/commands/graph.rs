@@ -1,7 +1,7 @@
 use crate::client::DaemonClient;
 use repin_core::model::node::Node;
-use repin_engine::traversal::{ImpactData, NeighborsData, PathTraceData};
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::runtime::traversal::{ImpactData, NeighborsData, PathTraceData};
 use std::collections::BTreeMap;
 
 pub fn execute_entity(client: &mut DaemonClient, name_or_id: &str) -> Result<(), String> {

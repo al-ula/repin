@@ -1,6 +1,6 @@
 use crate::lease::FileLease;
 use repin_core::config::RepinConfig;
-use repin_engine::{Engine, EngineOptions};
+use repin_core::runtime::{Engine, EngineOptions};
 use repin_product::ProjectLayout;
 use std::fs;
 use std::os::unix::fs::MetadataExt;

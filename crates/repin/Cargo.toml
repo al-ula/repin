@@ -1,0 +1,19 @@
+[package]
+name = "repin"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[[bin]]
+name = "repin"
+path = "src/main.rs"
+
+[dependencies]
+repin-cli.workspace = true
+
+[dev-dependencies]
+repin-product.workspace = true
+tempfile.workspace = true

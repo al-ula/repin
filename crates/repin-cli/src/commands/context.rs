@@ -1,7 +1,7 @@
 use crate::client::DaemonClient;
 use repin_core::model::provenance::Revision;
-use repin_engine::context::AssembledContext;
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
+use repin_core::runtime::context::AssembledContext;
 
 pub fn execute_context(
     client: &mut DaemonClient,

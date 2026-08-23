@@ -2,10 +2,10 @@ name: Test
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
+    branches: ["main"]
+    tags: ["v*"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -45,8 +45,16 @@ jobs:
       - name: Verify Git-derived binary version
         shell: bash
         run: |
-          package_version="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(next(package["version"] for package in json.load(sys.stdin)["packages"] if package["name"] == "repin-cli"))')"
-          expected="repin v${package_version}-$(git rev-parse --short=12 HEAD)"
+          package_version="$(
+            cargo metadata --no-deps --format-version 1 | python3 -c "
+          import json, sys
+          pkgs = json.load(sys.stdin)['packages']
+          name = 'repin'
+          print(next(p['version'] for p in pkgs if p['name'] == name))
+          "
+          )"
+          commit="$(git rev-parse --short=12 HEAD)"
+          expected="repin v${package_version}-${commit}"
           test "$(target/release/repin --version)" = "$expected"
 
   docs:
@@ -61,11 +69,17 @@ jobs:
         with:
           mdbook-version: "latest"
 
-      - name: Build mdBook specification
-        run: mdbook build
+      - name: Build specification book
+        run: mdbook build docs/code
 
-      - name: Test mdBook code blocks
-        run: mdbook test
+      - name: Test specification book code blocks
+        run: mdbook test docs/code
+
+      - name: Build usage book
+        run: mdbook build docs/usage
+
+      - name: Test usage book code blocks
+        run: mdbook test docs/usage
 
   security:
     name: License & Advisory Audit

@@ -1,7 +1,7 @@
 use crate::client::DaemonClient;
 use repin_core::config::RepinConfig;
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
 use repin_product::ProjectLayout;
-use repin_protocol::ipc::{IpcRequest, IpcResponse};
 
 /// Daemon-mediated project initialization (ADR-026). The daemon creates the
 /// state directory, database, and writer lease, then binds this connection to

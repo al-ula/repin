@@ -1,13 +1,13 @@
 use crate::lease::FileLease;
 use crate::registry::ContextRegistry;
 use repin_core::ports::store::Store;
-use repin_product::RuntimeLayout;
-use repin_protocol::errors::ErrorCode;
-use repin_protocol::ipc::{IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope};
-use repin_protocol::{
+use repin_core::protocol::errors::ErrorCode;
+use repin_core::protocol::ipc::{IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope};
+use repin_core::protocol::{
     BOOTSTRAP_VERSION, BootstrapHandshakeOk, BootstrapRejected, PROTOCOL_MAX, PROTOCOL_MIN,
     replacement_allowed, select_protocol,
 };
+use repin_product::RuntimeLayout;
 use std::io::{BufReader, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
@@ -149,7 +149,7 @@ impl DaemonServer {
         reader
             .get_ref()
             .set_read_timeout(Some(std::time::Duration::from_millis(
-                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+                repin_core::protocol::BOOTSTRAP_DEADLINE_MS,
             )))
             .map_err(|e| e.to_string())?;
 
@@ -161,9 +161,9 @@ impl DaemonServer {
             let frame = match read_bounded_frame(
                 &mut reader,
                 if negotiated {
-                    repin_protocol::MAX_FRAME_BYTES
+                    repin_core::protocol::MAX_FRAME_BYTES
                 } else {
-                    repin_protocol::MAX_BOOTSTRAP_FRAME_BYTES
+                    repin_core::protocol::MAX_BOOTSTRAP_FRAME_BYTES
                 },
             ) {
                 Ok(Some(frame)) => frame,
@@ -535,8 +535,8 @@ impl DaemonServer {
                 include_blast_radius,
                 include_verbatim_source,
             } => {
-                let budget =
-                    budget_bytes.unwrap_or(repin_engine::ContextBuilder::DEFAULT_BYTE_BUDGET);
+                let budget = budget_bytes
+                    .unwrap_or(repin_core::runtime::ContextBuilder::DEFAULT_BYTE_BUDGET);
                 let context_override = if padding_lines.is_some()
                     || include_blast_radius.is_some()
                     || include_verbatim_source.is_some()
@@ -559,8 +559,8 @@ impl DaemonServer {
                 changed_since,
                 budget_bytes,
             } => {
-                let budget =
-                    budget_bytes.unwrap_or(repin_engine::ContextBuilder::DEFAULT_BYTE_BUDGET);
+                let budget = budget_bytes
+                    .unwrap_or(repin_core::runtime::ContextBuilder::DEFAULT_BYTE_BUDGET);
                 let env = engine.review_context(changed_since, budget);
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();

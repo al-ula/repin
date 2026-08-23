@@ -50,10 +50,9 @@ repin-daemon ────┘
 generic Repin crates ──> no repin-product dependency
 ```
 
-The arrows show dependency direction. Generic crates, including
-`repin-runtime` and `repin-intelligence`, never import `repin-product` or a
-product layout type. They accept ordinary `Path`/`PathBuf` values, explicit
-roots, or resolved configuration values.
+The arrows show dependency direction. `repin-core` never imports
+`repin-product` or a product layout type. It accepts ordinary `Path`/`PathBuf`
+values, explicit roots, or resolved configuration values.
 
 The crate exposes typed layouts for project, runtime, and user scopes. The user
 layout carries the product model-cache root:
@@ -84,7 +83,7 @@ selectors. The product path literals live in one implementation location.
 ## 3. Ownership rules
 
 | Responsibility | Owner | Rule |
-|---|---|---|
+| --- | --- | --- |
 | Product path names and joins | `repin-product` | Product-level construction only |
 | `HOME`, XDG, temporary, or platform directory selection | `repin-product` | Resolve environment once, then pass explicit bases |
 | Project discovery and explicit `--config` selection | CLI or host adapter | Produce paths through `repin-product` |
@@ -171,7 +170,7 @@ ADR-024.
 - Existing state discovery, initialization, daemon election, and CLI behavior
   remain unchanged.
 - `cargo test --workspace` passes.
-- `mdbook build` passes.
+- `mdbook build docs/code` and `mdbook build docs/usage` pass.
 
 ## 8. Compatibility follow-up
 

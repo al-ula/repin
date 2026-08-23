@@ -1,9 +1,11 @@
 use repin_core::config::RepinConfig;
-use repin_product::{RuntimeLayout, default_runtime_layout};
-use repin_protocol::ipc::{
+use repin_core::protocol::ipc::{
     BootstrapHandshake, IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope,
 };
-use repin_protocol::{BOOTSTRAP_VERSION, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE};
+use repin_core::protocol::{
+    BOOTSTRAP_VERSION, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE,
+};
+use repin_product::{RuntimeLayout, default_runtime_layout};
 use std::io::{BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
@@ -57,7 +59,7 @@ impl DaemonClient {
         let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
         stream
             .set_read_timeout(Some(std::time::Duration::from_millis(
-                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+                repin_core::protocol::BOOTSTRAP_DEADLINE_MS,
             )))
             .map_err(|e| e.to_string())?;
         let mut client = Self {
@@ -108,7 +110,7 @@ impl DaemonClient {
 
         stream
             .set_read_timeout(Some(std::time::Duration::from_millis(
-                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+                repin_core::protocol::BOOTSTRAP_DEADLINE_MS,
             )))
             .map_err(|e| e.to_string())?;
         let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
@@ -268,7 +270,7 @@ impl DaemonClient {
             .map_err(|e| format!("failed to connect to daemon endpoint: {e}"))?;
         stream
             .set_read_timeout(Some(std::time::Duration::from_millis(
-                repin_protocol::BOOTSTRAP_DEADLINE_MS,
+                repin_core::protocol::BOOTSTRAP_DEADLINE_MS,
             )))
             .map_err(|e| e.to_string())?;
         let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
@@ -346,7 +348,7 @@ impl DaemonClient {
         let msg_str = serde_json::to_string(&msg).map_err(|e| e.to_string())?;
         writeln!(self.stream, "{msg_str}").map_err(|e| e.to_string())?;
 
-        let frame = read_bounded_frame(&mut self.reader, repin_protocol::MAX_FRAME_BYTES)?;
+        let frame = read_bounded_frame(&mut self.reader, repin_core::protocol::MAX_FRAME_BYTES)?;
         let resp_env: IpcResponseEnvelope =
             serde_json::from_slice(&frame).map_err(|e| e.to_string())?;
 

@@ -1,0 +1,9 @@
+[book]
+title = "Repin User Guide"
+authors = ["Repin contributors"]
+description = "How to build, configure, and operate the Repin command-line client."
+language = "en"
+src = "."
+
+[build]
+build-dir = "../../book/usage"

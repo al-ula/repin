@@ -1,9 +1,9 @@
 use crate::context_handle::WriterLease;
 use crate::registry::ContextRegistry;
 use repin_core::ports::store::StoreError;
+use repin_core::protocol::errors::ErrorCode;
+use repin_core::store::SqliteStore;
 pub use repin_product::{GRAPH_DB_FILE, STATE_DIR};
-use repin_protocol::errors::ErrorCode;
-use repin_store_sqlite::SqliteStore;
 use std::fs;
 use std::path::{Path, PathBuf};
 

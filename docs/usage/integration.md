@@ -1,6 +1,6 @@
-# Agent and Host Integration
+# Agent Integration
 
-Repin can be used as a CLI by an agent or embedded as a Rust library by a host application.
+Repin can be used as a CLI by an agent. Library embedding is outside this guide; see `crates/repin-core/examples/embedded_rag.rs` for an in-process example.
 
 ## Agent workflows
 
@@ -16,16 +16,42 @@ repin review-context --since 1
 
 Use `impact --json`, `path --json`, and `db inspect --json` when a caller needs machine-readable output. Paths and budgets should be supplied by the caller rather than inferred from unbounded repository scans.
 
-For model-assisted reranking, configure `intelligence.rerank.agent_cmd` or pass an explicit callback:
+## Rerank callback
+
+Optional model capabilities are disabled by default. For model-assisted reranking, configure `intelligence.rerank.agent_cmd` or pass an explicit callback:
 
 ```bash
 repin rerank "sqlite transaction ownership" --agent-cmd 'my-agent-rerank --json'
 ```
 
-The callback protocol and safety boundaries are defined in [Optional Intelligence](../code/intelligence.md) and the [multi-tier provider specification](../code/specifications/multi-tier-model-providers.md).
+The callback is a subprocess. Repin writes one JSON-RPC request to stdin and reads one JSON-RPC response from stdout. The deadline is `intelligence.rerank.deadline_ms`, overridable with `--deadline-ms`. A missing, failing, or timed-out callback leaves the deterministic ranking in place.
 
-## Host applications
+Input:
 
-Use the reusable runtime and capability crates when the host needs an in-process engine. The [Public API](../code/api.md) describes the stable client surface, and [Host Integration](../code/host-integration.md) describes lifecycle, freshness, capability negotiation, and change notification.
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "repin/rerank",
+  "params": {
+    "query": "session eviction timer",
+    "candidates": [
+      { "id": "fn:reap_idle_leases", "content": "pub fn reap_idle_leases(&mut self) { ... }" },
+      { "id": "fn:connect_client", "content": "pub fn connect_client(...) { ... }" }
+    ]
+  }
+}
+```
 
-The repository includes a deterministic embedded RAG example at [`crates/repin-runtime/examples/embedded_rag.rs`](../../crates/repin-runtime/examples/embedded_rag.rs).
+Output:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "ranked": [
+      { "id": "fn:reap_idle_leases", "score": 0.94 },
+      { "id": "fn:connect_client", "score": 0.12 }
+    ]
+  }
+}
+```

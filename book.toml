@@ -1,9 +1,0 @@
-[book]
-title = "Repin Documentation"
-authors = ["Repin contributors"]
-description = "User guidance and authoritative architecture, contracts, and design documentation for Repin."
-language = "en"
-src = "docs"
-
-[build]
-build-dir = "book"

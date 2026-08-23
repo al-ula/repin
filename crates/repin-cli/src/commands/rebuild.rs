@@ -1,5 +1,5 @@
 use crate::client::DaemonClient;
-use repin_protocol::ipc::{IpcRequest, IpcResponse, RebuildTarget};
+use repin_core::protocol::ipc::{IpcRequest, IpcResponse, RebuildTarget};
 
 pub fn execute_rebuild(client: &mut DaemonClient, target: RebuildTarget) -> Result<(), String> {
     let response = client.send_request(IpcRequest::Rebuild { target })?;

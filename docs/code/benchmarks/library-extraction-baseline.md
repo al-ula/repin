@@ -2,7 +2,7 @@
 
 This record is the M1 checkpoint for the ADR-023 extraction. It fixes the
 commands, fixture shape, and invariants used to compare the extracted crates
-with the original `repin-engine` composition.
+with the original in-process engine composition.
 
 ## Fixture and semantic baseline
 
@@ -32,13 +32,11 @@ Run these commands from the repository root on the pinned Linux PoC toolchain:
 
 ```text
 cargo test --workspace
-cargo test -p repin-runtime --example embedded_rag
-cargo test -p repin-conformance --test conformance_tests
-cargo clippy -p repin-context -p repin-retrieval -p repin-indexing \
-  -p repin-intelligence -p repin-runtime -p repin-engine \
-  --all-targets -- -D warnings
+cargo test -p repin-core --example embedded_rag
+cargo test -p repin-core --test conformance_tests
+cargo clippy -p repin-core --all-targets -- -D warnings
 cargo metadata --no-deps --format-version 1
-mdbook build
+mdbook build docs/code
 ```
 
 For a local timing sample, keep the fixture, build profile, filesystem, and
@@ -46,7 +44,7 @@ warm/cold state fixed and record the complete command output:
 
 ```text
 /usr/bin/time -p cargo test --workspace
-/usr/bin/time -p cargo run -p repin-runtime --example embedded_rag
+/usr/bin/time -p cargo run -p repin-core --example embedded_rag
 ```
 
 The first command measures the complete correctness suite. The embedded proof
