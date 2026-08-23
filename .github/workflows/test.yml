@@ -76,13 +76,13 @@ jobs:
         run: just docs
 
   security:
-    name: License & Advisory Audit
+    name: Advisory Audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check cargo dependencies and licenses
+      - name: Check cargo dependencies
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
