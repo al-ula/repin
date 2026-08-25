@@ -122,9 +122,10 @@ checks as required implementation validation:
 - invalid/newer graph state preserves bounded direct retrieval with explicit
   graph-unavailable status, and external lock ownership produces observer mode
   with `PROJECT_LEASE_UNAVAILABLE` for writes;
-- virtual-clock idle eviction occurs at `600,000 ms` only when the context is
-  truly idle, and final context unload precedes daemon socket close and lease
-  release;
+- virtual-clock idle eviction occurs at the default `600,000 ms` boundary only
+  when the context is truly idle; resolved per-context thresholds, process-wide
+  overrides, and `0` persistence obey their precedence; and final context
+  unload precedes daemon socket close and singleton-lease release;
 - daemon death releases project locks, restart repairs stale rendezvous state,
   and closing one client leaves unrelated work unaffected;
 - protocol negotiation, request IDs, progress, deadlines, cancellation, and
@@ -258,9 +259,8 @@ The crate extraction adds gates without weakening the existing product suites:
 - Intelligence tests use deterministic fake models, malformed responses,
   deadline timeouts, unavailable providers, and the recorded provider smoke
   commands. No credentials or network access are required by default.
-- Cargo metadata must list exactly `repin-core`, `repin-product`,
-  `repin-cli`, `repin-daemon`, and `repin`. `repin-core` MUST NOT depend on
-  any other workspace crate. `repin-daemon` MUST NOT depend on `repin-cli`.
+- Cargo metadata must list exactly `repin-core` and `repin`. `repin-core`
+  MUST NOT depend on `repin`.
 - Existing facade compile fixtures, daemon protocol snapshots, CLI contract
   tests, and serialized envelopes must remain unchanged.
 
@@ -290,10 +290,14 @@ The protocol suite also verifies the 1 MiB ordinary-frame and 64 KiB bootstrap
 limits and the 2,000 ms bootstrap deadline, including rejection before project
 binding.
 
-The lifecycle suite verifies that detached contexts remain isolated while
-within the ten-minute idle window, then release their project writer lease on
-reaping; a daemon replacement request is eligible only after that reaping and
-with no other bootstrap/client connection.
+The lifecycle suite verifies that detached contexts remain isolated before the
+default ten-minute boundary, then release their project writer lease exactly at
+that boundary. It also verifies per-context timeout isolation, process-wide
+override precedence, `0` persistence, reattachment cancellation, and that an
+attached client cannot be reaped. A daemon replacement request is eligible
+only after final reaping and with no other bootstrap/client connection. Final
+auto-exit must stop accepting work, remove the socket, and retain the singleton
+lease until server teardown.
 
 Producer-version invalidation must exercise owner discovery across nodes,
 edges, unresolved references, skips, and diagnostics, verify that no source

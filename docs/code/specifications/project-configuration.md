@@ -69,7 +69,7 @@ checkpoint_interval = 1000
 
 [daemon]
 watch_debounce_ms = 150
-idle_timeout_secs = 3600
+idle_timeout_secs = 600
 
 # ==============================================================================
 # Optional Model-Powered Intelligence (Default: none / disabled)
@@ -157,7 +157,7 @@ Specifies the configuration schema format version. Must be `1` for the current s
 
 ### `[daemon]`
 - `watch_debounce_ms` (Integer, Optional): Filesystem watcher debounce duration in milliseconds (default: `150`).
-- `idle_timeout_secs` (Integer, Optional): Idle timeout before releasing memory locks (default: `3600`; `0` for persistent).
+- `idle_timeout_secs` (Integer, Optional): Seconds a detached project context remains cached before stores and its writer lock are released (default: `600`; `0` disables idle eviction). `repin daemon run --idle-timeout <secs>` overrides this value for every context in that daemon process.
 
 ### `[intelligence]`
 - `[intelligence.providers.<name>]` (Table, Optional): Shared provider profiles defining `endpoint` (URL) and `api_key_env` (Environment variable name).

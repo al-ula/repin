@@ -1,6 +1,6 @@
 # Decisions
 
-This directory records the 29 accepted Architectural Decision Records (ADRs) establishing the architecture, contracts, and implementation profile for Repin.
+This directory records the 30 accepted Architectural Decision Records (ADRs) establishing the architecture, contracts, and implementation profile for Repin.
 
 Research has concluded for the accepted decisions. These ADRs bridge architectural requirements and production implementation.
 
@@ -37,6 +37,7 @@ Research has concluded for the accepted decisions. These ADRs bridge architectur
 | [ADR-027](ADR-027-cli-override-flags.md) | CLI flag overrides for per-invocation behavior tuning | accepted contract and capability decision | ADR-021 precedence layer, per-command override ergonomics |
 | [ADR-028](ADR-028-centralized-path-layout.md) | Centralize Repin product paths and keep shared crates generic | accepted architecture and library boundary decision | concrete path audit, reusable-crate boundary |
 | [ADR-029](ADR-029-consolidated-crate-topology.md) | Collapse reusable capabilities into `repin-core`; keep CLI, daemon, product, and binary as separate crates | accepted architecture and library API decision | crate-graph cost of ADR-023, product/library boundary |
+| [ADR-030](ADR-030-two-crate-workspace-topology.md) | Consolidate workspace into two crates (`repin-core` and `repin`) | accepted architecture and library API decision | simplify packaging, eliminate redundant product crates |
 
 ## Implementation Validation Scope
 

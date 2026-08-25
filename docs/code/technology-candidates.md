@@ -94,15 +94,12 @@ The in-process engine surface (`open(EngineOptions) -> Engine`) is retained for 
 
 ### Workspace Crate Architecture
 
-The Rust implementation is partitioned into five crates ([ADR-029](decisions/ADR-029-consolidated-crate-topology.md)):
+The Rust implementation is partitioned into two crates ([ADR-030](decisions/ADR-030-two-crate-workspace-topology.md)):
 
 | Crate | Layer | Purpose |
 | --- | --- | --- |
 | `repin-core` | L0–L4 | Public library: domain models, port traits, result envelopes, IPC values, filesystem/store/pack adapters, retrieval, indexing, context, optional intelligence, default `Runtime`/`Engine`, conformance harness |
-| `repin-product` | product | Repin-specific project, user, runtime, and model path layouts (`std` only) |
-| `repin-daemon` | L4/L5 | Per-user background daemon runtime, Unix domain socket rendezvous, per-project writer lease coordination |
-| `repin-cli` | L5 | CLI adapter: ancestor discovery, auto-starting daemon client, and subcommands |
-| `repin` | L5 | Thin executable (`cargo install repin`) |
+| `repin` | L4/L5 | Product library & binary: product layouts (`repin::product`), user daemon runtime (`repin::daemon`), CLI adapter (`repin::cli`), and executable (`cargo install repin`) |
 
 ## 5. Persistence and search architecture
 

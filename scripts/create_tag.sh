@@ -14,10 +14,10 @@ import sys
 packages = [
     package
     for package in json.load(sys.stdin)["packages"]
-    if package["name"] == "repin-cli"
+    if package["name"] == "repin"
 ]
 if len(packages) != 1:
-    raise SystemExit(f"expected one repin-cli package, found {len(packages)}")
+    raise SystemExit(f"expected one repin package, found {len(packages)}")
 print(packages[0]["version"])
 ')"
 tag="v${package_version}"

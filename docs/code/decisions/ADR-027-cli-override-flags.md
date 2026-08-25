@@ -19,7 +19,7 @@ Repin exposes a bounded set of behavior-tuning configuration keys as per-invocat
    - `repin context --no-verbatim-source` — sets `context.include_verbatim_source = false`.
    - `repin rerank --top-n <usize>` — overrides `intelligence.rerank.top_n` (caps candidates sent to the callback).
    - `repin rerank --deadline-ms <u64>` — overrides `intelligence.rerank.deadline_ms` (enforced on the shell callback).
-   - `repin daemon run --idle-timeout <secs>` — overrides `daemon.idle_timeout_secs`.
+   - `repin daemon run --idle-timeout <secs>` — overrides `daemon.idle_timeout_secs` for every context hosted by that daemon process. The value is measured in seconds; `0` disables idle eviction.
 
 2. **Already overridable** (documented, unchanged): `search --limit` (`retrieval.default_limit`), `rerank --agent-cmd` (`intelligence.rerank.agent_cmd`), `context --budget` (`context.default_token_budget`), `watch --interval` (`daemon.watch_debounce_ms`).
 
@@ -35,7 +35,8 @@ ADR-021 already established "Explicit CLI Arguments / API Request Overrides" as 
 
 - `repin-protocol` `IpcRequest` gains optional override fields on four variants.
 - `repin-runtime` engine methods accept optional override parameters forwarded to ranking, context, rerank, and indexing paths.
-- `repin-daemon` `handle_request` reads the override fields and forwards them.
+- The daemon applies the process-level idle override before resolved per-context values; without it, each context uses its resolved configuration.
+- `repin-daemon` `handle_request` reads the request-level override fields and forwards them.
 - `repin-cli` adds the `clap` arguments and threads them into the IPC request.
 - `repin-packs` / `repin-indexing` consume `tree_sitter_fallback` semantics where defined by ADR-013; until that wiring lands, no flag is exposed for it to avoid misleading no-ops.
 
@@ -43,7 +44,8 @@ ADR-021 already established "Explicit CLI Arguments / API Request Overrides" as 
 
 1. `cargo test -p repin-protocol` verifies IPC serde round-trip with and without override fields.
 2. `cargo test -p repin-cli` verifies flag parsing and that `config show` is unaffected by flag invocation.
-3. `cargo build` across the workspace plus `mdbook build docs/code` and `mdbook build docs/usage`.
+3. Daemon lifecycle tests verify seconds conversion, `0` persistence, and process-wide idle-timeout precedence.
+4. `cargo build` across the workspace plus `mdbook build docs/code` and `mdbook build docs/usage`.
 
 ## Reopen Triggers
 

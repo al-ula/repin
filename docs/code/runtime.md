@@ -96,11 +96,11 @@ replacement retry is eligible. A retry remains inside the bootstrap envelope;
 it is eligible only for a strictly newer client and a fully idle daemon.
 
 The daemon exits on demand after its final project context unloads and no
-bootstrap attempt or client connection remains. It closes the central socket
-before releasing `daemon.lock`, and releases the lease last. A process crash
-closes both the lease and all project lock handles through normal OS handle
-release. A later client may repair stale socket state and recover projects
-independently.
+bootstrap attempt or client connection remains. It stops accepting new work,
+closes and removes the central socket, then releases `daemon.lock` last. A
+process crash closes both the lease and all project lock handles through normal
+OS handle release. A later client may repair stale socket state, start a fresh
+daemon, and recover projects independently.
 
 An incompatible client may request daemon replacement only when the daemon's
 full-idle predicate holds: no active contexts, no attached connection other
@@ -318,8 +318,12 @@ validation check. Unsupported or unverifiable locking fails closed.
 
 A context is **idle** when it has no attached clients, no in-flight requests,
 no authoritative commit in progress, and no mandatory recovery work. Watcher
-registration by itself is not activity. An idle context is unloaded after
-`600,000 ms` (ten minutes), unless a new client attaches first.
+registration by itself is not activity. The default idle timeout is `600,000
+ms` (ten minutes). A context's resolved `daemon.idle_timeout_secs` selects its
+threshold; `0` disables idle eviction and retains that detached context until
+explicit unload or daemon shutdown. `repin daemon run --idle-timeout <secs>`
+overrides the resolved value for every context hosted by that daemon process.
+A new client attachment cancels the pending idle interval.
 
 Unloading stops the watcher, drains or records optional derived-index work,
 closes graph and index stores, releases the project writer lock, and removes
@@ -328,11 +332,11 @@ contexts, even when their projects share a parent directory or were opened by
 the same client process.
 
 The global daemon remains alive while any context is active, any client is
-connected, or bootstrap/startup work is in progress. Once the final context
-has unloaded and no bootstrap or client connection remains, the daemon stops
-accepting work, closes the central socket, and releases the singleton lease
-last. A client can then start a fresh daemon without relying on stale metadata
-or a manual cleanup command.
+connected, or bootstrap/startup work is in progress. Once a previously
+activated final context has unloaded and no bootstrap or client connection
+remains, the daemon stops accepting work, closes and removes the central
+socket, and releases the singleton lease last. A client can then start a fresh
+daemon without relying on stale metadata or a manual cleanup command.
 
 Deleting `.repin` is a rebuild/reset operation only after its context has
 unloaded. If deletion, replacement, rename, or a physical identity change is

@@ -8,11 +8,11 @@ An embedded RAG host may also use `repin-core` directly. In that topology
 the host owns the process, inference model, conversation state, and
 cancellation source; Repin owns repository safety, indexing/retrieval
 semantics, provenance, and deterministic context packing. The host does not
-need `repin-daemon`, `repin-cli`, or `repin-product`, and provider failures
+need the `repin` product crate or daemon, and provider failures
 remain explicit capability degradation rather than hidden prompt or answer
 behavior. Capability contracts are defined in
 [ADR-023](decisions/ADR-023-reusable-library-crates.md); workspace packaging
-is [ADR-029](decisions/ADR-029-consolidated-crate-topology.md).
+is [ADR-030](decisions/ADR-030-two-crate-workspace-topology.md).
 
 ## 1. Adapter responsibilities
 
@@ -110,14 +110,16 @@ but it does not redefine their stage or completion semantics.
 that connection according to the protocol, closes the connection, and clears
 host-visible state. It does not release another client's context, terminate
 the daemon, or cancel unrelated requests. The daemon decides when the context
-is idle; after `600,000 ms` without clients, in-flight work, authoritative
-commits, or mandatory recovery, it stops the watcher, closes stores and
-indexes, and releases the project writer lock.
+is idle. The default threshold is `600,000 ms`; the resolved project setting
+may change it, `0` retains the detached context, and the daemon-process CLI
+override takes precedence. On expiry, the daemon stops the watcher, closes
+stores and indexes, and releases the project writer lock.
 
 **Shutdown.** The daemon stops only after the final context unloads and no
-bootstrap or client connection remains. It closes the central socket before
-releasing the per-user daemon lease. Shutdown is idempotent and must complete
-promptly; a shutdown that waits for a full index to finish is a hang.
+bootstrap or client connection remains. It stops accepting work, closes and
+removes the central socket, then releases the per-user daemon lease last.
+Shutdown is idempotent and must complete promptly; a shutdown that waits for a
+full index to finish is a hang.
 
 ## 4. Change notification
 

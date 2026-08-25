@@ -170,6 +170,8 @@ impl Default for StorageConfig {
     }
 }
 
+pub const DEFAULT_IDLE_TIMEOUT_SECS: u64 = 600;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DaemonConfig {
     #[serde(default = "default_watch_debounce_ms")]
@@ -183,7 +185,7 @@ fn default_watch_debounce_ms() -> u64 {
 }
 
 fn default_idle_timeout_secs() -> u64 {
-    3600
+    DEFAULT_IDLE_TIMEOUT_SECS
 }
 
 impl Default for DaemonConfig {

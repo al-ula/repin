@@ -4,7 +4,7 @@ Repin is a standalone, deterministic knowledge-graph engine for repositories. It
 
 ## Status
 
-**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 29 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (5 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
+**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 30 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (2 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
 
 ## What Repin is
 
@@ -30,17 +30,14 @@ Two independent axes, both required:
 
 ## Workspace Crates
 
-The implementation is organized into five Rust crates in a single workspace ([ADR-029](decisions/ADR-029-consolidated-crate-topology.md)):
+The implementation is organized into two Rust crates in a single workspace ([ADR-030](decisions/ADR-030-two-crate-workspace-topology.md)):
 
 | Crate | Purpose | Key Responsibilities |
 | --- | --- | --- |
 | [`repin-core`](../../crates/repin-core) | Public library | Domain models, port traits, result envelopes, IPC values, filesystem/store/pack adapters, retrieval, indexing, context, optional intelligence, default `Runtime`/`Engine` composition, conformance harness |
-| [`repin-product`](../../crates/repin-product) | Product path policy | Repin-specific project, user, runtime, and model path layouts; no workspace-crate dependencies |
-| [`repin-cli`](../../crates/repin-cli) | CLI adapter | Project discovery, configuration loading, daemon auto-connect, command handlers |
-| [`repin-daemon`](../../crates/repin-daemon) | User daemon | Unix domain socket rendezvous, per-project writer lease, context registry |
-| [`repin`](../../crates/repin) | Executable | Thin `main` for `cargo install repin`; binary identity |
+| [`repin`](../../crates/repin) | Product library & binary | Product path layouts (`repin::product`), user daemon server and leases (`repin::daemon`), CLI parsing and subcommands (`repin::cli`), and installable executable |
 
-Capability algorithms remain independently callable as `repin-core` modules over port contracts. An embedded host depends on `repin-core` only. CLI and daemon stay separate libraries and share `repin-product`.
+Capability algorithms remain independently callable as `repin-core` modules over port contracts. An embedded host depends on `repin-core` only. The Repin product and executable live in `repin`.
 
 ## How to read this book
 
@@ -50,7 +47,7 @@ The specification is organized into seven logical parts:
 - **Part II: Core Domain & Data Model** ([Graph Model](graph-model.md), [Extraction](extraction.md), [Incremental Updates](incremental.md), [Storage](storage.md)) specifies what the engine stores, how facts are extracted and resolved, and how transactions and revisions guarantee convergence.
 - **Part III: Query & Integration Surfaces** ([Retrieval](retrieval.md), [Public API](api.md), [Runtime & IPC](runtime.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md)) covers search channels, client contracts, daemon rendezvous, and host seams.
 - **Part IV: Quality, Conformance & Implementation** ([Conformance](conformance.md), [Technology Selections & Implementation Profile](technology-candidates.md), [Roadmap](roadmap.md)) defines mechanical invariants, the accepted Rust/SQLite profile, and milestone delivery criteria.
-- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 29 accepted ADRs documenting the design rationale and constraints.
+- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 30 accepted ADRs documenting the design rationale and constraints.
 - **Part VI: Subsystem Specifications** ([Line Index](specifications/sparse-line-index.md), [Native Parsers](specifications/native-parsers-tree-sitter-fallback.md), [Vector Baseline](specifications/vector-search-rust-friendly.md), [Agent Context](specifications/agent-inspection-and-review-context.md)) provides deep normative algorithmic specifications.
 - **Part VII: Concluded Research & Trade Studies** ([redb vs SQLite](research/redb-tantivy-vs-sqlite.md), [libSQL](research/libsql-embedded-local.md)) documents research and candidate evaluations.
 

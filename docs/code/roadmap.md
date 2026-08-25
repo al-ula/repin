@@ -56,15 +56,15 @@ All decisions blocking deterministic implementation are resolved. The implementa
 
 Implementation builds and validates the product according to the finalized plan. The core implementation profile is validated with conformance suites, replay convergence testing, and the CLI frontend. Capability milestones below describe the product capability profile; the reusable-library extraction is governed by the M0–M10 sequence below.
 
-## Stage 5 — Reusable library extraction *(ADR-023 delivered; packaging superseded by ADR-029)*
+## Stage 5 — Reusable library extraction *(ADR-023 delivered; packaging superseded by ADR-030)*
 
 The extraction preserved the existing product and protocol while making
 indexing, retrieval, context construction, and optional intelligence usable by
 embedded Rust applications. Capability contracts remain those of
 [ADR-023](decisions/ADR-023-reusable-library-crates.md). Workspace packaging
-was later collapsed by [ADR-029](decisions/ADR-029-consolidated-crate-topology.md):
-capability modules live in `repin-core`; CLI, daemon, product layout, and the
-executable remain separate crates.
+was collapsed by [ADR-030](decisions/ADR-030-two-crate-workspace-topology.md):
+capability modules live in `repin-core`; the product layout, daemon, CLI, and
+executable are consolidated in `repin`.
 
 | Milestone | Deliverable | Exit evidence |
 | --- | --- | --- |
@@ -80,6 +80,7 @@ executable remain separate crates.
 | M9 | embedded RAG proof with caller-owned inference | offline fake-model test and opt-in local smoke |
 | M10 | publication readiness | workspace, conformance, docs, feature, and benchmark gates |
 | M11 | [ADR-029](decisions/ADR-029-consolidated-crate-topology.md) five-crate workspace | `cargo metadata` lists only the five members; `cargo test --workspace` |
+| M12 | [ADR-030](decisions/ADR-030-two-crate-workspace-topology.md) two-crate workspace | `cargo metadata` lists only `repin-core` and `repin`; `cargo test --workspace` |
 
 The public library is `repin-core`. The default build remains offline and
 deterministic. The extraction acceptance budget is at most 5% median and p95

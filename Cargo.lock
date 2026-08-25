@@ -885,20 +885,10 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 name = "repin"
 version = "0.1.0"
 dependencies = [
- "repin-cli",
- "repin-product",
- "tempfile",
-]
-
-[[package]]
-name = "repin-cli"
-version = "0.1.0"
-dependencies = [
  "anyhow",
  "clap",
+ "fs4",
  "repin-core",
- "repin-daemon",
- "repin-product",
  "serde",
  "serde_json",
  "tempfile",
@@ -933,24 +923,6 @@ dependencies = [
  "tree-sitter-typescript",
  "ureq",
 ]
-
-[[package]]
-name = "repin-daemon"
-version = "0.1.0"
-dependencies = [
- "fs4",
- "repin-core",
- "repin-product",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "repin-product"
-version = "0.1.0"
 
 [[package]]
 name = "ring"

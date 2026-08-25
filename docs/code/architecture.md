@@ -73,23 +73,19 @@ Rule 5 is the one most easily violated in practice. The test is mechanical: if r
 
 Reusable capabilities live as modules of one public crate. The module
 boundary follows the capability boundary; it does not change the layer
-rules above. Workspace packaging is five crates ([ADR-029](decisions/ADR-029-consolidated-crate-topology.md)):
+rules above. Workspace packaging is two crates ([ADR-030](decisions/ADR-030-two-crate-workspace-topology.md)):
 
 ```text
 repin-core     public library (ports, adapters, algorithms, Runtime/Engine)
-repin-product  Repin path layout (std only)
-repin-cli      CLI adapter
-repin-daemon   daemon adapter
-repin          thin executable
+repin          product library and executable (product layout, daemon, CLI)
 ```
 
 `repin-core::runtime` is the only default composition root. It selects
 concrete adapters and normalizes high-level results. `Engine` is a public
-alias of `Runtime`. Capability modules remain usable without either daemon
-or CLI. `repin-core` MUST NOT depend on `repin-product`, `repin-cli`,
-`repin-daemon`, or `repin`. Capability contracts remain those of
-[ADR-023](decisions/ADR-023-reusable-library-crates.md); the multi-crate
-extraction is withdrawn by ADR-029.
+alias of `Runtime`. Capability modules remain usable without the Repin
+product binary or daemon. `repin-core` MUST NOT depend on `repin`. Capability
+contracts remain those of [ADR-023](decisions/ADR-023-reusable-library-crates.md);
+product crates are consolidated into `repin` by ADR-030.
 
 ## 4. Ports
 

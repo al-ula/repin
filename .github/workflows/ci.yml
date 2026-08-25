@@ -106,10 +106,30 @@ jobs:
       - name: Build & package release
         run: just dist
 
+      - name: Extract release notes from changelog
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          heading="## [${version}]"
+          awk -v heading="$heading" '
+            $0 == heading || index($0, heading " - ") == 1 {
+              found = 1
+              next
+            }
+            found && /^## \[/ { exit }
+            found { print }
+            END { if (!found) exit 1 }
+          ' CHANGELOG.md > release-notes.md
+
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "Changelog section for ${version} is empty" >&2
+            exit 1
+          fi
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: "repin-*.tar.gz"
-          generate_release_notes: true
+          body_path: release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

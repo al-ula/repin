@@ -1,4 +1,4 @@
-use repin_product::ProjectLayout;
+use repin::ProjectLayout;
 use std::process::Command;
 use tempfile::tempdir;
 
