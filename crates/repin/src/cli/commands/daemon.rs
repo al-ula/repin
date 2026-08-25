@@ -2,6 +2,7 @@ use crate::cli::client::DaemonClient;
 use crate::product::RuntimeLayout;
 use repin_core::config::RepinConfig;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 pub fn execute_daemon_run(
     runtime_dir: Option<PathBuf>,
@@ -12,7 +13,14 @@ pub fn execute_daemon_run(
         "Starting Repin daemon in foreground on {}",
         rt_dir.display()
     );
-    let server = crate::daemon::DaemonServer::bind(rt_dir, idle_timeout)
+    let override_timeout = idle_timeout.map(|s| {
+        if s == 0 {
+            None
+        } else {
+            Some(Duration::from_secs(s))
+        }
+    });
+    let server = crate::daemon::DaemonServer::bind(rt_dir, override_timeout)
         .map_err(|e| format!("Failed to bind daemon: {e}"))?;
     server
         .run_loop()

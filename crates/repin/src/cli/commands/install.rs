@@ -1,4 +1,4 @@
-use crate::product::{default_user_layout, UserLayout};
+use crate::product::{UserLayout, default_user_layout};
 use std::fs;
 use std::path::{Path, PathBuf};
 

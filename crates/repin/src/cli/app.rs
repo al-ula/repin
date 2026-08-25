@@ -23,7 +23,7 @@ use crate::cli::commands::watch::execute_watch;
 use crate::cli::discovery::{discover_project_from, load_effective_config};
 use crate::product::ProjectLayout;
 use clap::{Parser, Subcommand};
-use repin_core::protocol::{ipc::RebuildTarget, PROTOCOL_MAX, PROTOCOL_MIN};
+use repin_core::protocol::{PROTOCOL_MAX, PROTOCOL_MIN, ipc::RebuildTarget};
 use repin_core::store::SqliteStore;
 use repin_core::store::{STORE_FORMAT_ID, STORE_SCHEMA_VERSION};
 use repin_core::versions::{

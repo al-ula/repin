@@ -1,4 +1,4 @@
-use crate::product::{default_runtime_layout, RuntimeLayout};
+use crate::product::{RuntimeLayout, default_runtime_layout};
 use repin_core::config::RepinConfig;
 use repin_core::protocol::ipc::{
     BootstrapHandshake, IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope,
@@ -84,44 +84,46 @@ impl DaemonClient {
         let runtime_dir = Self::default_runtime_dir();
         let socket_path = RuntimeLayout::at_base(&runtime_dir).socket_path;
 
-        let stream = match UnixStream::connect(&socket_path) {
-            Ok(s) => s,
-            Err(_) => {
-                let current_exe =
-                    std::env::current_exe().unwrap_or_else(|_| PathBuf::from("repin"));
-                let _ = std::process::Command::new(&current_exe)
-                    .arg("daemon")
-                    .stdin(std::process::Stdio::null())
-                    .stdout(std::process::Stdio::null())
-                    .stderr(std::process::Stdio::null())
-                    .spawn();
+        let try_connect_and_negotiate = |stream: UnixStream| -> Result<Self, String> {
+            stream
+                .set_read_timeout(Some(std::time::Duration::from_millis(
+                    repin_core::protocol::BOOTSTRAP_DEADLINE_MS,
+                )))
+                .map_err(|e| e.to_string())?;
+            let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
+            let mut client = Self {
+                stream,
+                reader: BufReader::new(reader_stream),
+                next_req_id: 1,
+                selected_protocol: PROTOCOL_MIN,
+            };
+            client.negotiate_bootstrap()?;
+            Ok(client)
+        };
 
-                let mut connected = None;
-                for _ in 0..30 {
-                    std::thread::sleep(std::time::Duration::from_millis(50));
-                    if let Ok(s) = UnixStream::connect(&socket_path) {
-                        connected = Some(s);
-                        break;
-                    }
-                }
-                connected.ok_or_else(|| "timed out connecting to repin daemon".to_string())?
+        if let Ok(stream) = UnixStream::connect(&socket_path)
+            && let Ok(client) = try_connect_and_negotiate(stream)
+        {
+            return Ok(client);
+        }
+
+        let current_exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("repin"));
+        let _ = std::process::Command::new(&current_exe)
+            .arg("daemon")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn();
+
+        for _ in 0..30 {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            if let Ok(stream) = UnixStream::connect(&socket_path)
+                && let Ok(client) = try_connect_and_negotiate(stream)
+            {
+                return Ok(client);
             }
-        };
-
-        stream
-            .set_read_timeout(Some(std::time::Duration::from_millis(
-                repin_core::protocol::BOOTSTRAP_DEADLINE_MS,
-            )))
-            .map_err(|e| e.to_string())?;
-        let reader_stream = stream.try_clone().map_err(|e| e.to_string())?;
-        let mut client = Self {
-            stream,
-            reader: BufReader::new(reader_stream),
-            next_req_id: 1,
-            selected_protocol: PROTOCOL_MIN,
-        };
-        client.negotiate_bootstrap()?;
-        Ok(client)
+        }
+        Err("timed out connecting to repin daemon".to_string())
     }
 
     pub fn connect_or_start(db_path: &Path, resolved_config: &RepinConfig) -> Result<Self, String> {

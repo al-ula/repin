@@ -307,6 +307,38 @@ impl Runtime {
         )
     }
 
+    pub fn remove_file(&self, path: &str) -> Result<UpdateSummary, StoreError> {
+        let Some(store) = self.store.as_ref() else {
+            return Err(StoreError::Io("store not available".to_string()));
+        };
+        let records = self.current_version_records();
+        let summary = InvalidationCoordinator::apply_file_removal(
+            store,
+            &self.options.root_id,
+            path,
+            Some(&records),
+        )?;
+        let _ = store.checkpoint();
+        Ok(summary)
+    }
+
+    pub fn update_file(&self, path: &str) -> Result<Option<UpdateSummary>, StoreError> {
+        let Some(store) = self.store.as_ref() else {
+            return Err(StoreError::Io("store not available".to_string()));
+        };
+        match self.fs.read_snapshot(path) {
+            Ok(snapshot) => {
+                let summary = self.update_snapshot(&snapshot)?;
+                let _ = store.checkpoint();
+                Ok(Some(summary))
+            }
+            Err(_) => {
+                let summary = self.remove_file(path)?;
+                Ok(Some(summary))
+            }
+        }
+    }
+
     pub fn search_hybrid(
         &self,
         query: &str,

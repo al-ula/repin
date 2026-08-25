@@ -30,7 +30,7 @@ The starter template documents every supported section. These defaults are usefu
 | `[indexing]` | Respect `.gitignore`, index documentation and configuration, and skip files larger than 2 MiB. |
 | `[retrieval]` | Hybrid search with a limit of 50 results. |
 | `[context]` | An 8192-token default budget with two padding lines around source ranges. |
-| `[daemon]` | 150 ms watch debounce and a 3600-second idle timeout. |
+| `[daemon]` | 150 ms watch debounce and a 600-second (10-minute) idle timeout. |
 | `[intelligence.*]` | Disabled until a provider is selected. |
 
 A small project configuration can look like this:

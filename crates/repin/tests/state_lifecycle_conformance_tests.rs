@@ -1,10 +1,16 @@
-use repin::{initialize_state, uninitialize_state, ContextRegistry};
+use repin::cli::client::DaemonClient;
+use repin::{
+    ContextRegistry, DaemonServer, FileLease, RuntimeLayout, initialize_state, uninitialize_state,
+};
+use repin_core::config::RepinConfig;
 use repin_core::protocol::errors::ErrorCode;
 use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
-use repin_core::protocol::{select_protocol, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE};
+use repin_core::protocol::{PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE, select_protocol};
 use std::fs;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 use tempfile::tempdir;
-
 /// docs/runtime.md §4: state creation and removal are daemon-mediated, and the
 /// protocol carrying them is negotiated, not assumed.
 #[test]
@@ -144,4 +150,328 @@ fn replaced_state_fails_its_context_closed_instead_of_serving_stale_graph() {
     assert_ne!(fresh.identity(), stale_identity);
     assert!(fresh.is_usable());
     assert_eq!(registry.active_count(), 1);
+}
+
+/// docs/runtime.md §7: detached context idle timeout in seconds and persistence when set to 0.
+#[test]
+fn detached_context_idle_timeout_and_zero_persistence_conformance() {
+    let dir = tempdir().unwrap();
+    let registry = ContextRegistry::new();
+    let state = initialize_state(dir.path()).unwrap();
+
+    let mut config = RepinConfig::default();
+    config.daemon.idle_timeout_secs = 1;
+
+    let context = registry
+        .get_or_load_with_config(&state.layout.db_path, config)
+        .unwrap();
+    assert_eq!(registry.active_count(), 1);
+    drop(context);
+    registry.mark_detached(&state.layout.db_path);
+
+    // Immediately checking idle reap does not evict the context
+    registry.reap_idle();
+    assert_eq!(registry.active_count(), 1);
+
+    // After 1.1 seconds, idle reap removes the context
+    std::thread::sleep(Duration::from_millis(1100));
+    registry.reap_idle();
+    assert_eq!(registry.active_count(), 0);
+
+    // Context with idle_timeout_secs = 0 is persistent
+    let mut persistent_config = RepinConfig::default();
+    persistent_config.daemon.idle_timeout_secs = 0;
+
+    let persistent_ctx = registry
+        .get_or_load_with_config(&state.layout.db_path, persistent_config)
+        .unwrap();
+    assert_eq!(registry.active_count(), 1);
+    drop(persistent_ctx);
+    registry.mark_detached(&state.layout.db_path);
+
+    std::thread::sleep(Duration::from_millis(100));
+    registry.reap_idle();
+    assert_eq!(registry.active_count(), 1, "0 must disable idle eviction");
+}
+
+/// docs/runtime.md §7: CLI --idle-timeout override takes precedence over per-context configuration.
+#[test]
+fn cli_idle_timeout_override_conformance() {
+    let dir = tempdir().unwrap();
+    let registry = ContextRegistry::new();
+    registry.set_override_idle_timeout(Some(Some(Duration::from_millis(50))));
+    let state = initialize_state(dir.path()).unwrap();
+
+    let mut config = RepinConfig::default();
+    config.daemon.idle_timeout_secs = 600;
+
+    let context = registry
+        .get_or_load_with_config(&state.layout.db_path, config)
+        .unwrap();
+    assert_eq!(registry.active_count(), 1);
+    drop(context);
+    registry.mark_detached(&state.layout.db_path);
+
+    std::thread::sleep(Duration::from_millis(70));
+    registry.reap_idle();
+    assert_eq!(
+        registry.active_count(),
+        0,
+        "CLI override must take precedence over config"
+    );
+}
+
+/// docs/runtime.md §7 & §9(6): daemon auto-exits once all active contexts are unloaded and zero connections remain.
+#[test]
+fn daemon_server_auto_exits_when_final_context_unloads() {
+    let rt_dir = tempdir().unwrap();
+    let project_dir = tempdir().unwrap();
+    let state = initialize_state(project_dir.path()).unwrap();
+    let rt_layout = RuntimeLayout::at_base(rt_dir.path());
+
+    let server = Arc::new(
+        DaemonServer::bind(rt_dir.path(), Some(Some(Duration::from_millis(100)))).unwrap(),
+    );
+    let server_clone = server.clone();
+    let server_handle = std::thread::spawn(move || server_clone.run_loop());
+
+    // Verify daemon did not immediately auto-exit on startup before any context activation
+    std::thread::sleep(Duration::from_millis(150));
+    assert!(
+        server.running().load(Ordering::SeqCst),
+        "daemon must not exit before first context activation"
+    );
+    assert!(rt_layout.socket_path.exists());
+
+    // Connect a client and bind context
+    let mut client = DaemonClient::connect_existing(Some(rt_dir.path())).unwrap();
+    let handshake_resp = client
+        .send_request(IpcRequest::Handshake {
+            client_version: env!("CARGO_PKG_VERSION").to_string(),
+            project_db_path: state.layout.db_path.display().to_string(),
+            resolved_config: Some(RepinConfig::default()),
+        })
+        .unwrap();
+    match handshake_resp {
+        IpcResponse::HandshakeOk { .. } => {}
+        other => panic!("expected HandshakeOk, got {other:?}"),
+    }
+
+    assert!(server.registry().has_ever_activated());
+    assert_eq!(server.registry().active_count(), 1);
+
+    // Disconnect client
+    drop(client);
+
+    // Wait for auto-exit (idle timeout 100ms + drain)
+    let join_result = server_handle.join().expect("server thread panicked");
+    assert!(join_result.is_ok(), "server run_loop exited cleanly");
+
+    // Socket file removed and lock released
+    assert!(
+        !rt_layout.socket_path.exists(),
+        "socket must be cleaned up on auto-exit"
+    );
+    drop(server);
+    let lease = FileLease::try_acquire(&rt_layout.daemon_lock);
+    assert!(lease.is_ok(), "daemon lock must be released on exit");
+}
+
+/// docs/runtime.md §7 & §9(6): daemon auto-exits after search request and disconnect.
+#[test]
+fn daemon_server_auto_exits_after_search_request() {
+    let rt_dir = tempdir().unwrap();
+    let project_dir = tempdir().unwrap();
+    let state = initialize_state(project_dir.path()).unwrap();
+    let rt_layout = RuntimeLayout::at_base(rt_dir.path());
+
+    let server = Arc::new(
+        DaemonServer::bind(rt_dir.path(), Some(Some(Duration::from_millis(100)))).unwrap(),
+    );
+    let server_clone = server.clone();
+    let server_handle = std::thread::spawn(move || server_clone.run_loop());
+    for _ in 0..50 {
+        if rt_layout.socket_path.exists() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+
+    let mut client = DaemonClient::connect_existing(Some(rt_dir.path())).unwrap();
+    let handshake_resp = client
+        .send_request(IpcRequest::Handshake {
+            client_version: env!("CARGO_PKG_VERSION").to_string(),
+            project_db_path: state.layout.db_path.display().to_string(),
+            resolved_config: Some(RepinConfig::default()),
+        })
+        .unwrap();
+    match handshake_resp {
+        IpcResponse::HandshakeOk { .. } => {}
+        other => panic!("expected HandshakeOk, got {other:?}"),
+    }
+
+    let search_resp = client
+        .send_request(IpcRequest::SearchHybrid {
+            query: "test".to_string(),
+            max_results: Some(10),
+            centrality_boost: None,
+        })
+        .unwrap();
+    match search_resp {
+        IpcResponse::SearchResult(_) => {}
+        other => panic!("expected SearchResult, got {other:?}"),
+    }
+
+    drop(client);
+
+    let join_result = server_handle.join().expect("server thread panicked");
+    assert!(join_result.is_ok(), "server run_loop exited cleanly");
+    assert!(!rt_layout.socket_path.exists());
+}
+
+/// docs/runtime.md §4: daemon auto-watches repository files and advances graph revision
+/// in the background without requiring synchronous VCS sync requests.
+#[test]
+fn daemon_auto_watches_file_changes_and_advances_revision() {
+    let rt_dir = tempdir().unwrap();
+    let project_dir = tempdir().unwrap();
+    let src_dir = project_dir.path().join("src");
+    fs::create_dir_all(&src_dir).unwrap();
+    let state = initialize_state(project_dir.path()).unwrap();
+    let db_path = state.layout.db_path.display().to_string();
+    drop(state);
+    let rt_layout = RuntimeLayout::at_base(rt_dir.path());
+    let mut config = RepinConfig::default();
+    config.daemon.watch_debounce_ms = 20;
+
+    let server = Arc::new(
+        DaemonServer::bind(rt_dir.path(), Some(Some(Duration::from_millis(150)))).unwrap(),
+    );
+    let server_clone = server.clone();
+    let server_handle = std::thread::spawn(move || server_clone.run_loop());
+    for _ in 0..50 {
+        if rt_layout.socket_path.exists() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+
+    let mut client = DaemonClient::connect_existing(Some(rt_dir.path())).unwrap();
+    let handshake_resp = client
+        .send_request(IpcRequest::Handshake {
+            client_version: env!("CARGO_PKG_VERSION").to_string(),
+            project_db_path: db_path,
+            resolved_config: Some(config),
+        })
+        .unwrap();
+    match handshake_resp {
+        IpcResponse::HandshakeOk { .. } => {}
+        other => panic!("expected HandshakeOk, got {other:?}"),
+    }
+
+    // Check initial status
+    let status = client.send_request(IpcRequest::Status).unwrap();
+    let (initial_rev, initial_nodes) = match status {
+        IpcResponse::StatusOk {
+            graph_revision,
+            node_count,
+            ..
+        } => (graph_revision, node_count),
+        other => panic!("expected StatusOk, got {other:?}"),
+    };
+    // 1. Create a new source file in the project
+    let file_path = src_dir.join("foo.rs");
+    fs::write(&file_path, "pub fn foo_fn() -> i32 { 42 }\n").unwrap();
+
+    // Poll until daemon watcher picks up file and advances revision
+    let mut updated_rev = initial_rev;
+    let mut updated_nodes = initial_nodes;
+    for _ in 0..60 {
+        std::thread::sleep(Duration::from_millis(50));
+        if let Ok(IpcResponse::StatusOk {
+            graph_revision,
+            node_count,
+            ..
+        }) = client.send_request(IpcRequest::Status)
+            && graph_revision > initial_rev
+        {
+            updated_rev = graph_revision;
+            updated_nodes = node_count;
+            break;
+        }
+    }
+    assert!(
+        updated_rev > initial_rev,
+        "daemon auto-watcher failed to advance revision on file creation: rev {initial_rev:?} -> {updated_rev:?}"
+    );
+    assert!(
+        updated_nodes > initial_nodes,
+        "node count should increase on adding source file with a symbol"
+    );
+
+    // 2. Modify the source file on disk
+    fs::write(
+        &file_path,
+        "pub fn foo_fn() -> i32 { 42 }\npub fn bar_fn() -> i32 { 100 }\n",
+    )
+    .unwrap();
+
+    let mut modified_rev = updated_rev;
+    let mut modified_nodes = updated_nodes;
+    for _ in 0..60 {
+        std::thread::sleep(Duration::from_millis(50));
+        if let Ok(IpcResponse::StatusOk {
+            graph_revision,
+            node_count,
+            ..
+        }) = client.send_request(IpcRequest::Status)
+            && graph_revision > updated_rev
+        {
+            modified_rev = graph_revision;
+            modified_nodes = node_count;
+            break;
+        }
+    }
+    assert!(
+        modified_rev > updated_rev,
+        "daemon auto-watcher failed to advance revision on file modification: rev {updated_rev:?} -> {modified_rev:?}"
+    );
+    assert!(
+        modified_nodes > updated_nodes,
+        "node count should increase on adding second symbol"
+    );
+
+    // 3. Delete the source file from disk
+    fs::remove_file(&file_path).unwrap();
+
+    let mut deleted_rev = modified_rev;
+    let mut deleted_nodes = modified_nodes;
+    for _ in 0..60 {
+        std::thread::sleep(Duration::from_millis(50));
+        if let Ok(IpcResponse::StatusOk {
+            graph_revision,
+            node_count,
+            ..
+        }) = client.send_request(IpcRequest::Status)
+            && graph_revision > modified_rev
+        {
+            deleted_rev = graph_revision;
+            deleted_nodes = node_count;
+            break;
+        }
+    }
+    assert!(
+        deleted_rev > modified_rev,
+        "daemon auto-watcher failed to advance revision on file deletion: rev {modified_rev:?} -> {deleted_rev:?}"
+    );
+    assert!(
+        deleted_nodes < modified_nodes,
+        "node count should decrease on deleting file"
+    );
+
+    // Clean up
+    drop(client);
+    let join_result = server_handle.join().expect("server thread panicked");
+    assert!(join_result.is_ok(), "server run_loop exited cleanly");
+    assert!(!rt_layout.socket_path.exists());
 }

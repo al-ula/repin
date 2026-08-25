@@ -1,10 +1,12 @@
 use crate::daemon::lease::FileLease;
+use crate::daemon::watcher::ProjectWatcher;
 use crate::product::ProjectLayout;
 use repin_core::config::RepinConfig;
 use repin_core::runtime::{Engine, EngineOptions};
 use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Physical identity of the graph database backing a context. Recorded when
@@ -64,11 +66,12 @@ impl WriterLease {
 pub struct ProjectContext {
     canonical_db_path: PathBuf,
     project_root: PathBuf,
-    engine: Engine,
+    engine: Arc<Engine>,
     writer_lease: Option<FileLease>,
     config: RepinConfig,
     identity: Option<DatabaseIdentity>,
-    closed: AtomicBool,
+    closed: Arc<AtomicBool>,
+    _watcher: Option<ProjectWatcher>,
 }
 
 impl ProjectContext {
@@ -116,6 +119,30 @@ impl ProjectContext {
 
         let identity = DatabaseIdentity::read(&canonical_db_path);
 
+        let closed = Arc::new(AtomicBool::new(false));
+        let engine = Arc::new(engine);
+
+        let watcher = if writer_lease.is_some() {
+            match ProjectWatcher::start(
+                &project_root,
+                Arc::clone(&engine),
+                Arc::clone(&closed),
+                config.daemon.watch_debounce_ms,
+            ) {
+                Ok(w) => Some(w),
+                Err(err) => {
+                    tracing::warn!(
+                        path = %project_root.display(),
+                        error = %err,
+                        "failed to start project file watcher; continuing without auto-watch"
+                    );
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
         Ok(Self {
             canonical_db_path,
             project_root,
@@ -123,7 +150,8 @@ impl ProjectContext {
             writer_lease,
             config,
             identity,
-            closed: AtomicBool::new(false),
+            closed,
+            _watcher: watcher,
         })
     }
 

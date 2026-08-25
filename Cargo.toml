@@ -48,6 +48,7 @@ tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"
 tree-sitter-md = "0.3"
 
+notify = { version = "8.0", default-features = false, features = ["macos_kqueue"] }
 # CLI & Diagnostics
 clap = { version = "4.5", features = ["derive", "env"] }
 tracing = "0.1"

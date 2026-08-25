@@ -1,5 +1,5 @@
 use crate::cli::discovery::{find_project_config_path, load_effective_config};
-use crate::product::{default_user_layout, ProjectLayout};
+use crate::product::{ProjectLayout, default_user_layout};
 use anyhow::{Context, Result};
 use repin_core::config::RepinConfig;
 use std::fs;

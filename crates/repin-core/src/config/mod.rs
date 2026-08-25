@@ -197,7 +197,7 @@ checkpoint_interval = 1000
 # File watcher debounce delay in milliseconds
 watch_debounce_ms = 150
 # Idle daemon context timeout in seconds (0 = persistent)
-idle_timeout_secs = 3600
+idle_timeout_secs = 600
 
 # ==============================================================================
 # Optional Model-Powered Intelligence (Default: none / disabled)

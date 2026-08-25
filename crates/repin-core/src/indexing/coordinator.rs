@@ -233,6 +233,59 @@ impl IndexingCoordinator {
         })
     }
 
+    pub fn apply_file_removal(
+        store: &dyn Store,
+        root: &str,
+        path: &str,
+        version_records: Option<&VersionRecords>,
+    ) -> Result<UpdateSummary, StoreError> {
+        let mut attempts = 0;
+
+        while attempts < Self::MAX_COMMIT_ATTEMPTS {
+            attempts += 1;
+            let view = store.read_view()?;
+            let base_revision = view.revision()?;
+
+            let mut transaction = store.begin_write()?;
+            if let Err(error) = transaction.expect_revision(base_revision) {
+                let _ = transaction.rollback();
+                if attempts < Self::MAX_COMMIT_ATTEMPTS {
+                    continue;
+                }
+                return Err(error);
+            }
+
+            transaction.remove_by_file(root, path)?;
+
+            if let Some(version_records) = version_records {
+                transaction.put_version_records(version_records)?;
+            }
+
+            let next_revision = base_revision.next();
+            transaction.set_revision(next_revision)?;
+            let summary = UpdateSummary {
+                revision: next_revision,
+                files_added: 0,
+                files_modified: 0,
+                files_deleted: 1,
+                nodes_added: 0,
+                nodes_removed: 0,
+                edges_added: 0,
+                edges_removed: 0,
+                unresolved_promoted: 0,
+                unresolved_demoted: 0,
+            };
+            transaction.put_update_summary(&summary)?;
+            transaction.commit()?;
+            return Ok(summary);
+        }
+
+        Err(StoreError::RevisionConflict {
+            expected: Revision::INITIAL,
+            actual: Revision::INITIAL,
+        })
+    }
+
     /// Remove every claim produced by one producer/version without reading source files.
     /// The caller supplies the replacement version record so metadata and removals
     /// become one authoritative revision.

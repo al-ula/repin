@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Event-driven background file watcher (`ProjectWatcher` via `notify`) in daemon runtime for active writer contexts, debouncing and coalescing filesystem mutations.
+- Incremental single-file fact removal and update primitives in `repin-core` (`Engine::update_file`, `Engine::remove_file`, and `InvalidationCoordinator::apply_file_removal`).
 - GitHub Pages automated deployment workflow for documentation portal and mdBooks.
 - Version-matched changelog extraction for GitHub release notes.
 
 ### Changed
 
+- Migrated `repin watch` command from synchronous VCS sync polling loops to status-driven revision observation backed by the daemon auto-watcher.
+- Configured idle timeout override precedence for daemon context retention and shutdown.
 - Consolidated workspace into a 2-crate topology (`repin-core` and `repin`) per ADR-030, merging CLI, daemon, and product layout modules into `repin`.
 
 ## [0.1.0] - 2026-08-23

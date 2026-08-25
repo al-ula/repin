@@ -5,15 +5,16 @@ use repin_core::ports::store::Store;
 use repin_core::protocol::errors::ErrorCode;
 use repin_core::protocol::ipc::{IpcMessage, IpcRequest, IpcResponse, IpcResponseEnvelope};
 use repin_core::protocol::{
-    replacement_allowed, select_protocol, BootstrapHandshakeOk, BootstrapRejected,
-    BOOTSTRAP_VERSION, PROTOCOL_MAX, PROTOCOL_MIN,
+    BOOTSTRAP_VERSION, BootstrapHandshakeOk, BootstrapRejected, PROTOCOL_MAX, PROTOCOL_MIN,
+    replacement_allowed, select_protocol,
 };
 use std::io::{BufReader, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::thread;
+use std::time::Duration;
 
 struct ConnectionCountGuard(Arc<AtomicUsize>);
 
@@ -58,7 +59,7 @@ pub struct DaemonServer {
 impl DaemonServer {
     pub fn bind<P: AsRef<Path>>(
         runtime_dir: P,
-        idle_timeout_ms: Option<u64>,
+        override_idle_timeout: Option<Option<Duration>>,
     ) -> Result<Self, String> {
         let layout = RuntimeLayout::at_base(runtime_dir);
         let _ = std::fs::create_dir_all(&layout.base);
@@ -68,10 +69,8 @@ impl DaemonServer {
 
         let _ = std::fs::remove_file(&layout.socket_path);
 
-        let mut registry = ContextRegistry::new();
-        if let Some(ms) = idle_timeout_ms {
-            registry.set_idle_timeout(std::time::Duration::from_millis(ms));
-        }
+        let registry = ContextRegistry::new();
+        registry.set_override_idle_timeout(override_idle_timeout);
 
         Ok(Self {
             socket_path: layout.socket_path,
@@ -89,6 +88,13 @@ impl DaemonServer {
         &self.lease
     }
 
+    pub fn registry(&self) -> &ContextRegistry {
+        &self.registry
+    }
+
+    pub fn running(&self) -> &Arc<AtomicBool> {
+        &self.running
+    }
     pub fn run_loop(&self) -> Result<(), String> {
         let listener = UnixListener::bind(&self.socket_path)
             .map_err(|e| format!("failed to bind unix socket: {e}"))?;
@@ -99,6 +105,12 @@ impl DaemonServer {
 
         while self.running.load(Ordering::SeqCst) {
             self.registry.reap_idle();
+            if self.registry.has_ever_activated()
+                && !self.registry.has_active_contexts()
+                && active_connections.load(Ordering::SeqCst) == 0
+            {
+                break;
+            }
             match listener.accept() {
                 Ok((stream, _)) => {
                     let registry = self.registry.clone();
@@ -111,7 +123,7 @@ impl DaemonServer {
                             Self::handle_connection(stream, registry, running, _guard.0.clone());
                     });
                 }
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     thread::sleep(std::time::Duration::from_millis(50));
                 }
                 Err(e) => {
@@ -122,7 +134,7 @@ impl DaemonServer {
                 }
             }
         }
-
+        let _ = std::fs::remove_file(&self.socket_path);
         // A replacement or shutdown request may have been acknowledged by a
         // handler while the accept loop was still active. Keep the singleton
         // lease until those final connections have closed, but bound the
@@ -133,7 +145,6 @@ impl DaemonServer {
             }
             thread::sleep(std::time::Duration::from_millis(50));
         }
-        let _ = std::fs::remove_file(&self.socket_path);
         Ok(())
     }
 
