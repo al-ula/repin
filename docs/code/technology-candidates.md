@@ -28,7 +28,7 @@ Decision authority: ADR-001 through ADR-016
 | Regex direct search | `regex` | accepted adapter | Bounded direct regex matching with exact spans ([ADR-010](decisions/ADR-010-regex-direct-search.md)) |
 | VCS integration | Bounded Git subprocess | accepted adapter | Machine-readable changed-set and branch-state detection ([ADR-011](decisions/ADR-011-bounded-git-subprocess.md)) |
 | Agent inspection & review | `inspectFile` + `AtPosition` + `reviewContext` | accepted profile | Structural outlines, position resolution, review composition ([ADR-016](decisions/ADR-016-agent-inspection-and-review-context.md)) |
-| File watching | `notify` | deferred to I3 | Platform backends behind the `Watch` port ([ADR-007](decisions/ADR-007-optional-capability-sequencing.md)) |
+| File watching | `notify` | accepted profile | Event-driven debounced filesystem watcher in daemon contexts ([ADR-007](decisions/ADR-007-optional-capability-sequencing.md)) |
 | Writer exclusion | OS-backed advisory lock (`fs4` / platform adapter) | accepted profile | Atomic inter-process writer ownership with diagnostic metadata |
 | Serialization | `serde` | accepted profile | Protocol and configuration encoding without exposing internal storage types |
 | Diagnostics & tracing | `tracing` | accepted profile | Structured, redaction-aware instrumentation across all layers |

@@ -63,7 +63,7 @@ Optional model capabilities are disabled by default. Configure a provider before
 
 | Command | Purpose |
 | --- | --- |
-| `repin watch --interval <MILLISECONDS>` | Continuously apply worktree changes. |
+| `repin watch --interval <MILLISECONDS>` | Continuously observe worktree changes and report graph revisions. |
 | `repin daemon run` | Run the daemon in the foreground. |
 | `repin daemon run --idle-timeout <SECS>` | Override `daemon.idle_timeout_secs` for this daemon process. |
 | `repin daemon status` | Inspect daemon process and socket state. |
