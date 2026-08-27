@@ -196,6 +196,16 @@ impl GoLanguagePack {
                         fn_range,
                         Attributes::default(),
                     ));
+
+                    parent_id_stack.push(fn_id);
+                    Self::traverse_body_references(
+                        ts_node,
+                        source,
+                        builder,
+                        fn_id,
+                        facts,
+                    );
+                    parent_id_stack.pop();
                 }
             }
             "method_declaration" => {
@@ -267,6 +277,16 @@ impl GoLanguagePack {
                         method_range,
                         Attributes::default(),
                     ));
+
+                    parent_id_stack.push(method_id);
+                    Self::traverse_body_references(
+                        ts_node,
+                        source,
+                        builder,
+                        method_id,
+                        facts,
+                    );
+                    parent_id_stack.pop();
                 }
             }
             "type_declaration" => {
@@ -594,6 +614,17 @@ impl GoLanguagePack {
                                 field_range,
                                 Attributes::default(),
                             ));
+
+                            if !clean_name.is_empty() && !is_builtin_type(clean_name) {
+                                add_unresolved_ref(
+                                    builder,
+                                    struct_id,
+                                    clean_name.to_string(),
+                                    Some(format!("embed {type_name}")),
+                                    EdgeKind::Extends,
+                                    facts,
+                                );
+                            }
                         }
 
                         for (name, sub_node) in names {
@@ -617,6 +648,27 @@ impl GoLanguagePack {
                                 field_range,
                                 Attributes::default(),
                             ));
+                        }
+
+                        // Record field type reference
+                        if let Some(type_node) = field.child_by_field_name("type") {
+                            let type_name = node_text(&type_node, source).trim();
+                            let clean_type = type_name
+                                .rsplit('.')
+                                .next()
+                                .unwrap_or(type_name)
+                                .trim_start_matches('*')
+                                .trim_start_matches("[]");
+                            if !clean_type.is_empty() && !is_builtin_type(clean_type) {
+                                add_unresolved_ref(
+                                    builder,
+                                    struct_id,
+                                    clean_type.to_string(),
+                                    None,
+                                    EdgeKind::HasType,
+                                    facts,
+                                );
+                            }
                         }
                     }
                 }
@@ -675,6 +727,21 @@ impl GoLanguagePack {
                         method_range,
                         Attributes::default(),
                     ));
+
+                    Self::traverse_body_references(&child, source, builder, method_id, facts);
+                }
+            } else if child.kind() == "type_identifier" || child.kind() == "type_elem" {
+                let iface_name = node_text(&child, source).trim();
+                let clean_name = iface_name.rsplit('.').next().unwrap_or(iface_name);
+                if !clean_name.is_empty() && !is_builtin_type(clean_name) {
+                    add_unresolved_ref(
+                        builder,
+                        iface_id,
+                        clean_name.to_string(),
+                        Some(format!("embed {iface_name}")),
+                        EdgeKind::Extends,
+                        facts,
+                    );
                 }
             }
         }
@@ -769,4 +836,192 @@ impl GoLanguagePack {
             Some(doc_lines.join(" "))
         }
     }
+
+    fn traverse_body_references(
+        node: &TsNode<'_>,
+        source: &[u8],
+        builder: &FactBuilder<'_>,
+        from_id: NodeId,
+        facts: &mut ExtractedFacts,
+    ) {
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            let kind = child.kind();
+            match kind {
+                "call_expression" => {
+                    if let Some(func_node) = child.child_by_field_name("function") {
+                        match func_node.kind() {
+                            "identifier" => {
+                                let fn_name = node_text(&func_node, source).trim();
+                                if !fn_name.is_empty() && !is_builtin_func(fn_name) {
+                                    add_unresolved_ref(
+                                        builder,
+                                        from_id,
+                                        fn_name.to_string(),
+                                        Some(fn_name.to_string()),
+                                        EdgeKind::Calls,
+                                        facts,
+                                    );
+                                }
+                            }
+                            "selector_expression" => {
+                                if let Some(field_node) = func_node.child_by_field_name("field") {
+                                    let field_name = node_text(&field_node, source).trim();
+                                    let operand_text = func_node
+                                        .child_by_field_name("operand")
+                                        .map(|op| node_text(&op, source).trim())
+                                        .unwrap_or("");
+                                    if !field_name.is_empty() {
+                                        let scope_hint = if operand_text.is_empty() {
+                                            Some(field_name.to_string())
+                                        } else {
+                                            Some(format!("{operand_text}.{field_name}"))
+                                        };
+                                        add_unresolved_ref(
+                                            builder,
+                                            from_id,
+                                            field_name.to_string(),
+                                            scope_hint,
+                                            EdgeKind::Calls,
+                                            facts,
+                                        );
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    Self::traverse_body_references(&child, source, builder, from_id, facts);
+                }
+                "composite_literal" => {
+                    if let Some(type_node) = child.child_by_field_name("type") {
+                        let type_text = node_text(&type_node, source).trim();
+                        let clean_name = type_text
+                            .rsplit('.')
+                            .next()
+                            .unwrap_or(type_text)
+                            .trim_start_matches('&')
+                            .trim_start_matches('*');
+                        if !clean_name.is_empty() && !is_builtin_type(clean_name) {
+                            add_unresolved_ref(
+                                builder,
+                                from_id,
+                                clean_name.to_string(),
+                                Some(format!("&{type_text}{{...}}")),
+                                EdgeKind::Instantiates,
+                                facts,
+                            );
+                        }
+                    }
+                    Self::traverse_body_references(&child, source, builder, from_id, facts);
+                }
+                "type_identifier" => {
+                    let type_name = node_text(&child, source).trim();
+                    if !type_name.is_empty() && !is_builtin_type(type_name) {
+                        add_unresolved_ref(
+                            builder,
+                            from_id,
+                            type_name.to_string(),
+                            None,
+                            EdgeKind::HasType,
+                            facts,
+                        );
+                    }
+                }
+                _ => {
+                    Self::traverse_body_references(&child, source, builder, from_id, facts);
+                }
+            }
+        }
+    }
+}
+
+fn is_builtin_type(name: &str) -> bool {
+    matches!(
+        name,
+        "bool"
+            | "byte"
+            | "complex64"
+            | "complex128"
+            | "error"
+            | "float32"
+            | "float64"
+            | "int"
+            | "int8"
+            | "int16"
+            | "int32"
+            | "int64"
+            | "rune"
+            | "string"
+            | "uint"
+            | "uint8"
+            | "uint16"
+            | "uint32"
+            | "uint64"
+            | "uintptr"
+            | "any"
+            | "comparable"
+            | "nil"
+            | "true"
+            | "false"
+            | "iota"
+    )
+}
+
+fn is_builtin_func(name: &str) -> bool {
+    matches!(
+        name,
+        "append"
+            | "cap"
+            | "clear"
+            | "close"
+            | "complex"
+            | "copy"
+            | "delete"
+            | "imag"
+            | "len"
+            | "make"
+            | "max"
+            | "min"
+            | "new"
+            | "panic"
+            | "print"
+            | "println"
+            | "real"
+            | "recover"
+    )
+}
+
+fn add_unresolved_ref(
+    builder: &FactBuilder<'_>,
+    from: NodeId,
+    seeking: String,
+    scope_hint: Option<String>,
+    edge_kind: EdgeKind,
+    facts: &mut ExtractedFacts,
+) {
+    if facts
+        .unresolved
+        .iter()
+        .any(|u| u.from == from && u.seeking == seeking && u.edge_kind == edge_kind)
+    {
+        return;
+    }
+
+    facts.unresolved.push(UnresolvedRef {
+        from,
+        seeking,
+        scope_hint,
+        edge_kind,
+        provenance: Provenance {
+            root: builder.root.to_string(),
+            path: builder.path.to_string(),
+            range: None,
+            extractor: builder.extractor_name.to_string(),
+            extractor_version: builder.extractor_version.to_string(),
+            derivation: Derivation::Extracted,
+            confidence: Confidence::EXACT,
+            revision: Revision::INITIAL,
+        },
+    });
 }

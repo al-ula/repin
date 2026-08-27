@@ -388,6 +388,12 @@ type ServiceConfig struct {
 	Host string `json:"host"`
 }
 
+// AdvancedConfig embeds ServiceConfig.
+type AdvancedConfig struct {
+	ServiceConfig
+	DebugMode bool
+}
+
 // Runner defines lifecycle execution.
 type Runner interface {
 	// Run starts the runner loop.
@@ -395,8 +401,15 @@ type Runner interface {
 	Stop()
 }
 
+func validateHost(host string) error {
+	return nil
+}
+
 // NewConfig creates initialized configuration.
 func NewConfig(host string, port int) (*ServiceConfig, error) {
+	if err := validateHost(host); err != nil {
+		return nil, err
+	}
 	return &ServiceConfig{Host: host, Port: port}, nil
 }
 
@@ -410,7 +423,6 @@ func (c *ServiceConfig) UpdatePort(port int) {
 	c.Port = port
 }
 "#;
-
     let snapshot = FileSnapshot {
         root: "root".to_string(),
         path: "pkg/server/server.go".to_string(),
@@ -491,7 +503,7 @@ func (c *ServiceConfig) UpdatePort(port int) {
         Some("ServiceConfig::UpdatePort")
     );
 
-    // Check imports
+    // Check imports and cross-file references
     let seeking: Vec<&str> = facts
         .unresolved
         .iter()
@@ -501,4 +513,25 @@ func (c *ServiceConfig) UpdatePort(port int) {
     assert!(seeking.contains(&"sync"));
     assert!(seeking.contains(&"json"));
     assert!(seeking.contains(&"pprof"));
+
+    // Check Calls edge for unimported/intra-package function call
+    let calls_ref = facts
+        .unresolved
+        .iter()
+        .find(|u| u.seeking == "validateHost" && u.edge_kind == repin_core::model::registries::EdgeKind::Calls);
+    assert!(calls_ref.is_some(), "expected Calls unresolved ref for validateHost");
+
+    // Check Instantiates edge for struct literal
+    let inst_ref = facts
+        .unresolved
+        .iter()
+        .find(|u| u.seeking == "ServiceConfig" && u.edge_kind == repin_core::model::registries::EdgeKind::Instantiates);
+    assert!(inst_ref.is_some(), "expected Instantiates unresolved ref for ServiceConfig");
+
+    // Check Extends edge for embedded struct
+    let extends_ref = facts
+        .unresolved
+        .iter()
+        .find(|u| u.seeking == "ServiceConfig" && u.edge_kind == repin_core::model::registries::EdgeKind::Extends);
+    assert!(extends_ref.is_some(), "expected Extends unresolved ref for embedded ServiceConfig");
 }
