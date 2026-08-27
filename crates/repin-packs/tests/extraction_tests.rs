@@ -1,6 +1,6 @@
 use repin_core::hash::ContentHash;
 use repin_core::model::registries::{ArtifactClass, NodeKind};
-use repin_packs::{CLanguagePack, CppLanguagePack, GoLanguagePack, JavaLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
+use repin_packs::{CLanguagePack, CppLanguagePack, CSharpLanguagePack, GoLanguagePack, JavaLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 
@@ -947,4 +947,157 @@ public class OrderServiceImpl extends BaseOrderService implements IOrderService 
         .collect();
     assert!(seeking_calls.contains(&"assertNotNull"));
     assert!(seeking_calls.contains(&"validateOrder"));
+}
+
+#[test]
+fn test_csharp_comprehensive_extraction() {
+    let source = br#"
+namespace Repin.Engine.Services;
+
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using static System.Math;
+
+/// <summary>
+/// Notification dispatcher interface.
+/// </summary>
+public interface INotificationService
+{
+    Task SendAsync(string recipient, string message);
+}
+
+public enum Priority
+{
+    Low,
+    Normal,
+    High
+}
+
+public record NotificationRecord(string Recipient, string Message, Priority Level);
+
+/// <summary>
+/// Implementation of notification dispatcher.
+/// </summary>
+public class NotificationService : BaseService, INotificationService
+{
+    public const int MaxBatchSize = 100;
+    private readonly List<NotificationRecord> _queue;
+
+    public int PendingCount => _queue.Count;
+    public string Name { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of NotificationService.
+    /// </summary>
+    public NotificationService(string name)
+    {
+        Name = name;
+        _queue = new List<NotificationRecord>();
+    }
+
+    public async Task SendAsync(string recipient, string message)
+    {
+        var record = new NotificationRecord(recipient, message, Priority.Normal);
+        _queue.Add(record);
+        Console.WriteLine("sent notification");
+        await DispatchInternalAsync();
+    }
+
+    private Task DispatchInternalAsync() => Task.CompletedTask;
+}
+"#;
+
+    let snapshot = FileSnapshot {
+        root: "root".to_string(),
+        path: "src/Services/NotificationService.cs".to_string(),
+        content: source.to_vec(),
+        content_hash: ContentHash::of_bytes(source),
+        artifact_class: ArtifactClass::Code,
+    };
+
+    let pack = CSharpLanguagePack::new();
+    assert!(pack.can_handle("src/Services/NotificationService.cs", &[]));
+    assert!(!pack.can_handle("src/Services/NotificationService.rs", &[]));
+
+    let facts = pack.extract(&snapshot).unwrap();
+
+    let node_names: Vec<(&str, NodeKind)> = facts
+        .nodes
+        .iter()
+        .map(|n| (n.node.name.as_str(), n.node.kind))
+        .collect();
+
+    assert!(node_names.contains(&("src/Services/NotificationService.cs", NodeKind::File)));
+    assert!(node_names.contains(&("Repin.Engine.Services", NodeKind::Namespace)));
+    assert!(node_names.contains(&("INotificationService", NodeKind::Interface)));
+    assert!(node_names.contains(&("SendAsync", NodeKind::Method)));
+    assert!(node_names.contains(&("Priority", NodeKind::Enum)));
+    assert!(node_names.contains(&("Low", NodeKind::Constant)));
+    assert!(node_names.contains(&("Normal", NodeKind::Constant)));
+    assert!(node_names.contains(&("High", NodeKind::Constant)));
+    assert!(node_names.contains(&("NotificationRecord", NodeKind::Struct)));
+    assert!(node_names.contains(&("Recipient", NodeKind::Field)));
+    assert!(node_names.contains(&("Message", NodeKind::Field)));
+    assert!(node_names.contains(&("Level", NodeKind::Field)));
+    assert!(node_names.contains(&("NotificationService", NodeKind::Class)));
+    assert!(node_names.contains(&("MaxBatchSize", NodeKind::Constant)));
+    assert!(node_names.contains(&("_queue", NodeKind::Field)));
+    assert!(node_names.contains(&("PendingCount", NodeKind::Property)));
+    assert!(node_names.contains(&("Name", NodeKind::Property)));
+    assert!(node_names.contains(&("NotificationService", NodeKind::Constructor)));
+    assert!(node_names.contains(&("DispatchInternalAsync", NodeKind::Method)));
+
+    // Check doc summary
+    let iface_node = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "INotificationService")
+        .unwrap();
+    assert_eq!(
+        iface_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        "Notification dispatcher interface."
+    );
+
+    // Check extends inheritance
+    let seeking_extends: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Extends)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_extends.contains(&"BaseService"));
+    assert!(seeking_extends.contains(&"INotificationService"));
+
+    // Check imports
+    let seeking_imports: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Imports)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_imports.contains(&"System"));
+    assert!(seeking_imports.contains(&"Generic"));
+    assert!(seeking_imports.contains(&"Tasks"));
+    assert!(seeking_imports.contains(&"Math"));
+
+    // Check instantiations
+    let seeking_instantiations: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Instantiates)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_instantiations.contains(&"NotificationRecord"));
+
+    // Check calls
+    let seeking_calls: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Calls)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_calls.contains(&"Add"));
+    assert!(seeking_calls.contains(&"WriteLine"));
+    assert!(seeking_calls.contains(&"DispatchInternalAsync"));
 }

@@ -65,6 +65,7 @@ Detection is deterministic and cheap. Ambiguity resolves by rule specificity, th
 - **`c_pack`**: Extracts C source and headers (`.c`, `.h`) into `struct`, `enum`, `type`, `function`, `constant`, `variable`, `field`, doc summaries, `#include` imports, and call dependencies.
 - **`cpp_pack`**: Extracts C++ source and headers (`.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`) into `namespace`, `class`, `struct`, `enum`, `type`, `function`, `method`, `constructor`, `field`, doc summaries, inheritance, `#include` / `using` imports, and call dependencies.
 - **`java_pack`**: Extracts Java source (`.java`) into `package`, `class`, `interface`, `enum`, `record`, `constructor`, `method`, `constant`, `field`, doc summaries, inheritance (`extends` / `implements`), `import` dependencies, and call / instantiation dependencies.
+- **`csharp_pack`**: Extracts C# source (`.cs`) into `namespace`, `class`, `interface`, `struct`, `enum`, `delegate`, `constructor`, `method`, `property`, `constant`, `field`, XML doc summaries, inheritance (`extends` / `implements`), `using` imports, and call / instantiation dependencies.
 - **`prose_pack`**: Extracts Markdown (`.md`, `.markdown`) into document, section, and heading structural hierarchy.
 
 ## 3. Extractor contract

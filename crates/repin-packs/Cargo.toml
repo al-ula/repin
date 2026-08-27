@@ -8,7 +8,7 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-default = ["rust", "typescript", "python", "prose", "go", "c", "cpp", "java"]
+default = ["rust", "typescript", "python", "prose", "go", "c", "cpp", "java", "csharp"]
 rust = ["dep:tree-sitter-rust"]
 typescript = ["dep:tree-sitter-typescript"]
 python = ["dep:tree-sitter-python"]
@@ -17,6 +17,7 @@ go = ["dep:tree-sitter-go"]
 c = ["dep:tree-sitter-c"]
 cpp = ["dep:tree-sitter-cpp"]
 java = ["dep:tree-sitter-java"]
+csharp = ["dep:tree-sitter-c-sharp"]
 [dependencies]
 repin-core = { workspace = true }
 tree-sitter = { workspace = true }
@@ -28,6 +29,7 @@ tree-sitter-go = { workspace = true, optional = true }
 tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-cpp = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

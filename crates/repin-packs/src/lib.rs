@@ -16,6 +16,8 @@ pub mod c_pack;
 pub mod cpp_pack;
 #[cfg(feature = "java")]
 pub mod java_pack;
+#[cfg(feature = "csharp")]
+pub mod csharp_pack;
 
 #[cfg(feature = "prose")]
 pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
@@ -33,6 +35,8 @@ pub use c_pack::{C_PACK_VERSION, CLanguagePack};
 pub use cpp_pack::{CPP_PACK_VERSION, CppLanguagePack};
 #[cfg(feature = "java")]
 pub use java_pack::{JAVA_PACK_VERSION, JavaLanguagePack};
+#[cfg(feature = "csharp")]
+pub use csharp_pack::{CSHARP_PACK_VERSION, CSharpLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 
@@ -55,6 +59,8 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
     packs.push(Box::new(CppLanguagePack::new()));
     #[cfg(feature = "java")]
     packs.push(Box::new(JavaLanguagePack::new()));
+    #[cfg(feature = "csharp")]
+    packs.push(Box::new(CSharpLanguagePack::new()));
     packs
 }
 
@@ -310,5 +316,69 @@ mod tests {
             .map(|u| u.seeking.as_str())
             .collect();
         assert!(implements.contains(&"IUserService"));
+    }
+    #[cfg(feature = "csharp")]
+    #[test]
+    fn test_csharp_pack_extraction() {
+        let cs_code = r#"
+        namespace Repin.Services;
+
+        using System;
+        using System.Collections.Generic;
+
+        /// <summary>
+        /// User repository service.
+        /// </summary>
+        public class UserRepository : BaseRepository, IUserRepository
+        {
+            public string ConnectionString { get; set; }
+
+            public UserRepository(string connStr)
+            {
+                ConnectionString = connStr;
+            }
+
+            public List<string> GetUserIds()
+            {
+                var list = new List<string>();
+                Console.WriteLine("retrieving");
+                return list;
+            }
+        }
+        "#;
+
+        let snapshot = FileSnapshot {
+            root: "root".to_string(),
+            path: "src/UserRepository.cs".to_string(),
+            content: cs_code.as_bytes().to_vec(),
+            artifact_class: ArtifactClass::Code,
+            content_hash: ContentHash::of_bytes(cs_code.as_bytes()),
+        };
+
+        let pack = CSharpLanguagePack::new();
+        assert!(pack.can_handle("src/UserRepository.cs", cs_code.as_bytes()));
+        let facts = pack.extract(&snapshot).unwrap();
+
+        let node_names: Vec<(&str, NodeKind)> = facts
+            .nodes
+            .iter()
+            .map(|n| (n.node.name.as_str(), n.node.kind))
+            .collect();
+
+        assert!(node_names.contains(&("src/UserRepository.cs", NodeKind::File)));
+        assert!(node_names.contains(&("Repin.Services", NodeKind::Namespace)));
+        assert!(node_names.contains(&("UserRepository", NodeKind::Class)));
+        assert!(node_names.contains(&("ConnectionString", NodeKind::Property)));
+        assert!(node_names.contains(&("UserRepository", NodeKind::Constructor)));
+        assert!(node_names.contains(&("GetUserIds", NodeKind::Method)));
+
+        let extends: Vec<&str> = facts
+            .unresolved
+            .iter()
+            .filter(|u| u.edge_kind == EdgeKind::Extends)
+            .map(|u| u.seeking.as_str())
+            .collect();
+        assert!(extends.contains(&"BaseRepository"));
+        assert!(extends.contains(&"IUserRepository"));
     }
 }
