@@ -1,6 +1,6 @@
 use repin_core::hash::ContentHash;
 use repin_core::model::registries::{ArtifactClass, NodeKind};
-use repin_packs::{CLanguagePack, CppLanguagePack, GoLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
+use repin_packs::{CLanguagePack, CppLanguagePack, GoLanguagePack, JavaLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 
@@ -792,4 +792,159 @@ using RendererPtr = VulkanRenderer<void>*;
         .map(|u| u.seeking.as_str())
         .collect();
     assert!(seeking_calls.contains(&"setup_pipeline"));
+}
+
+#[test]
+fn test_java_comprehensive_extraction() {
+    let source = br#"
+package org.repin.server;
+
+import java.util.Map;
+import java.util.HashMap;
+import java.io.Serializable;
+import static org.junit.Assert.assertNotNull;
+
+/**
+ * Core order management service interface.
+ */
+public interface IOrderService extends Serializable {
+    void processOrder(String orderId);
+}
+
+/**
+ * Order processing status enum.
+ */
+public enum OrderStatus {
+    PENDING,
+    PROCESSING,
+    COMPLETED
+}
+
+/**
+ * Order entity record.
+ */
+public record OrderItem(String itemId, double price, int quantity) {}
+
+/**
+ * Implementation of order service.
+ */
+public class OrderServiceImpl extends BaseOrderService implements IOrderService {
+    public static final int DEFAULT_TIMEOUT = 3000;
+    private final Map<String, OrderItem> orders;
+
+    /**
+     * Constructor for OrderServiceImpl.
+     */
+    public OrderServiceImpl() {
+        this.orders = new HashMap<>();
+    }
+
+    @Override
+    public void processOrder(String orderId) {
+        assertNotNull(orderId);
+        validateOrder(orderId);
+        System.out.println("processing " + orderId);
+    }
+
+    private void validateOrder(String orderId) {}
+}
+"#;
+
+    let snapshot = FileSnapshot {
+        root: "root".to_string(),
+        path: "src/main/java/org/repin/server/OrderServiceImpl.java".to_string(),
+        content: source.to_vec(),
+        content_hash: ContentHash::of_bytes(source),
+        artifact_class: ArtifactClass::Code,
+    };
+
+    let pack = JavaLanguagePack::new();
+    assert!(pack.can_handle("src/main/java/org/repin/server/OrderServiceImpl.java", &[]));
+    assert!(!pack.can_handle("src/main/java/org/repin/server/OrderServiceImpl.rs", &[]));
+
+    let facts = pack.extract(&snapshot).unwrap();
+
+    let node_names: Vec<(&str, NodeKind)> = facts
+        .nodes
+        .iter()
+        .map(|n| (n.node.name.as_str(), n.node.kind))
+        .collect();
+
+    assert!(node_names.contains(&("src/main/java/org/repin/server/OrderServiceImpl.java", NodeKind::File)));
+    assert!(node_names.contains(&("org.repin.server", NodeKind::Package)));
+    assert!(node_names.contains(&("IOrderService", NodeKind::Interface)));
+    assert!(node_names.contains(&("processOrder", NodeKind::Method)));
+    assert!(node_names.contains(&("OrderStatus", NodeKind::Enum)));
+    assert!(node_names.contains(&("PENDING", NodeKind::Constant)));
+    assert!(node_names.contains(&("PROCESSING", NodeKind::Constant)));
+    assert!(node_names.contains(&("COMPLETED", NodeKind::Constant)));
+    assert!(node_names.contains(&("OrderItem", NodeKind::Struct)));
+    assert!(node_names.contains(&("itemId", NodeKind::Field)));
+    assert!(node_names.contains(&("price", NodeKind::Field)));
+    assert!(node_names.contains(&("quantity", NodeKind::Field)));
+    assert!(node_names.contains(&("OrderServiceImpl", NodeKind::Class)));
+    assert!(node_names.contains(&("DEFAULT_TIMEOUT", NodeKind::Constant)));
+    assert!(node_names.contains(&("orders", NodeKind::Field)));
+    assert!(node_names.contains(&("OrderServiceImpl", NodeKind::Constructor)));
+    assert!(node_names.contains(&("validateOrder", NodeKind::Method)));
+
+    // Check doc summary
+    let iface_node = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "IOrderService")
+        .unwrap();
+    assert_eq!(
+        iface_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        "Core order management service interface."
+    );
+
+    // Check extends and implements
+    let seeking_extends: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Extends)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_extends.contains(&"Serializable"));
+    assert!(seeking_extends.contains(&"BaseOrderService"));
+
+    let seeking_implements: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Implements)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_implements.contains(&"IOrderService"));
+
+    // Check imports
+    let seeking_imports: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Imports)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_imports.contains(&"Map"));
+    assert!(seeking_imports.contains(&"HashMap"));
+    assert!(seeking_imports.contains(&"Serializable"));
+    assert!(seeking_imports.contains(&"assertNotNull"));
+
+    // Check instantiations
+    let seeking_instantiations: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Instantiates)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_instantiations.contains(&"HashMap"));
+
+    // Check calls
+    let seeking_calls: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Calls)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_calls.contains(&"assertNotNull"));
+    assert!(seeking_calls.contains(&"validateOrder"));
 }

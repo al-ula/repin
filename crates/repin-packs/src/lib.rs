@@ -14,6 +14,8 @@ pub mod go_pack;
 pub mod c_pack;
 #[cfg(feature = "cpp")]
 pub mod cpp_pack;
+#[cfg(feature = "java")]
+pub mod java_pack;
 
 #[cfg(feature = "prose")]
 pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
@@ -29,6 +31,8 @@ pub use go_pack::{GO_PACK_VERSION, GoLanguagePack};
 pub use c_pack::{C_PACK_VERSION, CLanguagePack};
 #[cfg(feature = "cpp")]
 pub use cpp_pack::{CPP_PACK_VERSION, CppLanguagePack};
+#[cfg(feature = "java")]
+pub use java_pack::{JAVA_PACK_VERSION, JavaLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 
@@ -49,6 +53,8 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
     packs.push(Box::new(CLanguagePack::new()));
     #[cfg(feature = "cpp")]
     packs.push(Box::new(CppLanguagePack::new()));
+    #[cfg(feature = "java")]
+    packs.push(Box::new(JavaLanguagePack::new()));
     packs
 }
 
@@ -236,5 +242,73 @@ mod tests {
             .map(|u| u.seeking.as_str())
             .collect();
         assert!(extends.contains(&"BaseObject"));
+    }
+    #[cfg(feature = "java")]
+    #[test]
+    fn test_java_pack_extraction() {
+        let java_code = r#"
+        package com.example.service;
+
+        import java.util.List;
+        import java.util.ArrayList;
+
+        /**
+         * User service class.
+         */
+        public class UserService extends BaseService implements IUserService {
+            private final String name;
+
+            public UserService(String name) {
+                this.name = name;
+            }
+
+            public List<String> getItems() {
+                List<String> items = new ArrayList<>();
+                System.out.println("fetching");
+                return items;
+            }
+        }
+        "#;
+
+        let snapshot = FileSnapshot {
+            root: "root".to_string(),
+            path: "src/UserService.java".to_string(),
+            content: java_code.as_bytes().to_vec(),
+            artifact_class: ArtifactClass::Code,
+            content_hash: ContentHash::of_bytes(java_code.as_bytes()),
+        };
+
+        let pack = JavaLanguagePack::new();
+        assert!(pack.can_handle("src/UserService.java", java_code.as_bytes()));
+        let facts = pack.extract(&snapshot).unwrap();
+
+        let node_names: Vec<(&str, NodeKind)> = facts
+            .nodes
+            .iter()
+            .map(|n| (n.node.name.as_str(), n.node.kind))
+            .collect();
+
+        assert!(node_names.contains(&("src/UserService.java", NodeKind::File)));
+        assert!(node_names.contains(&("com.example.service", NodeKind::Package)));
+        assert!(node_names.contains(&("UserService", NodeKind::Class)));
+        assert!(node_names.contains(&("UserService", NodeKind::Constructor)));
+        assert!(node_names.contains(&("getItems", NodeKind::Method)));
+        assert!(node_names.contains(&("name", NodeKind::Field)));
+
+        let extends: Vec<&str> = facts
+            .unresolved
+            .iter()
+            .filter(|u| u.edge_kind == EdgeKind::Extends)
+            .map(|u| u.seeking.as_str())
+            .collect();
+        assert!(extends.contains(&"BaseService"));
+
+        let implements: Vec<&str> = facts
+            .unresolved
+            .iter()
+            .filter(|u| u.edge_kind == EdgeKind::Implements)
+            .map(|u| u.seeking.as_str())
+            .collect();
+        assert!(implements.contains(&"IUserService"));
     }
 }
