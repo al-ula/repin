@@ -1,6 +1,6 @@
 use repin_core::hash::ContentHash;
 use repin_core::model::registries::{ArtifactClass, NodeKind};
-use repin_packs::{GoLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
+use repin_packs::{CLanguagePack, GoLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 
@@ -534,4 +534,122 @@ func (c *ServiceConfig) UpdatePort(port int) {
         .iter()
         .find(|u| u.seeking == "ServiceConfig" && u.edge_kind == repin_core::model::registries::EdgeKind::Extends);
     assert!(extends_ref.is_some(), "expected Extends unresolved ref for embedded ServiceConfig");
+}
+
+#[test]
+fn test_c_comprehensive_extraction() {
+    let source = br#"
+#include <stdio.h>
+#include <stdlib.h>
+#include "my_types.h"
+
+#define BUFFER_SIZE 4096
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
+/// Point structure in 2D space
+struct Point {
+    int x;
+    int y;
+};
+
+union Value {
+    int i_val;
+    double d_val;
+};
+
+typedef enum {
+    STATUS_OK = 0,
+    STATUS_ERR = 1
+} Status;
+
+typedef unsigned long long uint64;
+
+static const int MAX_RETRIES = 5;
+
+/// Compute Manhattan distance between two points
+int manhattan_distance(struct Point p1, struct Point p2) {
+    int dx = abs(p1.x - p2.x);
+    int dy = abs(p1.y - p2.y);
+    printf("computed dx=%d dy=%d\n", dx, dy);
+    return dx + dy;
+}
+"#;
+
+    let snapshot = FileSnapshot {
+        root: "root".to_string(),
+        path: "src/geometry.c".to_string(),
+        content: source.to_vec(),
+        content_hash: ContentHash::of_bytes(source),
+        artifact_class: ArtifactClass::Code,
+    };
+
+    let pack = CLanguagePack::new();
+    assert!(pack.can_handle("src/geometry.c", &[]));
+    assert!(pack.can_handle("include/geometry.h", &[]));
+    assert!(!pack.can_handle("src/geometry.rs", &[]));
+
+    let facts = pack.extract(&snapshot).unwrap();
+
+    let node_names: Vec<(&str, NodeKind)> = facts
+        .nodes
+        .iter()
+        .map(|n| (n.node.name.as_str(), n.node.kind))
+        .collect();
+
+    assert!(node_names.contains(&("src/geometry.c", NodeKind::File)));
+    assert!(node_names.contains(&("BUFFER_SIZE", NodeKind::Constant)));
+    assert!(node_names.contains(&("MIN", NodeKind::Function)));
+    assert!(node_names.contains(&("Point", NodeKind::Struct)));
+    assert!(node_names.contains(&("x", NodeKind::Field)));
+    assert!(node_names.contains(&("y", NodeKind::Field)));
+    assert!(node_names.contains(&("Value", NodeKind::Struct)));
+    assert!(node_names.contains(&("i_val", NodeKind::Field)));
+    assert!(node_names.contains(&("d_val", NodeKind::Field)));
+    assert!(node_names.contains(&("STATUS_OK", NodeKind::Constant)));
+    assert!(node_names.contains(&("STATUS_ERR", NodeKind::Constant)));
+    assert!(node_names.contains(&("uint64", NodeKind::Type)));
+    assert!(node_names.contains(&("MAX_RETRIES", NodeKind::Constant)));
+    assert!(node_names.contains(&("manhattan_distance", NodeKind::Function)));
+
+    // Check doc summary
+    let point_node = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "Point")
+        .unwrap();
+    assert_eq!(
+        point_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        "Point structure in 2D space"
+    );
+
+    let fn_node = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "manhattan_distance")
+        .unwrap();
+    assert_eq!(
+        fn_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        "Compute Manhattan distance between two points"
+    );
+
+    // Check includes
+    let seeking_imports: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Imports)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_imports.contains(&"stdio"));
+    assert!(seeking_imports.contains(&"stdlib"));
+    assert!(seeking_imports.contains(&"my_types"));
+
+    // Check calls
+    let seeking_calls: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Calls)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_calls.contains(&"abs"));
+    assert!(seeking_calls.contains(&"printf"));
 }

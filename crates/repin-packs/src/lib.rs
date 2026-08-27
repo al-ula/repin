@@ -10,6 +10,8 @@ pub mod ts_pack;
 pub mod py_pack;
 #[cfg(feature = "go")]
 pub mod go_pack;
+#[cfg(feature = "c")]
+pub mod c_pack;
 
 #[cfg(feature = "prose")]
 pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
@@ -21,6 +23,8 @@ pub use ts_pack::{TS_PACK_VERSION, TsLanguagePack};
 pub use py_pack::{PY_PACK_VERSION, PyLanguagePack};
 #[cfg(feature = "go")]
 pub use go_pack::{GO_PACK_VERSION, GoLanguagePack};
+#[cfg(feature = "c")]
+pub use c_pack::{C_PACK_VERSION, CLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 
@@ -37,6 +41,8 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
     packs.push(Box::new(ProseLanguagePack::new()));
     #[cfg(feature = "go")]
     packs.push(Box::new(GoLanguagePack::new()));
+    #[cfg(feature = "c")]
+    packs.push(Box::new(CLanguagePack::new()));
     packs
 }
 
@@ -44,7 +50,7 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
 mod tests {
     use super::*;
     use repin_core::hash::ContentHash;
-    use repin_core::model::registries::ArtifactClass;
+    use repin_core::model::registries::{ArtifactClass, EdgeKind, NodeKind};
     use repin_core::ports::fs::FileSnapshot;
 
     #[cfg(feature = "rust")]
@@ -106,5 +112,66 @@ mod tests {
         assert_eq!(facts.nodes.len(), 3); // File + Package + Function
         assert_eq!(facts.edges.len(), 2); // File -> Package contains, File -> Function contains
         assert_eq!(facts.unresolved.len(), 1); // import "fmt" -> seeking fmt
+    }
+    #[cfg(feature = "c")]
+    #[test]
+    fn test_c_pack_extraction() {
+        let c_code = r#"
+        #include <stdio.h>
+        #include "custom.h"
+
+        #define MAX_SIZE 1024
+
+        // Point structure
+        struct Point {
+            int x;
+            int y;
+        };
+
+        typedef enum Status {
+            OK = 0,
+            ERROR = 1
+        } Status;
+
+        // Calculate distance
+        double distance(struct Point p1, struct Point p2) {
+            printf("calculating\n");
+            return 0.0;
+        }
+        "#;
+
+        let snapshot = FileSnapshot {
+            root: "root".to_string(),
+            path: "main.c".to_string(),
+            content: c_code.as_bytes().to_vec(),
+            artifact_class: ArtifactClass::Code,
+            content_hash: ContentHash::of_bytes(c_code.as_bytes()),
+        };
+
+        let pack = CLanguagePack::new();
+        let facts = pack.extract(&snapshot).unwrap();
+
+        let node_names: Vec<(&str, NodeKind)> = facts
+            .nodes
+            .iter()
+            .map(|n| (n.node.name.as_str(), n.node.kind))
+            .collect();
+
+        assert!(node_names.contains(&("main.c", NodeKind::File)));
+        assert!(node_names.contains(&("MAX_SIZE", NodeKind::Constant)));
+        assert!(node_names.contains(&("Point", NodeKind::Struct)));
+        assert!(node_names.contains(&("x", NodeKind::Field)));
+        assert!(node_names.contains(&("y", NodeKind::Field)));
+        assert!(node_names.contains(&("Status", NodeKind::Enum)));
+        assert!(node_names.contains(&("OK", NodeKind::Constant)));
+        assert!(node_names.contains(&("distance", NodeKind::Function)));
+
+        let calls: Vec<&str> = facts
+            .unresolved
+            .iter()
+            .filter(|u| u.edge_kind == EdgeKind::Calls)
+            .map(|u| u.seeking.as_str())
+            .collect();
+        assert!(calls.contains(&"printf"));
     }
 }
