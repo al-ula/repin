@@ -48,6 +48,24 @@ repin index
 
 Repin starts or connects to its per-user daemon as needed. The daemon owns shared project state; the project database lives at `.repin/graph.sqlite3`.
 
+## Supported languages
+
+Repin includes built-in language extractors for syntax, declarations, imports, doc comments, and type/call dependencies:
+
+| Language | Extensions | Extracted constructs |
+| --- | --- | --- |
+| **Rust** | `.rs` | structs, enums, traits, functions, methods, modules, docs, import references |
+| **TypeScript / JavaScript** | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | classes, interfaces, types, enums, functions, methods, JSDoc, module imports |
+| **Python** | `.py`, `.pyi`, `.pyw` | classes, functions, methods, variables, docstrings, imports |
+| **Go** | `.go` | packages, structs, interfaces, types, functions, methods, constants, variables, docs, imports |
+| **C** | `.c`, `.h` | structs, enums, types, functions, constants, variables, fields, docs, `#include` imports, calls |
+| **C++** | `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx` | namespaces, classes, structs, enums, types, functions, methods, constructors, fields, docs, inheritance, imports, calls |
+| **Java** | `.java` | packages, classes, interfaces, enums, records, constructors, methods, constants, fields, docs, inheritance, imports, calls |
+| **C#** | `.cs` | namespaces, classes, interfaces, structs, enums, delegates, constructors, methods, properties, constants, fields, XML docs, inheritance, using imports, calls |
+| **Markdown** | `.md`, `.markdown` | documents, sections, heading hierarchy |
+
+Files in unsupported languages degrade gracefully to text-searchable file nodes rather than being skipped.
+
 ## Search and inspect
 
 ```bash

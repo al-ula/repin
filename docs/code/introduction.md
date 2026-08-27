@@ -4,7 +4,7 @@ Repin is a standalone, deterministic knowledge-graph engine for repositories. It
 
 ## Status
 
-**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 30 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (2 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
+**Implementation Complete & Authoritative Architecture Specification.** Research has concluded, all 31 Architectural Decision Records (ADRs) are finalized and accepted, and the complete Rust workspace implementation (11 crates) is in place. This section is the normative design, contract blueprint, and implementation reference for Repin.
 
 ## What Repin is
 
@@ -30,15 +30,23 @@ Two independent axes, both required:
 
 ## Workspace Crates
 
-The implementation is organized into two Rust crates in a single workspace ([ADR-030](decisions/ADR-030-two-crate-workspace-topology.md)):
+The implementation is organized into a modular hub-and-spoke architecture across 11 Rust crates in a single workspace ([ADR-031](decisions/ADR-031-modular-hub-and-spoke-architecture.md)):
 
 | Crate | Purpose | Key Responsibilities |
 | --- | --- | --- |
-| [`repin-core`](../../crates/repin-core) | Public library | Domain models, port traits, result envelopes, IPC values, filesystem/store/pack adapters, retrieval, indexing, context, optional intelligence, default `Runtime`/`Engine` composition, conformance harness |
+| [`repin-core`](../../crates/repin-core) | Contract hub | Pure domain models, port traits, protocol envelopes, line indexing, versions, config, and extractor utilities with zero heavy dependencies |
+| [`repin-fs`](../../crates/repin-fs) | Filesystem capability | Filesystem capability adapters, path containment, immutable safety exclusions, and Git VCS integration |
+| [`repin-store-sqlite`](../../crates/repin-store-sqlite) | Storage adapter | SQLite and FTS5 storage adapter implementing `repin_core::ports::store::Store` |
+| [`repin-direct-search`](../../crates/repin-direct-search) | Direct retrieval | Bounded working-tree regex and scanner search over source files |
+| [`repin-packs`](../../crates/repin-packs) | Language packs | Pluggable language extractors (Rust, TS/JS, Python, Go, C, C++, Java, C#, Markdown/prose) implementing `LanguagePack` |
+| [`repin-indexing`](../../crates/repin-indexing) | Indexing orchestration | Indexing coordinator, invalidation planning, and transactional update orchestration |
+| [`repin-retrieval`](../../crates/repin-retrieval) | Retrieval algorithms | Hybrid lexical/vector search, graph traversal, degree centrality, and deterministic rank fusion |
+| [`repin-context`](../../crates/repin-context) | Context construction | Evidence validation, deterministic token-budget packing, and snippet formatting |
+| [`repin-intelligence`](../../crates/repin-intelligence) | Model providers | AI model provider adapters (embedded ONNX, agent CLI callback, remote REST APIs) |
+| [`repin-runtime`](../../crates/repin-runtime) | Composition root | Assembles spokes into the `Runtime` facade (`Engine` compatibility alias) |
 | [`repin`](../../crates/repin) | Product library & binary | Product path layouts (`repin::product`), user daemon server and leases (`repin::daemon`), CLI parsing and subcommands (`repin::cli`), and installable executable |
 
-Capability algorithms remain independently callable as `repin-core` modules over port contracts. An embedded host depends on `repin-core` only. The Repin product and executable live in `repin`.
-
+Capability spokes depend strictly on `repin-core` and never on sibling functional crates. An embedded host can depend on `repin-runtime` for full composition or select specific spokes with `repin-core`. The Repin product and executable live in `repin`.
 ## How to read this book
 
 The specification is organized into seven logical parts:
@@ -47,7 +55,7 @@ The specification is organized into seven logical parts:
 - **Part II: Core Domain & Data Model** ([Graph Model](graph-model.md), [Extraction](extraction.md), [Incremental Updates](incremental.md), [Storage](storage.md)) specifies what the engine stores, how facts are extracted and resolved, and how transactions and revisions guarantee convergence.
 - **Part III: Query & Integration Surfaces** ([Retrieval](retrieval.md), [Public API](api.md), [Runtime & IPC](runtime.md), [Host Integration](host-integration.md), [Optional Intelligence](intelligence.md)) covers search channels, client contracts, daemon rendezvous, and host seams.
 - **Part IV: Quality, Conformance & Implementation** ([Conformance](conformance.md), [Technology Selections & Implementation Profile](technology-candidates.md), [Roadmap](roadmap.md)) defines mechanical invariants, the accepted Rust/SQLite profile, and milestone delivery criteria.
-- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 30 accepted ADRs documenting the design rationale and constraints.
+- **Part V: Architectural Decision Records** ([Decisions](decisions/index.md)) contains the 31 accepted ADRs documenting the design rationale and constraints.
 - **Part VI: Subsystem Specifications** ([Line Index](specifications/sparse-line-index.md), [Native Parsers](specifications/native-parsers-tree-sitter-fallback.md), [Vector Baseline](specifications/vector-search-rust-friendly.md), [Agent Context](specifications/agent-inspection-and-review-context.md)) provides deep normative algorithmic specifications.
 - **Part VII: Concluded Research & Trade Studies** ([redb vs SQLite](research/redb-tantivy-vs-sqlite.md), [libSQL](research/libsql-embedded-local.md)) documents research and candidate evaluations.
 

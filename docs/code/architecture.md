@@ -78,7 +78,7 @@ repin-core             contract hub (domain, ports, protocol, line index, versio
 repin-fs               filesystem containment and Git VCS adapter
 repin-store-sqlite     SQLite & FTS5 store adapter
 repin-direct-search    bounded working-tree search
-repin-packs            pluggable language packs (rust, typescript, prose)
+repin-packs            pluggable language packs (rust, typescript, python, go, c, cpp, java, csharp, prose)
 repin-indexing         indexing coordinator and invalidation
 repin-retrieval        hybrid search, traversal, and ranking
 repin-context          context packing and token budgeting

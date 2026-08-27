@@ -32,8 +32,8 @@ Run these commands from the repository root on the pinned Linux PoC toolchain:
 
 ```text
 cargo test --workspace
-cargo test -p repin-core --example embedded_rag
-cargo test -p repin-core --test conformance_tests
+cargo test -p repin-runtime --example embedded_rag
+cargo test -p repin-runtime --test conformance_tests
 cargo clippy -p repin-core --all-targets -- -D warnings
 cargo metadata --no-deps --format-version 1
 mdbook build docs/code
@@ -44,7 +44,7 @@ warm/cold state fixed and record the complete command output:
 
 ```text
 /usr/bin/time -p cargo test --workspace
-/usr/bin/time -p cargo run -p repin-core --example embedded_rag
+/usr/bin/time -p cargo run -p repin-runtime --example embedded_rag
 ```
 
 The first command measures the complete correctness suite. The embedded proof

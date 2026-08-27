@@ -35,6 +35,8 @@ just release
 just test
 ```
 
+*(Or with direct Cargo: `cargo build --release && cargo test`)*
+
 Set `CARGO_BUILD_TARGET` when producing a release for a specific target.
 
 The `just` build recipes embed the current Git commit in the binary identity
@@ -59,11 +61,16 @@ Repin includes Tree-sitter powered AST symbol and relationship extraction packs:
 
 | Language / Format | Extensions | Extracted Facts & Capabilities |
 | --- | --- | --- |
-| **Rust** | `.rs` | Functions, methods, structs, enums, traits, impl blocks, modules, type aliases, call graphs |
-| **TypeScript / JavaScript** | `.ts`, `.tsx`, `.js`, `.jsx` | Functions, classes, methods, interfaces, type aliases, imports/exports, call graphs |
-| **Markdown / Prose** | `.md`, `.markdown`, `.txt` | Document sections, heading hierarchies, structural outlines |
+| **Rust** | `.rs` | Structs, enums, traits, functions, methods, modules, type aliases, docs, imports, calls |
+| **TypeScript / JavaScript** | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | Classes, interfaces, types, enums, functions, methods, JSDoc, imports/exports, calls |
+| **Python** | `.py`, `.pyi`, `.pyw` | Classes, functions, methods, variables, docstrings, module imports |
+| **Go** | `.go` | Packages, structs, interfaces, types, functions, methods, constants, variables, docs, imports |
+| **C** | `.c`, `.h` | Structs, enums, types, functions, constants, variables, fields, docs, `#include` imports, calls |
+| **C++** | `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx` | Namespaces, classes, structs, enums, types, functions, methods, constructors, fields, docs, inheritance, imports, calls |
+| **Java** | `.java` | Packages, classes, interfaces, enums, records, constructors, methods, constants, fields, docs, inheritance, imports, calls |
+| **C#** | `.cs` | Namespaces, classes, interfaces, structs, enums, delegates, constructors, methods, properties, constants, fields, XML docs, inheritance, imports, calls |
+| **Markdown / Prose** | `.md`, `.markdown` | Document sections, heading hierarchies, structural outlines |
 | **Universal Text** | *All files* | Direct regular expression and full-text search across the entire working tree |
-
 ## Documentation
 
 Two independent mdBooks:
@@ -71,7 +78,7 @@ Two independent mdBooks:
 - [User Guide](docs/usage/index.md) — quick start, CLI reference, configuration, agent workflows, and troubleshooting.
 - [Architecture & Design Specification](docs/code/index.md) — architecture, contracts, data models, decisions, specifications, and verification.
 
-Build them with `just docs`.
+Build them with `just docs` (or `mdbook build docs/code && mdbook build docs/usage`).
 
 ## License
 

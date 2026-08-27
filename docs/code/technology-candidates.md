@@ -94,13 +94,21 @@ The in-process engine surface (`open(EngineOptions) -> Engine`) is retained for 
 
 ### Workspace Crate Architecture
 
-The Rust implementation is partitioned into two crates ([ADR-030](decisions/ADR-030-two-crate-workspace-topology.md)):
+The Rust implementation is partitioned into an 11-crate modular hub-and-spoke workspace ([ADR-031](decisions/ADR-031-modular-hub-and-spoke-architecture.md)):
 
 | Crate | Layer | Purpose |
 | --- | --- | --- |
-| `repin-core` | L0–L4 | Public library: domain models, port traits, result envelopes, IPC values, filesystem/store/pack adapters, retrieval, indexing, context, optional intelligence, default `Runtime`/`Engine`, conformance harness |
-| `repin` | L4/L5 | Product library & binary: product layouts (`repin::product`), user daemon runtime (`repin::daemon`), CLI adapter (`repin::cli`), and executable (`cargo install repin`) |
-
+| `repin-core` | L0–L3 | Contract hub: pure domain models, port traits, protocol envelopes, line indexing, versions, config, and extractor utilities |
+| `repin-fs` | L0 | Filesystem capability adapter, path containment, safety exclusions, Git VCS integration |
+| `repin-store-sqlite` | L0 | SQLite & FTS5 storage adapter implementing `Store` port |
+| `repin-direct-search` | L2 | Bounded working-tree regex and scanner search over source files |
+| `repin-packs` | L0/L1 | Pluggable language extractors (Rust, TS/JS, Python, Go, C, C++, Java, C#, Markdown/prose) |
+| `repin-indexing` | L1 | Indexing coordinator, invalidation planning, and transactional update orchestration |
+| `repin-retrieval` | L2 | Hybrid lexical/vector search, graph traversal, degree centrality, and deterministic ranking |
+| `repin-context` | L2 | Evidence validation, token-budget packing, and snippet formatting |
+| `repin-intelligence` | L0/L2 | Model providers (embedded ONNX, agent shell callback, remote REST APIs) |
+| `repin-runtime` | L4 | Composition root assembling spokes into `Runtime` facade (`Engine` compatibility alias) |
+| `repin` | L4/L5 | Product library & binary: product layouts (`repin::product`), user daemon runtime (`repin::daemon`), CLI adapter (`repin::cli`), and executable |
 ## 5. Persistence and search architecture
 
 ### SQLite + FTS5 unified transaction domain

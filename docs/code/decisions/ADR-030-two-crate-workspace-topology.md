@@ -1,7 +1,7 @@
 # ADR-030: Two-crate workspace topology
 
 ```text
-Status: accepted architecture and library API decision
+Status: superseded by ADR-031 (see ADR-031 for modular hub-and-spoke topology)
 Date: 2026-08-22
 Decision type: workspace crate consolidation, packaging, and binary integration
 Builds on: ADR-015, ADR-024, ADR-026, ADR-028, ADR-029

@@ -259,8 +259,7 @@ The crate extraction adds gates without weakening the existing product suites:
 - Intelligence tests use deterministic fake models, malformed responses,
   deadline timeouts, unavailable providers, and the recorded provider smoke
   commands. No credentials or network access are required by default.
-- Cargo metadata must list exactly `repin-core` and `repin`. `repin-core`
-  MUST NOT depend on `repin`.
+- Cargo metadata must list the 11 modular hub-and-spoke workspace members. Spoke crates (`repin-fs`, `repin-store-sqlite`, `repin-direct-search`, `repin-packs`, `repin-indexing`, `repin-retrieval`, `repin-context`, `repin-intelligence`) MUST depend strictly on `repin-core` and MUST NOT depend on sibling functional crates. `repin-core` MUST NOT depend on any spoke or product crate.
 - Existing facade compile fixtures, daemon protocol snapshots, CLI contract
   tests, and serialized envelopes must remain unchanged.
 

@@ -56,15 +56,14 @@ All decisions blocking deterministic implementation are resolved. The implementa
 
 Implementation builds and validates the product according to the finalized plan. The core implementation profile is validated with conformance suites, replay convergence testing, and the CLI frontend. Capability milestones below describe the product capability profile; the reusable-library extraction is governed by the M0–M10 sequence below.
 
-## Stage 5 — Reusable library extraction *(ADR-023 delivered; packaging superseded by ADR-030)*
+## Stage 5 — Reusable library extraction *(ADR-023 delivered; modular hub-and-spoke adopted in ADR-031)*
 
 The extraction preserved the existing product and protocol while making
 indexing, retrieval, context construction, and optional intelligence usable by
 embedded Rust applications. Capability contracts remain those of
 [ADR-023](decisions/ADR-023-reusable-library-crates.md). Workspace packaging
-was collapsed by [ADR-030](decisions/ADR-030-two-crate-workspace-topology.md):
-capability modules live in `repin-core`; the product layout, daemon, CLI, and
-executable are consolidated in `repin`.
+was structured into a modular hub-and-spoke topology by [ADR-031](decisions/ADR-031-modular-hub-and-spoke-architecture.md):
+`repin-core` is the zero-heavy-dependency contract hub, leaf capability adapters are isolated spoke crates, `repin-runtime` serves as the composition root, and product layout, daemon, CLI, and executable are consolidated in `repin`.
 
 | Milestone | Deliverable | Exit evidence |
 | --- | --- | --- |
@@ -81,8 +80,9 @@ executable are consolidated in `repin`.
 | M10 | publication readiness | workspace, conformance, docs, feature, and benchmark gates |
 | M11 | [ADR-029](decisions/ADR-029-consolidated-crate-topology.md) five-crate workspace | `cargo metadata` lists only the five members; `cargo test --workspace` |
 | M12 | [ADR-030](decisions/ADR-030-two-crate-workspace-topology.md) two-crate workspace | `cargo metadata` lists only `repin-core` and `repin`; `cargo test --workspace` |
+| M13 | [ADR-031](decisions/ADR-031-modular-hub-and-spoke-architecture.md) 11-crate hub-and-spoke | `cargo metadata` lists the 11 workspace members; `cargo test --workspace` |
 
-The public library is `repin-core`. The default build remains offline and
+The public contract hub is `repin-core`, and the default composition root is `repin-runtime`. The default build remains offline and
 deterministic. The extraction acceptance budget is at most 5% median and p95
 regression after variance analysis, with zero added in-process serialization,
 store round trips, or source reads.
