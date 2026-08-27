@@ -12,6 +12,8 @@ pub mod py_pack;
 pub mod go_pack;
 #[cfg(feature = "c")]
 pub mod c_pack;
+#[cfg(feature = "cpp")]
+pub mod cpp_pack;
 
 #[cfg(feature = "prose")]
 pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
@@ -25,6 +27,8 @@ pub use py_pack::{PY_PACK_VERSION, PyLanguagePack};
 pub use go_pack::{GO_PACK_VERSION, GoLanguagePack};
 #[cfg(feature = "c")]
 pub use c_pack::{C_PACK_VERSION, CLanguagePack};
+#[cfg(feature = "cpp")]
+pub use cpp_pack::{CPP_PACK_VERSION, CppLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 
@@ -43,6 +47,8 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
     packs.push(Box::new(GoLanguagePack::new()));
     #[cfg(feature = "c")]
     packs.push(Box::new(CLanguagePack::new()));
+    #[cfg(feature = "cpp")]
+    packs.push(Box::new(CppLanguagePack::new()));
     packs
 }
 
@@ -173,5 +179,62 @@ mod tests {
             .map(|u| u.seeking.as_str())
             .collect();
         assert!(calls.contains(&"printf"));
+    }
+    #[cfg(feature = "cpp")]
+    #[test]
+    fn test_cpp_pack_extraction() {
+        let cpp_code = r#"
+        #include <iostream>
+        #include "base.hpp"
+
+        using namespace std;
+
+        namespace core::graphics {
+
+        class Shape : public BaseObject {
+        public:
+            Shape() {}
+            virtual ~Shape() {}
+            virtual double area() const = 0;
+        private:
+            int id;
+        };
+
+        }
+        "#;
+
+        let snapshot = FileSnapshot {
+            root: "root".to_string(),
+            path: "src/shape.cpp".to_string(),
+            content: cpp_code.as_bytes().to_vec(),
+            artifact_class: ArtifactClass::Code,
+            content_hash: ContentHash::of_bytes(cpp_code.as_bytes()),
+        };
+
+        let pack = CppLanguagePack::new();
+        assert!(pack.can_handle("src/shape.cpp", cpp_code.as_bytes()));
+        let facts = pack.extract(&snapshot).unwrap();
+
+        let node_names: Vec<(&str, NodeKind)> = facts
+            .nodes
+            .iter()
+            .map(|n| (n.node.name.as_str(), n.node.kind))
+            .collect();
+
+        assert!(node_names.contains(&("src/shape.cpp", NodeKind::File)));
+        assert!(node_names.contains(&("core::graphics", NodeKind::Namespace)));
+        assert!(node_names.contains(&("Shape", NodeKind::Class)));
+        assert!(node_names.contains(&("Shape", NodeKind::Constructor)));
+        assert!(node_names.contains(&("~Shape", NodeKind::Method)));
+        assert!(node_names.contains(&("area", NodeKind::Method)));
+        assert!(node_names.contains(&("id", NodeKind::Field)));
+
+        let extends: Vec<&str> = facts
+            .unresolved
+            .iter()
+            .filter(|u| u.edge_kind == EdgeKind::Extends)
+            .map(|u| u.seeking.as_str())
+            .collect();
+        assert!(extends.contains(&"BaseObject"));
     }
 }

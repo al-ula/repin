@@ -1,6 +1,6 @@
 use repin_core::hash::ContentHash;
 use repin_core::model::registries::{ArtifactClass, NodeKind};
-use repin_packs::{CLanguagePack, GoLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
+use repin_packs::{CLanguagePack, CppLanguagePack, GoLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 
@@ -652,4 +652,144 @@ int manhattan_distance(struct Point p1, struct Point p2) {
         .collect();
     assert!(seeking_calls.contains(&"abs"));
     assert!(seeking_calls.contains(&"printf"));
+}
+
+#[test]
+fn test_cpp_comprehensive_extraction() {
+    let source = br#"
+#include <iostream>
+#include <vector>
+#include "engine/base.hpp"
+
+using namespace std;
+using Engine::BaseNode;
+
+namespace engine::rendering {
+
+/// Rendering engine interface
+class IRenderer {
+public:
+    virtual ~IRenderer() = default;
+    virtual void render() = 0;
+};
+
+/// Vulkan renderer implementation
+template <typename DeviceTraits>
+class VulkanRenderer : public IRenderer, public BaseNode {
+public:
+    VulkanRenderer(int device_id) : device_id_(device_id) {}
+    ~VulkanRenderer() override {}
+
+    void render() override {
+        setup_pipeline();
+        cout << "rendering frame" << endl;
+    }
+
+private:
+    void setup_pipeline() {}
+    int device_id_;
+};
+
+struct RenderConfig {
+    bool enable_vsync;
+    int width;
+    int height;
+};
+
+enum class PipelineState {
+    Ready,
+    Executing,
+    Failed
+};
+
+using RendererPtr = VulkanRenderer<void>*;
+
+} // namespace engine::rendering
+"#;
+
+    let snapshot = FileSnapshot {
+        root: "root".to_string(),
+        path: "src/renderer.cpp".to_string(),
+        content: source.to_vec(),
+        content_hash: ContentHash::of_bytes(source),
+        artifact_class: ArtifactClass::Code,
+    };
+
+    let pack = CppLanguagePack::new();
+    assert!(pack.can_handle("src/renderer.cpp", &[]));
+    assert!(pack.can_handle("include/renderer.hpp", &[]));
+    assert!(pack.can_handle("include/renderer.hh", &[]));
+    assert!(pack.can_handle("include/renderer.h", b"namespace engine { class Foo {}; }"));
+    assert!(!pack.can_handle("src/renderer.rs", &[]));
+
+    let facts = pack.extract(&snapshot).unwrap();
+
+    let node_names: Vec<(&str, NodeKind)> = facts
+        .nodes
+        .iter()
+        .map(|n| (n.node.name.as_str(), n.node.kind))
+        .collect();
+
+    assert!(node_names.contains(&("src/renderer.cpp", NodeKind::File)));
+    assert!(node_names.contains(&("engine::rendering", NodeKind::Namespace)));
+    assert!(node_names.contains(&("IRenderer", NodeKind::Class)));
+    assert!(node_names.contains(&("~IRenderer", NodeKind::Method)));
+    assert!(node_names.contains(&("render", NodeKind::Method)));
+    assert!(node_names.contains(&("VulkanRenderer", NodeKind::Class)));
+    assert!(node_names.contains(&("VulkanRenderer", NodeKind::Constructor)));
+    assert!(node_names.contains(&("~VulkanRenderer", NodeKind::Method)));
+    assert!(node_names.contains(&("setup_pipeline", NodeKind::Method)));
+    assert!(node_names.contains(&("device_id_", NodeKind::Field)));
+    assert!(node_names.contains(&("RenderConfig", NodeKind::Struct)));
+    assert!(node_names.contains(&("enable_vsync", NodeKind::Field)));
+    assert!(node_names.contains(&("width", NodeKind::Field)));
+    assert!(node_names.contains(&("height", NodeKind::Field)));
+    assert!(node_names.contains(&("PipelineState", NodeKind::Enum)));
+    assert!(node_names.contains(&("Ready", NodeKind::Constant)));
+    assert!(node_names.contains(&("Executing", NodeKind::Constant)));
+    assert!(node_names.contains(&("Failed", NodeKind::Constant)));
+    assert!(node_names.contains(&("RendererPtr", NodeKind::Type)));
+
+    // Check doc summary
+    let renderer_node = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "IRenderer")
+        .unwrap();
+    assert_eq!(
+        renderer_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        "Rendering engine interface"
+    );
+
+    // Check extends inheritance
+    let seeking_extends: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Extends)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_extends.contains(&"IRenderer"));
+    assert!(seeking_extends.contains(&"BaseNode"));
+
+    // Check imports (includes and using)
+    let seeking_imports: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Imports)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_imports.contains(&"iostream"));
+    assert!(seeking_imports.contains(&"vector"));
+    assert!(seeking_imports.contains(&"base"));
+    assert!(seeking_imports.contains(&"std"));
+    assert!(seeking_imports.contains(&"BaseNode"));
+
+    // Check calls
+    let seeking_calls: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .filter(|u| u.edge_kind == repin_core::model::registries::EdgeKind::Calls)
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking_calls.contains(&"setup_pipeline"));
 }

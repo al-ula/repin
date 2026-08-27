@@ -63,6 +63,7 @@ Detection is deterministic and cheap. Ambiguity resolves by rule specificity, th
 - **`py_pack`**: Extracts Python source and stubs (`.py`, `.pyi`, `.pyw`) into `class`, `function`, `method`, `variable`, docstring summaries, and `import` / `from ... import` dependencies.
 - **`go_pack`**: Extracts Go source (`.go`) into `package`, `struct`, `interface`, `type`, `function`, `method`, `constant`, `variable`, doc summaries, and module import dependencies.
 - **`c_pack`**: Extracts C source and headers (`.c`, `.h`) into `struct`, `enum`, `type`, `function`, `constant`, `variable`, `field`, doc summaries, `#include` imports, and call dependencies.
+- **`cpp_pack`**: Extracts C++ source and headers (`.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`) into `namespace`, `class`, `struct`, `enum`, `type`, `function`, `method`, `constructor`, `field`, doc summaries, inheritance, `#include` / `using` imports, and call dependencies.
 - **`prose_pack`**: Extracts Markdown (`.md`, `.markdown`) into document, section, and heading structural hierarchy.
 
 ## 3. Extractor contract
