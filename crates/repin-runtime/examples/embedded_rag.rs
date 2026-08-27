@@ -111,7 +111,7 @@ fn run_rag<E: EmbeddingModel, I: CallerInference>(
     let all_nodes = view.nodes_by_name("build", &Default::default()).map_err(|e| e.to_string())?;
     for node in &all_nodes {
         let node_vec = embedder
-            .embed(&[node.name.clone()])
+            .embed(std::slice::from_ref(&node.name))
             .map_err(|e| e.to_string())?[0]
             .clone();
         vector_index.insert(node.id, node_vec);

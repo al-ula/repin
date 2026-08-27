@@ -6,6 +6,8 @@ pub mod prose_pack;
 pub mod rust_pack;
 #[cfg(feature = "typescript")]
 pub mod ts_pack;
+#[cfg(feature = "python")]
+pub mod py_pack;
 
 #[cfg(feature = "prose")]
 pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
@@ -13,6 +15,8 @@ pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
 pub use rust_pack::{RUST_PACK_VERSION, RustLanguagePack};
 #[cfg(feature = "typescript")]
 pub use ts_pack::{TS_PACK_VERSION, TsLanguagePack};
+#[cfg(feature = "python")]
+pub use py_pack::{PY_PACK_VERSION, PyLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 
@@ -23,6 +27,8 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
     packs.push(Box::new(RustLanguagePack::new()));
     #[cfg(feature = "typescript")]
     packs.push(Box::new(TsLanguagePack::new()));
+    #[cfg(feature = "python")]
+    packs.push(Box::new(PyLanguagePack::new()));
     #[cfg(feature = "prose")]
     packs.push(Box::new(ProseLanguagePack::new()));
     packs
@@ -54,5 +60,25 @@ mod tests {
         assert_eq!(facts.nodes.len(), 2); // File + Function
         assert_eq!(facts.edges.len(), 1); // File -> Function contains
         assert_eq!(facts.unresolved.len(), 1); // use std::io -> seeking io
+    }
+    #[cfg(feature = "python")]
+    #[test]
+    fn test_py_pack_extraction() {
+        let code = b"import os\n\ndef hello():\n    \"\"\"Docstring.\"\"\"\n    pass\n";
+        let snapshot = FileSnapshot {
+            root: "root".to_string(),
+            path: "src/main.py".to_string(),
+            content: code.to_vec(),
+            content_hash: ContentHash::of_bytes(code),
+            artifact_class: ArtifactClass::Code,
+        };
+
+        let pack = PyLanguagePack::new();
+        assert!(pack.can_handle("src/main.py", code));
+
+        let facts = pack.extract(&snapshot).unwrap();
+        assert_eq!(facts.nodes.len(), 2); // File + Function
+        assert_eq!(facts.edges.len(), 1); // File -> Function contains
+        assert_eq!(facts.unresolved.len(), 1); // import os -> seeking os
     }
 }

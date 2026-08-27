@@ -8,17 +8,18 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-default = ["rust", "typescript", "prose"]
+default = ["rust", "typescript", "python", "prose"]
 rust = ["dep:tree-sitter-rust"]
 typescript = ["dep:tree-sitter-typescript"]
+python = ["dep:tree-sitter-python"]
 prose = ["dep:tree-sitter-md"]
-
 [dependencies]
 repin-core = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-rust = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-md = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

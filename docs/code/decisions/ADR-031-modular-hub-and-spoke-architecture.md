@@ -68,7 +68,7 @@ The workspace is organized into a hub-and-spoke topology:
 | `repin-fs` | Filesystem capability, path containment, safety exclusions, Git VCS | `repin-core`, `cap-std`, `ignore`, `globset`, `tempfile` | Sibling spoke crates |
 | `repin-store-sqlite` | SQLite/FTS5 storage adapter implementing `repin_core::ports::store::Store` | `repin-core`, `rusqlite` | Sibling spoke crates |
 | `repin-direct-search` | Bounded working-tree regex/scanner search | `repin-core`, `regex`, `ignore` | Sibling spoke crates |
-| `repin-packs` | Pluggable language packs implementing `repin_core::ports::pack::LanguagePack` | `repin-core`, `tree-sitter`, `tree-sitter-rust`, `tree-sitter-typescript`, `tree-sitter-md`, `pulldown-cmark` | Sibling spoke crates |
+| `repin-packs` | Pluggable language packs implementing `repin_core::ports::pack::LanguagePack` | `repin-core`, `tree-sitter`, `tree-sitter-rust`, `tree-sitter-typescript`, `tree-sitter-python`, `tree-sitter-md`, `pulldown-cmark` | Sibling spoke crates |
 | `repin-indexing` | Indexing coordinator, invalidation, blast radius | `repin-core`, `rayon`, `crossbeam-channel` | Sibling spoke crates (e.g. no `rusqlite`, no `tree-sitter`) |
 | `repin-retrieval` | Hybrid lexical/vector search, graph traversal, degree centrality, ranking | `repin-core` | Sibling spoke crates |
 | `repin-context` | Evidence validation, token-budget packing, snippet formatting | `repin-core` | Sibling spoke crates |
@@ -80,7 +80,7 @@ The workspace is organized into a hub-and-spoke topology:
 
 1. **Spoke Isolation**: Functional spoke crates (`repin-fs`, `repin-store-sqlite`, `repin-direct-search`, `repin-packs`, `repin-indexing`, `repin-retrieval`, `repin-context`, `repin-intelligence`) MUST depend strictly on `repin-core` and MUST NOT depend on one another.
 2. **Trait-Driven Indexing & Retrieval**: `repin-indexing` and `repin-retrieval` operate solely against `repin_core::ports::Store`, `repin_core::ports::ReadView`, `repin_core::ports::LanguagePack`, and `repin_core::ports::SourceFs`. They have zero compile-time knowledge of SQLite, FTS5, or Tree-sitter.
-3. **Pluggable Language Packs**: `repin-packs` feature-gates language extractors (`rust`, `typescript`, `prose`). Downstream consumers can write custom language extractors in their own crates by implementing `repin_core::ports::pack::LanguagePack` without modifying `repin-packs` or `repin-core`.
+3. **Pluggable Language Packs**: `repin-packs` feature-gates language extractors (`rust`, `typescript`, `python`, `prose`). Downstream consumers can write custom language extractors in their own crates by implementing `repin_core::ports::pack::LanguagePack` without modifying `repin-packs` or `repin-core`.
 4. **Single Composition Root**: `repin-runtime` is the sole crate that instantiates concrete store adapters, registers default language packs, and wires indexing and retrieval into a unified facade.
 
 ### 2.3 Compatibility Authorities
