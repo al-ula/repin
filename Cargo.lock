@@ -996,7 +996,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "repin"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -1018,7 +1018,7 @@ dependencies = [
 
 [[package]]
 name = "repin-context"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "repin-core",
  "repin-store-sqlite",
@@ -1030,7 +1030,7 @@ dependencies = [
 
 [[package]]
 name = "repin-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "blake3",
  "hex",
@@ -1044,7 +1044,7 @@ dependencies = [
 
 [[package]]
 name = "repin-direct-search"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "ignore",
  "regex",
@@ -1054,7 +1054,7 @@ dependencies = [
 
 [[package]]
 name = "repin-fs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cap-std",
  "globset",
@@ -1066,7 +1066,7 @@ dependencies = [
 
 [[package]]
 name = "repin-indexing"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "crossbeam-channel",
  "rayon",
@@ -1081,7 +1081,7 @@ dependencies = [
 
 [[package]]
 name = "repin-intelligence"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "blake3",
  "repin-core",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "repin-packs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "repin-core",
  "serde",
@@ -1114,7 +1114,7 @@ dependencies = [
 
 [[package]]
 name = "repin-retrieval"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "blake3",
  "hex",
@@ -1129,7 +1129,7 @@ dependencies = [
 
 [[package]]
 name = "repin-runtime"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "repin-context",
  "repin-core",
@@ -1148,7 +1148,7 @@ dependencies = [
 
 [[package]]
 name = "repin-store-sqlite"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "repin-core",
  "rusqlite",

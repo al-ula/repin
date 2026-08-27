@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-27
+
+### Added
+
+- **Expanded Multi-Language AST Extraction Packs**:
+  - Python (`.py`, `.pyi`, `.pyw`): class, function, method, variable, docstring, and module import extraction (`py_pack`).
+  - Go (`.go`): package, struct, interface, type, function, method, constant, variable, doc summary, import, and intra-package call / type reference extraction (`go_pack`).
+  - C (`.c`, `.h`): struct, enum, typedef, function, constant, variable, field, doc summary, `#include` import, and call extraction (`c_pack`).
+  - C++ (`.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`): namespace, class, struct, enum, type, function, method, constructor, field, doc summary, inheritance (`extends`), `#include`/`using` import, and call extraction (`cpp_pack`).
+  - Java (`.java`): package, class, interface, enum, record, constructor, method, constant, field, doc summary, inheritance (`extends`/`implements`), `import`, and call / instantiation extraction (`java_pack`).
+  - C# (`.cs`): namespace, class, interface, struct, enum, delegate, constructor, method, property, constant, field, XML doc summary, inheritance (`extends`/`implements`), `using` import, and call / instantiation extraction (`csharp_pack`).
+- **Architecture Decision Records**:
+  - Accepted ADR-031 defining the modular hub-and-spoke workspace architecture.
+
+### Changed
+
+- **Modular Hub-and-Spoke Workspace Topology (ADR-031)**:
+  - Decomposed workspace into 11 specialized crates: zero-heavy-dependency contract hub (`repin-core`), 8 isolated leaf capability spokes (`repin-fs`, `repin-store-sqlite`, `repin-direct-search`, `repin-packs`, `repin-indexing`, `repin-retrieval`, `repin-context`, `repin-intelligence`), composition root (`repin-runtime`), and CLI/daemon binary (`repin`).
+  - Decoupled Tree-sitter and SQLite dependencies from core contracts, allowing lightweight downstream embedding.
+- **Documentation Alignment**:
+  - Synchronized normative architecture book (`docs/code`), user guide (`docs/usage`), and README with ADR-031 topology, full 9-language extraction matrix, and updated example crate targets.
+
 ## [0.1.1] - 2026-08-26
 
 ### Added
@@ -68,5 +90,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documentation web landing portal (`docs/index.html`).
   - Conformance test harness, deterministic replay convergence tests, and cross-engine benchmark suite.
 
+[0.1.2]: https://github.com/al-ula/repin/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/al-ula/repin/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/al-ula/repin/releases/tag/v0.1.0
