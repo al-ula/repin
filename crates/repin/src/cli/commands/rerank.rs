@@ -1,6 +1,6 @@
 use crate::cli::client::DaemonClient;
 use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
-use repin_core::runtime::ranking::RankedCandidate;
+use repin_runtime::ranking::RankedCandidate;
 
 pub fn execute_rerank(
     client: &mut DaemonClient,

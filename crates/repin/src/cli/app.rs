@@ -24,8 +24,8 @@ use crate::cli::discovery::{discover_project_from, load_effective_config};
 use crate::product::ProjectLayout;
 use clap::{Parser, Subcommand};
 use repin_core::protocol::{PROTOCOL_MAX, PROTOCOL_MIN, ipc::RebuildTarget};
-use repin_core::store::SqliteStore;
-use repin_core::store::{STORE_FORMAT_ID, STORE_SCHEMA_VERSION};
+use repin_store_sqlite::SqliteStore;
+use repin_store_sqlite::{STORE_FORMAT_ID, STORE_SCHEMA_VERSION};
 use repin_core::versions::{
     ATTRIBUTE_REGISTRY_VERSION, CLASSIFICATION_VERSION, KIND_REGISTRY_VERSION, RESOLUTION_VERSION,
 };

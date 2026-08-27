@@ -1,6 +1,6 @@
 use crossbeam_channel::Sender;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
-use repin_core::runtime::Engine;
+use repin_runtime::Engine;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;

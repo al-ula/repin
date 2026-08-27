@@ -547,7 +547,7 @@ impl DaemonServer {
                 include_verbatim_source,
             } => {
                 let budget = budget_bytes
-                    .unwrap_or(repin_core::runtime::ContextBuilder::DEFAULT_BYTE_BUDGET);
+                    .unwrap_or(repin_runtime::ContextBuilder::DEFAULT_BYTE_BUDGET);
                 let context_override = if padding_lines.is_some()
                     || include_blast_radius.is_some()
                     || include_verbatim_source.is_some()
@@ -571,7 +571,7 @@ impl DaemonServer {
                 budget_bytes,
             } => {
                 let budget = budget_bytes
-                    .unwrap_or(repin_core::runtime::ContextBuilder::DEFAULT_BYTE_BUDGET);
+                    .unwrap_or(repin_runtime::ContextBuilder::DEFAULT_BYTE_BUDGET);
                 let env = engine.review_context(changed_since, budget);
                 let val = serde_json::to_value(&env).unwrap_or_default();
                 let deserialized = serde_json::from_value(val).unwrap();

@@ -2,7 +2,7 @@ use crate::daemon::lease::FileLease;
 use crate::daemon::watcher::ProjectWatcher;
 use crate::product::ProjectLayout;
 use repin_core::config::RepinConfig;
-use repin_core::runtime::{Engine, EngineOptions};
+use repin_runtime::{Engine, EngineOptions};
 use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};

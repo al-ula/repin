@@ -1,19 +1,10 @@
 pub mod config;
-pub mod conformance;
-pub mod context;
-pub mod direct_search;
-pub mod fs;
+pub mod extractor_util;
 pub mod hash;
-pub mod indexing;
-pub mod intelligence;
 pub mod line_index;
 pub mod model;
-pub mod packs;
 pub mod ports;
 pub mod protocol;
-pub mod retrieval;
-pub mod runtime;
-pub mod store;
 pub mod versions;
 
 pub use config::{
@@ -21,19 +12,27 @@ pub use config::{
     Merge, PartialRepinConfig, ProjectConfig, RepinConfig, RetrievalConfig, StorageConfig,
 };
 
+pub use extractor_util::{DiscriminatorTracker, FactBuilder};
 pub use hash::{ContentHash, HashAlgorithm};
 pub use line_index::{ByteSpan, LineIndex, LineIndexError, Position, Range};
 pub use model::{
-    ArtifactClass, Attributes, Confidence, Derivation, Edge, EdgeClaim, EdgeId, FactClaimKey,
-    FactOwner, Node, NodeClaim, NodeId, Provenance, Revision, UnresolvedKey, UnresolvedRef,
+    ArtifactClass, Attributes, Confidence, Derivation, Edge, EdgeClaim, EdgeId, EdgeKind,
+    FactClaimKey, FactOwner, Node, NodeClaim, NodeId, NodeKind, Provenance, Revision,
+    UnresolvedKey, UnresolvedRef,
 };
 pub use ports::{
-    ChangeOrigin, DerivedIndexIntent, DerivedIndexState, Diagnostic, EdgeFilters, ExtractedFacts,
-    ExtractionError, FileChange, FileSnapshot, IndexKind, LanguagePack, NodeClassificationUpdate,
-    NodeFilters, ReadView, Skip, SourceError, SourceFs, Store, StoreCapabilities, StoreError,
-    Transaction, UpdateSummary, Vcs, VcsChangeSet, VcsError, VersionRecords,
+    BranchInfo, ChangeOrigin, DerivedIndexIntent, DerivedIndexState, Diagnostic, EdgeFilters,
+    EmbeddingModel, ExtractedFacts, ExtractionError, FileChange, FileSnapshot, GenerateRequest,
+    GenerateResponse, IndexKind, LanguagePack, ModelError, ModelIdentity, ModelLocation,
+    NodeClassificationUpdate, NodeFilters, ReadView, RerankCandidate, RerankHit, Reranker, Skip,
+    SourceError, SourceFs, Store, StoreCapabilities, StoreError, TextModel, Transaction,
+    UpdateSummary, Vcs, VcsChangeSet, VcsError, VersionRecords,
 };
-
-// Re-exports for convenience
-pub use context::{AssembledContext, ContextBuilder, ContextSnippet};
-pub use runtime::{Engine, EngineOptions, Runtime, RuntimeOptions};
+pub use protocol::{
+    BOOTSTRAP_DEADLINE_MS, BOOTSTRAP_VERSION, BootstrapHandshake, BootstrapHandshakeOk,
+    BootstrapRejected, CoverageState, ErrorCode, Evidence, Freshness, GraphState, IpcMessage,
+    IpcRequest, IpcResponse, IpcResponseEnvelope, LexicalState, MAX_BOOTSTRAP_FRAME_BYTES,
+    MAX_FRAME_BYTES, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE, ProviderId, ProviderInfo,
+    ProviderKind, ProviderLocation, ResultEnvelope, ResultProvenance, SourceKind, Status,
+    Truncation, TruncationReason, Warning, replacement_allowed, select_protocol,
+};

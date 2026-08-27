@@ -1,6 +1,6 @@
 use crate::product::default_user_layout;
 use anyhow::{Context, Result};
-use repin_core::runtime::intelligence::{ensure_hf_model_assets, list_cached_models};
+use repin_runtime::intelligence::{ensure_hf_model_assets, list_cached_models};
 use std::fs;
 use std::path::PathBuf;
 
@@ -50,7 +50,7 @@ pub fn execute_model_list() -> Result<()> {
 pub fn execute_model_remove(model_id: &str) -> Result<()> {
     let root = model_root()?;
     let cache_dir =
-        repin_core::runtime::intelligence::embedded::get_model_cache_dir(&root, model_id)
+        repin_runtime::intelligence::embedded::get_model_cache_dir(&root, model_id)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     if !cache_dir.exists() {

@@ -1,0 +1,23 @@
+[package]
+name = "repin-intelligence"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[features]
+default = ["agent", "embedded", "remote"]
+agent = []
+embedded = ["dep:ureq"]
+remote = ["dep:ureq"]
+
+[dependencies]
+repin-core = { workspace = true }
+blake3 = { workspace = true }
+ureq = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

@@ -65,6 +65,7 @@
   - [ADR-028 — Centralized product layout](decisions/ADR-028-centralized-path-layout.md)
   - [ADR-029 — Consolidated crate topology](decisions/ADR-029-consolidated-crate-topology.md)
   - [ADR-030 — Two-crate workspace topology](decisions/ADR-030-two-crate-workspace-topology.md)
+  - [ADR-031 — Modular hub-and-spoke architecture](decisions/ADR-031-modular-hub-and-spoke-architecture.md)
 
 ## Subsystem Specifications
 

@@ -1,7 +1,7 @@
 use crate::cli::client::DaemonClient;
 use repin_core::protocol::evidence::Evidence;
 use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
-use repin_core::runtime::ranking::RankedCandidate;
+use repin_runtime::ranking::RankedCandidate;
 
 pub fn execute_search(
     client: &mut DaemonClient,

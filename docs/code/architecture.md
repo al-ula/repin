@@ -71,21 +71,23 @@ Rule 5 is the one most easily violated in practice. The test is mechanical: if r
 
 ### Library crate topology
 
-Reusable capabilities live as modules of one public crate. The module
-boundary follows the capability boundary; it does not change the layer
-rules above. Workspace packaging is two crates ([ADR-030](decisions/ADR-030-two-crate-workspace-topology.md)):
+Capabilities are organized in a modular hub-and-spoke architecture ([ADR-031](decisions/ADR-031-modular-hub-and-spoke-architecture.md)):
 
 ```text
-repin-core     public library (ports, adapters, algorithms, Runtime/Engine)
-repin          product library and executable (product layout, daemon, CLI)
+repin-core             contract hub (domain, ports, protocol, line index, versions)
+repin-fs               filesystem containment and Git VCS adapter
+repin-store-sqlite     SQLite & FTS5 store adapter
+repin-direct-search    bounded working-tree search
+repin-packs            pluggable language packs (rust, typescript, prose)
+repin-indexing         indexing coordinator and invalidation
+repin-retrieval        hybrid search, traversal, and ranking
+repin-context          context packing and token budgeting
+repin-intelligence     AI model providers
+repin-runtime          composition root (Runtime / Engine facade)
+repin                  product library and executable (product layout, daemon, CLI)
 ```
 
-`repin-core::runtime` is the only default composition root. It selects
-concrete adapters and normalizes high-level results. `Engine` is a public
-alias of `Runtime`. Capability modules remain usable without the Repin
-product binary or daemon. `repin-core` MUST NOT depend on `repin`. Capability
-contracts remain those of [ADR-023](decisions/ADR-023-reusable-library-crates.md);
-product crates are consolidated into `repin` by ADR-030.
+`repin-runtime` is the default composition root assembling the functional spokes into the `Runtime` facade (`Engine` is a public alias of `Runtime`). Functional leaf crates depend strictly on `repin-core` and never on sibling functional crates. `repin-core` has zero heavy dependencies (no SQLite, no Tree-sitter, no cap-std).
 
 ## 4. Ports
 

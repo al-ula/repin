@@ -1,0 +1,21 @@
+[package]
+name = "repin-indexing"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+repin-core = { workspace = true }
+rayon = { workspace = true }
+crossbeam-channel = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+repin-fs = { workspace = true }
+repin-store-sqlite = { workspace = true }
+repin-packs = { workspace = true }
+tempfile = { workspace = true }

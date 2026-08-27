@@ -1,6 +1,6 @@
 use crate::cli::client::DaemonClient;
 use repin_core::protocol::ipc::{IpcRequest, IpcResponse};
-use repin_core::runtime::eval::EvalReport;
+use repin_runtime::eval::EvalReport;
 
 pub fn execute_eval(client: &mut DaemonClient) -> Result<(), String> {
     println!("Running Precision-at-N Benchmark Evaluation on indexed graph...");

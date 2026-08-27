@@ -3,7 +3,7 @@ use crate::daemon::registry::ContextRegistry;
 pub use crate::product::{GRAPH_DB_FILE, STATE_DIR};
 use repin_core::ports::store::StoreError;
 use repin_core::protocol::errors::ErrorCode;
-use repin_core::store::SqliteStore;
+use repin_store_sqlite::SqliteStore;
 use std::fs;
 use std::path::{Path, PathBuf};
 

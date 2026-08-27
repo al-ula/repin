@@ -4,7 +4,7 @@ How an application embeds Repin. This is L4 in [Architecture](architecture.md).
 
 The design goal is that an adapter is **thin and unprivileged**: it translates vocabulary and renders results, and does nothing that requires reaching past the public API. If an adapter needs internal access to work well, that is a defect in this seam, not in the adapter.
 
-An embedded RAG host may also use `repin-core` directly. In that topology
+An embedded RAG host may also use `repin-runtime` (or individual spokes with `repin-core`) directly. In that topology
 the host owns the process, inference model, conversation state, and
 cancellation source; Repin owns repository safety, indexing/retrieval
 semantics, provenance, and deterministic context packing. The host does not
@@ -12,7 +12,7 @@ need the `repin` product crate or daemon, and provider failures
 remain explicit capability degradation rather than hidden prompt or answer
 behavior. Capability contracts are defined in
 [ADR-023](decisions/ADR-023-reusable-library-crates.md); workspace packaging
-is [ADR-030](decisions/ADR-030-two-crate-workspace-topology.md).
+is [ADR-031](decisions/ADR-031-modular-hub-and-spoke-architecture.md).
 
 ## 1. Adapter responsibilities
 
