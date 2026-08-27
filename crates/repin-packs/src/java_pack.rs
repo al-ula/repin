@@ -104,7 +104,13 @@ impl JavaLanguagePack {
                 );
             }
             "import_declaration" => {
-                Self::process_import_declaration(ts_node, source, builder, current_parent_id, facts);
+                Self::process_import_declaration(
+                    ts_node,
+                    source,
+                    builder,
+                    current_parent_id,
+                    facts,
+                );
             }
             "class_declaration" => {
                 Self::process_class_declaration(
@@ -481,7 +487,8 @@ impl JavaLanguagePack {
         ));
 
         // Extended interfaces
-        let mut extends_node = ts_node.child_by_field_name("extends_interfaces")
+        let mut extends_node = ts_node
+            .child_by_field_name("extends_interfaces")
             .or_else(|| ts_node.child_by_field_name("extends"));
         if extends_node.is_none() {
             let mut c = ts_node.walk();
@@ -1094,14 +1101,8 @@ impl JavaLanguagePack {
                 Some(format!("{}::{}", container_chain.join("::"), name))
             };
 
-            let claim = builder.make_node(
-                kind,
-                &name,
-                qualified,
-                container_chain,
-                &item_node,
-                attrs,
-            );
+            let claim =
+                builder.make_node(kind, &name, qualified, container_chain, &item_node, attrs);
             let id = claim.node.id;
             let range = claim.node.range;
             facts.nodes.push(claim);

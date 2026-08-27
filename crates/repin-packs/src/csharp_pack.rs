@@ -329,7 +329,12 @@ impl CSharpLanguagePack {
             .trim();
 
         let seeking = if let Some((_, right)) = cleaned.split_once('=') {
-            right.trim().rsplit('.').next().unwrap_or(right.trim()).to_string()
+            right
+                .trim()
+                .rsplit('.')
+                .next()
+                .unwrap_or(right.trim())
+                .to_string()
         } else {
             cleaned.rsplit('.').next().unwrap_or(cleaned).to_string()
         };
@@ -858,7 +863,10 @@ impl CSharpLanguagePack {
             }
         }
 
-        if let Some(type_node) = ts_node.child_by_field_name("returns").or_else(|| ts_node.child_by_field_name("type")) {
+        if let Some(type_node) = ts_node
+            .child_by_field_name("returns")
+            .or_else(|| ts_node.child_by_field_name("type"))
+        {
             attrs.insert(
                 "return_type".to_string(),
                 serde_json::json!(node_text(&type_node, source).trim()),
@@ -996,7 +1004,8 @@ impl CSharpLanguagePack {
                             sub.children(&mut sc).find(|c| c.kind() == "identifier")
                         });
                         if let Some(name_node) = name_node {
-                            field_names.push((node_text(&name_node, source).trim().to_string(), sub));
+                            field_names
+                                .push((node_text(&name_node, source).trim().to_string(), sub));
                         }
                     }
                 }
@@ -1038,14 +1047,8 @@ impl CSharpLanguagePack {
                 Some(format!("{}::{}", container_chain.join("::"), name))
             };
 
-            let claim = builder.make_node(
-                kind,
-                &name,
-                qualified,
-                container_chain,
-                &item_node,
-                attrs,
-            );
+            let claim =
+                builder.make_node(kind, &name, qualified, container_chain, &item_node, attrs);
             let id = claim.node.id;
             let range = claim.node.range;
             facts.nodes.push(claim);

@@ -32,7 +32,7 @@ pub use protocol::{
     BOOTSTRAP_DEADLINE_MS, BOOTSTRAP_VERSION, BootstrapHandshake, BootstrapHandshakeOk,
     BootstrapRejected, CoverageState, ErrorCode, Evidence, Freshness, GraphState, IpcMessage,
     IpcRequest, IpcResponse, IpcResponseEnvelope, LexicalState, MAX_BOOTSTRAP_FRAME_BYTES,
-    MAX_FRAME_BYTES, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE, ProviderId, ProviderInfo,
-    ProviderKind, ProviderLocation, ResultEnvelope, ResultProvenance, SourceKind, Status,
-    Truncation, TruncationReason, Warning, replacement_allowed, select_protocol,
+    MAX_FRAME_BYTES, PROTOCOL_MAX, PROTOCOL_MIN, PROTOCOL_STATE_LIFECYCLE, ProviderId,
+    ProviderInfo, ProviderKind, ProviderLocation, ResultEnvelope, ResultProvenance, SourceKind,
+    Status, Truncation, TruncationReason, Warning, replacement_allowed, select_protocol,
 };

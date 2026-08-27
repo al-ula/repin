@@ -1,15 +1,11 @@
 use super::agent::AgentReranker;
 use super::eval::{BenchmarkHarness, EvalReport};
 use super::inspect::{FileOutline, Inspector};
-use repin_core::config::RepinConfig;
 use repin_context::{AssembledContext, ContextBuilder};
-use repin_direct_search::{DirectRegex, DirectScanner};
-use repin_fs::{CapabilityFs, GitVcs};
-use repin_indexing::{IndexingCoordinator, InvalidationCoordinator, InvalidationScope};
+use repin_core::config::RepinConfig;
 use repin_core::line_index::Position;
 use repin_core::model::node::Node;
 use repin_core::model::provenance::Revision;
-use repin_packs::default_packs;
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 use repin_core::ports::store::VersionRecords;
@@ -18,6 +14,10 @@ use repin_core::ports::vcs::Vcs;
 use repin_core::protocol::envelope::{ResultEnvelope, SourceKind};
 use repin_core::protocol::evidence::Evidence;
 use repin_core::protocol::freshness::{CoverageState, Freshness, GraphState, LexicalState};
+use repin_direct_search::{DirectRegex, DirectScanner};
+use repin_fs::{CapabilityFs, GitVcs};
+use repin_indexing::{IndexingCoordinator, InvalidationCoordinator, InvalidationScope};
+use repin_packs::default_packs;
 use repin_retrieval::ranking::{DeterministicRanker, RankReason, RankedCandidate};
 use repin_retrieval::traversal::{GraphTraversal, ImpactData, NeighborsData, PathTraceData};
 use repin_retrieval::{HybridRetriever, LexicalHit, LexicalSource};
@@ -156,11 +156,13 @@ impl Runtime {
             Err(error) => {
                 let mut envelope = ResultEnvelope::not_found(Vec::new());
                 envelope.status = repin_core::protocol::envelope::Status::Invalid;
-                envelope.warnings.push(repin_core::protocol::envelope::Warning {
-                    code: repin_core::protocol::errors::ErrorCode::InvalidQuery,
-                    message: error.to_string(),
-                    detail: None,
-                });
+                envelope
+                    .warnings
+                    .push(repin_core::protocol::envelope::Warning {
+                        code: repin_core::protocol::errors::ErrorCode::InvalidQuery,
+                        message: error.to_string(),
+                        detail: None,
+                    });
                 return envelope;
             }
         };
@@ -409,11 +411,13 @@ impl Runtime {
             Err(error) => {
                 let mut envelope = ResultEnvelope::ok(ranked);
                 envelope.provenance.sources.push(SourceKind::Graph);
-                envelope.warnings.push(repin_core::protocol::envelope::Warning {
-                    code: repin_core::protocol::errors::ErrorCode::CapabilityUnavailable,
-                    message: format!("Agent reranker callback failed: {error}"),
-                    detail: None,
-                });
+                envelope
+                    .warnings
+                    .push(repin_core::protocol::envelope::Warning {
+                        code: repin_core::protocol::errors::ErrorCode::CapabilityUnavailable,
+                        message: format!("Agent reranker callback failed: {error}"),
+                        detail: None,
+                    });
                 return envelope;
             }
         };
@@ -481,11 +485,13 @@ impl Runtime {
             Err(error) => {
                 let mut envelope = ResultEnvelope::ok(ranked);
                 envelope.provenance.sources.push(SourceKind::Graph);
-                envelope.warnings.push(repin_core::protocol::envelope::Warning {
-                    code: repin_core::protocol::errors::ErrorCode::CapabilityUnavailable,
-                    message: format!("Model reranker failed: {error}"),
-                    detail: None,
-                });
+                envelope
+                    .warnings
+                    .push(repin_core::protocol::envelope::Warning {
+                        code: repin_core::protocol::errors::ErrorCode::CapabilityUnavailable,
+                        message: format!("Model reranker failed: {error}"),
+                        detail: None,
+                    });
                 return envelope;
             }
         };
@@ -804,7 +810,10 @@ impl Runtime {
     /// Execute the public recovery target. Graph/all use the idempotent,
     /// version-aware source coordinator; derived-index targets remain
     /// explicit until their concrete adapters are available.
-    pub fn rebuild(&self, target: repin_core::protocol::ipc::RebuildTarget) -> Result<usize, String> {
+    pub fn rebuild(
+        &self,
+        target: repin_core::protocol::ipc::RebuildTarget,
+    ) -> Result<usize, String> {
         match target {
             repin_core::protocol::ipc::RebuildTarget::Graph
             | repin_core::protocol::ipc::RebuildTarget::All => {
@@ -884,11 +893,13 @@ fn unavailable_graph(error: Option<&StoreError>) -> ResultEnvelope<Vec<RankedCan
     let message = error
         .map(ToString::to_string)
         .unwrap_or_else(|| "graph store not configured or available".to_string());
-    envelope.warnings.push(repin_core::protocol::envelope::Warning {
-        code,
-        message,
-        detail: None,
-    });
+    envelope
+        .warnings
+        .push(repin_core::protocol::envelope::Warning {
+            code,
+            message,
+            detail: None,
+        });
     envelope
 }
 

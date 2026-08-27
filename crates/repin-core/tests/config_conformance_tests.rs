@@ -39,10 +39,7 @@ fn test_conformance_partial_toml_merging() {
         .expect("merge should succeed");
 
     assert_eq!(config.indexing.exclude_paths, vec!["build/**", "dist/**"]);
-    assert_eq!(
-        config.indexing.exclude_extensions,
-        vec!["min.js", "snap"]
-    );
+    assert_eq!(config.indexing.exclude_extensions, vec!["min.js", "snap"]);
     assert_eq!(config.indexing.max_file_size_bytes, 1048576);
     assert_eq!(config.retrieval.default_limit, 25);
     assert_eq!(config.retrieval.centrality_boost, 0.25);

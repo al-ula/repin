@@ -41,9 +41,9 @@ impl LanguagePack for CLanguagePack {
             .set_language(&language)
             .map_err(|e| ExtractionError::ParseFailure(e.to_string()))?;
 
-        let tree = parser.parse(&snapshot.content, None).ok_or_else(|| {
-            ExtractionError::ParseFailure("failed to parse c source".to_string())
-        })?;
+        let tree = parser
+            .parse(&snapshot.content, None)
+            .ok_or_else(|| ExtractionError::ParseFailure("failed to parse c source".to_string()))?;
 
         let line_index = LineIndex::build(&snapshot.content);
         let mut builder = FactBuilder::new(
@@ -97,10 +97,24 @@ impl CLanguagePack {
                 Self::process_include(ts_node, source, builder, current_parent_id, facts);
             }
             "preproc_def" => {
-                Self::process_preproc_def(ts_node, source, builder, container_chain, current_parent_id, facts);
+                Self::process_preproc_def(
+                    ts_node,
+                    source,
+                    builder,
+                    container_chain,
+                    current_parent_id,
+                    facts,
+                );
             }
             "preproc_function_def" => {
-                Self::process_preproc_function_def(ts_node, source, builder, container_chain, current_parent_id, facts);
+                Self::process_preproc_function_def(
+                    ts_node,
+                    source,
+                    builder,
+                    container_chain,
+                    current_parent_id,
+                    facts,
+                );
             }
             "function_definition" => {
                 Self::process_function_definition(
@@ -425,7 +439,8 @@ impl CLanguagePack {
                         let mut found = None;
                         let mut cursor = curr.walk();
                         for child in curr.children(&mut cursor) {
-                            if child.kind().ends_with("declarator") || child.kind() == "identifier" {
+                            if child.kind().ends_with("declarator") || child.kind() == "identifier"
+                            {
                                 found = Some(child);
                                 break;
                             }
@@ -768,7 +783,14 @@ impl CLanguagePack {
             container_chain.push(struct_name);
             parent_id_stack.push(struct_id);
 
-            Self::process_field_declarations(&body_node, source, builder, container_chain, struct_id, facts);
+            Self::process_field_declarations(
+                &body_node,
+                source,
+                builder,
+                container_chain,
+                struct_id,
+                facts,
+            );
 
             parent_id_stack.pop();
             container_chain.pop();
@@ -835,7 +857,14 @@ impl CLanguagePack {
             container_chain.push(union_name);
             parent_id_stack.push(union_id);
 
-            Self::process_field_declarations(&body_node, source, builder, container_chain, union_id, facts);
+            Self::process_field_declarations(
+                &body_node,
+                source,
+                builder,
+                container_chain,
+                union_id,
+                facts,
+            );
 
             parent_id_stack.pop();
             container_chain.pop();
@@ -880,11 +909,7 @@ impl CLanguagePack {
                         attrs.insert("type".to_string(), serde_json::json!(type_text));
                     }
 
-                    let qualified = Some(format!(
-                        "{}::{}",
-                        container_chain.join("::"),
-                        field_name
-                    ));
+                    let qualified = Some(format!("{}::{}", container_chain.join("::"), field_name));
 
                     let field_claim = builder.make_node(
                         NodeKind::Field,
@@ -1056,12 +1081,10 @@ impl CLanguagePack {
                     if let Some(func_node) = child.child_by_field_name("function") {
                         let fn_name = match func_node.kind() {
                             "identifier" => node_text(&func_node, source).trim().to_string(),
-                            "field_expression" => {
-                                func_node
-                                    .child_by_field_name("field")
-                                    .map(|f| node_text(&f, source).trim().to_string())
-                                    .unwrap_or_default()
-                            }
+                            "field_expression" => func_node
+                                .child_by_field_name("field")
+                                .map(|f| node_text(&f, source).trim().to_string())
+                                .unwrap_or_default(),
                             _ => String::new(),
                         };
 

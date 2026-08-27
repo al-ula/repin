@@ -49,9 +49,8 @@ pub fn execute_model_list() -> Result<()> {
 
 pub fn execute_model_remove(model_id: &str) -> Result<()> {
     let root = model_root()?;
-    let cache_dir =
-        repin_runtime::intelligence::embedded::get_model_cache_dir(&root, model_id)
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let cache_dir = repin_runtime::intelligence::embedded::get_model_cache_dir(&root, model_id)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     if !cache_dir.exists() {
         println!(

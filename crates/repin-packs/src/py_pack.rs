@@ -249,7 +249,9 @@ impl PyLanguagePack {
 
                 let mut cursor = ts_node.walk();
                 for child in ts_node.children(&mut cursor) {
-                    if child.kind() == "dotted_name" && ts_node.child_by_field_name("module_name") != Some(child) {
+                    if child.kind() == "dotted_name"
+                        && ts_node.child_by_field_name("module_name") != Some(child)
+                    {
                         let item_name = node_text(&child, source).trim();
                         if !item_name.is_empty() {
                             Self::add_import_ref(
@@ -331,191 +333,193 @@ impl PyLanguagePack {
         match kind {
             "function_definition" => {
                 if let Some(name_node) = def_node.child_by_field_name("name") {
-                let name = node_text(&name_node, source);
-                let mut attrs = Attributes::default();
+                    let name = node_text(&name_node, source);
+                    let mut attrs = Attributes::default();
 
-                if !decorators.is_empty() {
-                    attrs.insert("decorators".to_string(), serde_json::json!(decorators));
-                }
-
-                // Check async
-                let is_async = def_node
-                    .children(&mut def_node.walk())
-                    .any(|c| c.kind() == "async")
-                    || range_node
-                        .children(&mut range_node.walk())
-                        .any(|c| c.kind() == "async");
-                if is_async {
-                    attrs.insert("is_async".to_string(), serde_json::json!(true));
-                }
-
-                // Extract docstring
-                if let Some(body_node) = def_node.child_by_field_name("body")
-                    && let Some(doc) = Self::extract_docstring(&body_node, source)
-                {
-                    attrs.insert("doc_summary".to_string(), serde_json::json!(doc));
-                }
-
-                // Extract return type if present
-                if let Some(return_type_node) = def_node.child_by_field_name("return_type") {
-                    let ret_type = node_text(&return_type_node, source).trim();
-                    if !ret_type.is_empty() {
-                        attrs.insert("return_type".to_string(), serde_json::json!(ret_type));
+                    if !decorators.is_empty() {
+                        attrs.insert("decorators".to_string(), serde_json::json!(decorators));
                     }
-                }
 
-                let in_class = !container_chain.is_empty()
-                    && container_chain.last().unwrap().starts_with("class ");
+                    // Check async
+                    let is_async = def_node
+                        .children(&mut def_node.walk())
+                        .any(|c| c.kind() == "async")
+                        || range_node
+                            .children(&mut range_node.walk())
+                            .any(|c| c.kind() == "async");
+                    if is_async {
+                        attrs.insert("is_async".to_string(), serde_json::json!(true));
+                    }
 
-                let node_kind = if in_class {
-                    if name == "__init__" || name == "__new__" {
-                        NodeKind::Constructor
+                    // Extract docstring
+                    if let Some(body_node) = def_node.child_by_field_name("body")
+                        && let Some(doc) = Self::extract_docstring(&body_node, source)
+                    {
+                        attrs.insert("doc_summary".to_string(), serde_json::json!(doc));
+                    }
+
+                    // Extract return type if present
+                    if let Some(return_type_node) = def_node.child_by_field_name("return_type") {
+                        let ret_type = node_text(&return_type_node, source).trim();
+                        if !ret_type.is_empty() {
+                            attrs.insert("return_type".to_string(), serde_json::json!(ret_type));
+                        }
+                    }
+
+                    let in_class = !container_chain.is_empty()
+                        && container_chain.last().unwrap().starts_with("class ");
+
+                    let node_kind = if in_class {
+                        if name == "__init__" || name == "__new__" {
+                            NodeKind::Constructor
+                        } else {
+                            NodeKind::Method
+                        }
                     } else {
-                        NodeKind::Method
+                        NodeKind::Function
+                    };
+
+                    let qualified = if container_chain.is_empty() {
+                        Some(name.to_string())
+                    } else {
+                        Some(format!("{}::{}", container_chain.join("::"), name))
+                    };
+
+                    let fn_claim = builder.make_node(
+                        node_kind,
+                        name,
+                        qualified,
+                        container_chain,
+                        range_node,
+                        attrs,
+                    );
+                    let fn_id = fn_claim.node.id;
+                    let fn_range = fn_claim.node.range;
+                    facts.nodes.push(fn_claim);
+
+                    facts.edges.push(builder.make_edge(
+                        current_parent_id,
+                        fn_id,
+                        EdgeKind::Contains,
+                        fn_range,
+                        Attributes::default(),
+                    ));
+
+                    // Process nested definitions if any
+                    if let Some(body_node) = def_node.child_by_field_name("body") {
+                        container_chain.push(format!("fn {name}"));
+                        parent_id_stack.push(fn_id);
+
+                        let mut cursor = body_node.walk();
+                        for child in body_node.children(&mut cursor) {
+                            Self::traverse_node(
+                                &child,
+                                source,
+                                builder,
+                                container_chain,
+                                parent_id_stack,
+                                facts,
+                            );
+                        }
+
+                        parent_id_stack.pop();
+                        container_chain.pop();
                     }
-                } else {
-                    NodeKind::Function
-                };
-
-                let qualified = if container_chain.is_empty() {
-                    Some(name.to_string())
-                } else {
-                    Some(format!("{}::{}", container_chain.join("::"), name))
-                };
-
-                let fn_claim = builder.make_node(
-                    node_kind,
-                    name,
-                    qualified,
-                    container_chain,
-                    range_node,
-                    attrs,
-                );
-                let fn_id = fn_claim.node.id;
-                let fn_range = fn_claim.node.range;
-                facts.nodes.push(fn_claim);
-
-                facts.edges.push(builder.make_edge(
-                    current_parent_id,
-                    fn_id,
-                    EdgeKind::Contains,
-                    fn_range,
-                    Attributes::default(),
-                ));
-
-                // Process nested definitions if any
-                if let Some(body_node) = def_node.child_by_field_name("body") {
-                    container_chain.push(format!("fn {name}"));
-                    parent_id_stack.push(fn_id);
-
-                    let mut cursor = body_node.walk();
-                    for child in body_node.children(&mut cursor) {
-                        Self::traverse_node(
-                            &child,
-                            source,
-                            builder,
-                            container_chain,
-                            parent_id_stack,
-                            facts,
-                        );
-                    }
-
-                    parent_id_stack.pop();
-                    container_chain.pop();
                 }
             }
-        }
-        "class_definition" => {
+            "class_definition" => {
                 if let Some(name_node) = def_node.child_by_field_name("name") {
-                let name = node_text(&name_node, source);
-                let mut attrs = Attributes::default();
+                    let name = node_text(&name_node, source);
+                    let mut attrs = Attributes::default();
 
-                if !decorators.is_empty() {
-                    attrs.insert("decorators".to_string(), serde_json::json!(decorators));
-                }
-                // Extract docstring
-                if let Some(body_node) = def_node.child_by_field_name("body")
-                    && let Some(doc) = Self::extract_docstring(&body_node, source)
-                {
-                    attrs.insert("doc_summary".to_string(), serde_json::json!(doc));
-                }
+                    if !decorators.is_empty() {
+                        attrs.insert("decorators".to_string(), serde_json::json!(decorators));
+                    }
+                    // Extract docstring
+                    if let Some(body_node) = def_node.child_by_field_name("body")
+                        && let Some(doc) = Self::extract_docstring(&body_node, source)
+                    {
+                        attrs.insert("doc_summary".to_string(), serde_json::json!(doc));
+                    }
 
-                let qualified = if container_chain.is_empty() {
-                    Some(name.to_string())
-                } else {
-                    Some(format!("{}::{}", container_chain.join("::"), name))
-                };
+                    let qualified = if container_chain.is_empty() {
+                        Some(name.to_string())
+                    } else {
+                        Some(format!("{}::{}", container_chain.join("::"), name))
+                    };
 
-                let class_claim = builder.make_node(
-                    NodeKind::Class,
-                    name,
-                    qualified,
-                    container_chain,
-                    range_node,
-                    attrs,
-                );
-                let class_id = class_claim.node.id;
-                let class_range = class_claim.node.range;
-                facts.nodes.push(class_claim);
+                    let class_claim = builder.make_node(
+                        NodeKind::Class,
+                        name,
+                        qualified,
+                        container_chain,
+                        range_node,
+                        attrs,
+                    );
+                    let class_id = class_claim.node.id;
+                    let class_range = class_claim.node.range;
+                    facts.nodes.push(class_claim);
 
-                facts.edges.push(builder.make_edge(
-                    current_parent_id,
-                    class_id,
-                    EdgeKind::Contains,
-                    class_range,
-                    Attributes::default(),
-                ));
+                    facts.edges.push(builder.make_edge(
+                        current_parent_id,
+                        class_id,
+                        EdgeKind::Contains,
+                        class_range,
+                        Attributes::default(),
+                    ));
 
-                // Extract base classes / inheritance (superclasses)
-                if let Some(arg_list) = def_node.child_by_field_name("superclasses") {
-                    let mut cursor = arg_list.walk();
-                    for child in arg_list.children(&mut cursor) {
-                        if child.kind() == "identifier" || child.kind() == "attribute" {
-                            let base_name = node_text(&child, source).trim();
-                            if !base_name.is_empty() {
-                                facts.unresolved.push(UnresolvedRef {
-                                    from: class_id,
-                                    seeking: base_name.to_string(),
-                                    scope_hint: Some(format!("class {name}")),
-                                    edge_kind: EdgeKind::Extends,
-                                    provenance: Provenance {
-                                        root: builder.root.to_string(),
-                                        path: builder.path.to_string(),
-                                        range: None,
-                                        extractor: builder.extractor_name.to_string(),
-                                        extractor_version: builder.extractor_version.to_string(),
-                                        derivation: Derivation::Extracted,
-                                        confidence: Confidence::EXACT,
-                                        revision: Revision::INITIAL,
-                                    },
-                                });
+                    // Extract base classes / inheritance (superclasses)
+                    if let Some(arg_list) = def_node.child_by_field_name("superclasses") {
+                        let mut cursor = arg_list.walk();
+                        for child in arg_list.children(&mut cursor) {
+                            if child.kind() == "identifier" || child.kind() == "attribute" {
+                                let base_name = node_text(&child, source).trim();
+                                if !base_name.is_empty() {
+                                    facts.unresolved.push(UnresolvedRef {
+                                        from: class_id,
+                                        seeking: base_name.to_string(),
+                                        scope_hint: Some(format!("class {name}")),
+                                        edge_kind: EdgeKind::Extends,
+                                        provenance: Provenance {
+                                            root: builder.root.to_string(),
+                                            path: builder.path.to_string(),
+                                            range: None,
+                                            extractor: builder.extractor_name.to_string(),
+                                            extractor_version: builder
+                                                .extractor_version
+                                                .to_string(),
+                                            derivation: Derivation::Extracted,
+                                            confidence: Confidence::EXACT,
+                                            revision: Revision::INITIAL,
+                                        },
+                                    });
+                                }
                             }
                         }
                     }
-                }
 
-                // Process class body
-                if let Some(body_node) = def_node.child_by_field_name("body") {
-                    container_chain.push(format!("class {name}"));
-                    parent_id_stack.push(class_id);
+                    // Process class body
+                    if let Some(body_node) = def_node.child_by_field_name("body") {
+                        container_chain.push(format!("class {name}"));
+                        parent_id_stack.push(class_id);
 
-                    let mut cursor = body_node.walk();
-                    for child in body_node.children(&mut cursor) {
-                        Self::traverse_node(
-                            &child,
-                            source,
-                            builder,
-                            container_chain,
-                            parent_id_stack,
-                            facts,
-                        );
+                        let mut cursor = body_node.walk();
+                        for child in body_node.children(&mut cursor) {
+                            Self::traverse_node(
+                                &child,
+                                source,
+                                builder,
+                                container_chain,
+                                parent_id_stack,
+                                facts,
+                            );
+                        }
+
+                        parent_id_stack.pop();
+                        container_chain.pop();
                     }
-
-                    parent_id_stack.pop();
-                    container_chain.pop();
                 }
             }
-        }
             _ => {}
         }
     }
@@ -532,58 +536,59 @@ impl PyLanguagePack {
         if let Some(left_node) = assignment_node.child_by_field_name("left")
             && left_node.kind() == "identifier"
         {
-                let name = node_text(&left_node, source).trim();
-                if name.is_empty() || name.starts_with('_') && name.ends_with('_') && name != "__all__" {
-                    return;
-                }
-
-                let in_class = !container_chain.is_empty()
-                    && container_chain.last().unwrap().starts_with("class ");
-
-                // Detect if it is a type alias or constant or field or variable
-                let is_constant = name.chars().all(|c| !c.is_alphabetic() || c.is_uppercase());
-                let node_kind = if in_class {
-                    NodeKind::Field
-                } else if is_constant {
-                    NodeKind::Constant
-                } else {
-                    NodeKind::Variable
-                };
-
-                let mut attrs = Attributes::default();
-                if let Some(type_node) = assignment_node.child_by_field_name("type") {
-                    let type_text = node_text(&type_node, source).trim();
-                    if !type_text.is_empty() {
-                        attrs.insert("type_annotation".to_string(), serde_json::json!(type_text));
-                    }
-                }
-
-                let qualified = if container_chain.is_empty() {
-                    Some(name.to_string())
-                } else {
-                    Some(format!("{}::{}", container_chain.join("::"), name))
-                };
-
-                let var_claim = builder.make_node(
-                    node_kind,
-                    name,
-                    qualified,
-                    container_chain,
-                    stmt_node,
-                    attrs,
-                );
-                let var_id = var_claim.node.id;
-                let var_range = var_claim.node.range;
-                facts.nodes.push(var_claim);
-
-                facts.edges.push(builder.make_edge(
-                    current_parent_id,
-                    var_id,
-                    EdgeKind::Contains,
-                    var_range,
-                    Attributes::default(),
-                ));
+            let name = node_text(&left_node, source).trim();
+            if name.is_empty() || name.starts_with('_') && name.ends_with('_') && name != "__all__"
+            {
+                return;
             }
+
+            let in_class = !container_chain.is_empty()
+                && container_chain.last().unwrap().starts_with("class ");
+
+            // Detect if it is a type alias or constant or field or variable
+            let is_constant = name.chars().all(|c| !c.is_alphabetic() || c.is_uppercase());
+            let node_kind = if in_class {
+                NodeKind::Field
+            } else if is_constant {
+                NodeKind::Constant
+            } else {
+                NodeKind::Variable
+            };
+
+            let mut attrs = Attributes::default();
+            if let Some(type_node) = assignment_node.child_by_field_name("type") {
+                let type_text = node_text(&type_node, source).trim();
+                if !type_text.is_empty() {
+                    attrs.insert("type_annotation".to_string(), serde_json::json!(type_text));
+                }
+            }
+
+            let qualified = if container_chain.is_empty() {
+                Some(name.to_string())
+            } else {
+                Some(format!("{}::{}", container_chain.join("::"), name))
+            };
+
+            let var_claim = builder.make_node(
+                node_kind,
+                name,
+                qualified,
+                container_chain,
+                stmt_node,
+                attrs,
+            );
+            let var_id = var_claim.node.id;
+            let var_range = var_claim.node.range;
+            facts.nodes.push(var_claim);
+
+            facts.edges.push(builder.make_edge(
+                current_parent_id,
+                var_id,
+                EdgeKind::Contains,
+                var_range,
+                Attributes::default(),
+            ));
+        }
     }
 
     fn add_import_ref(

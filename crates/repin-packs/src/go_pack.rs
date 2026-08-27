@@ -131,7 +131,13 @@ impl GoLanguagePack {
                 let mut cursor = ts_node.walk();
                 for child in ts_node.children(&mut cursor) {
                     if child.kind() == "import_spec" {
-                        Self::process_import_spec(&child, source, builder, current_parent_id, facts);
+                        Self::process_import_spec(
+                            &child,
+                            source,
+                            builder,
+                            current_parent_id,
+                            facts,
+                        );
                     } else if child.kind() == "import_spec_list" {
                         let mut list_cursor = child.walk();
                         for item in child.children(&mut list_cursor) {
@@ -198,13 +204,7 @@ impl GoLanguagePack {
                     ));
 
                     parent_id_stack.push(fn_id);
-                    Self::traverse_body_references(
-                        ts_node,
-                        source,
-                        builder,
-                        fn_id,
-                        facts,
-                    );
+                    Self::traverse_body_references(ts_node, source, builder, fn_id, facts);
                     parent_id_stack.pop();
                 }
             }
@@ -226,13 +226,13 @@ impl GoLanguagePack {
                         // Find the type inside receiver, e.g. (s *Server) -> Server or *Server
                         let mut rec_cursor = receiver_node.walk();
                         for child in receiver_node.children(&mut rec_cursor) {
-                            if child.kind() == "parameter_declaration" {
-                                if let Some(type_node) = child.child_by_field_name("type") {
-                                    receiver_type = node_text(&type_node, source)
-                                        .trim()
-                                        .trim_start_matches('*')
-                                        .to_string();
-                                }
+                            if child.kind() == "parameter_declaration"
+                                && let Some(type_node) = child.child_by_field_name("type")
+                            {
+                                receiver_type = node_text(&type_node, source)
+                                    .trim()
+                                    .trim_start_matches('*')
+                                    .to_string();
                             }
                         }
                     }
@@ -279,13 +279,7 @@ impl GoLanguagePack {
                     ));
 
                     parent_id_stack.push(method_id);
-                    Self::traverse_body_references(
-                        ts_node,
-                        source,
-                        builder,
-                        method_id,
-                        facts,
-                    );
+                    Self::traverse_body_references(ts_node, source, builder, method_id, facts);
                     parent_id_stack.pop();
                 }
             }
@@ -484,9 +478,23 @@ impl GoLanguagePack {
             parent_id_stack.push(type_id);
 
             if body_kind == "struct_type" {
-                Self::process_struct_fields(&body_node, source, builder, container_chain, type_id, facts);
+                Self::process_struct_fields(
+                    &body_node,
+                    source,
+                    builder,
+                    container_chain,
+                    type_id,
+                    facts,
+                );
             } else if body_kind == "interface_type" {
-                Self::process_interface_methods(&body_node, source, builder, container_chain, type_id, facts);
+                Self::process_interface_methods(
+                    &body_node,
+                    source,
+                    builder,
+                    container_chain,
+                    type_id,
+                    facts,
+                );
             }
 
             parent_id_stack.pop();
@@ -591,10 +599,17 @@ impl GoLanguagePack {
                         }
 
                         // Embedded field (e.g. `sync.Mutex` or `MyEmbedded`)
-                        if names.is_empty() && let Some(type_node) = field.child_by_field_name("type") {
+                        if names.is_empty()
+                            && let Some(type_node) = field.child_by_field_name("type")
+                        {
                             let type_name = node_text(&type_node, source).trim();
-                            let clean_name = type_name.rsplit('.').next().unwrap_or(type_name).trim_start_matches('*');
-                            let qualified = Some(format!("{}::{}", container_chain.join("::"), clean_name));
+                            let clean_name = type_name
+                                .rsplit('.')
+                                .next()
+                                .unwrap_or(type_name)
+                                .trim_start_matches('*');
+                            let qualified =
+                                Some(format!("{}::{}", container_chain.join("::"), clean_name));
                             let field_claim = builder.make_node(
                                 NodeKind::Field,
                                 clean_name,
@@ -628,7 +643,8 @@ impl GoLanguagePack {
                         }
 
                         for (name, sub_node) in names {
-                            let qualified = Some(format!("{}::{}", container_chain.join("::"), name));
+                            let qualified =
+                                Some(format!("{}::{}", container_chain.join("::"), name));
                             let field_claim = builder.make_node(
                                 NodeKind::Field,
                                 name,

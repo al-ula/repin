@@ -137,7 +137,8 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        let migrated: repin_core::ports::VersionRecords = serde_json::from_str(&serialized).unwrap();
+        let migrated: repin_core::ports::VersionRecords =
+            serde_json::from_str(&serialized).unwrap();
         assert_eq!(migrated.store_schema_version, STORE_SCHEMA_VERSION);
     }
 

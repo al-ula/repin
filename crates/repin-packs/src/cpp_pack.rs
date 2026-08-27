@@ -124,10 +124,24 @@ impl CppLanguagePack {
                 Self::process_include(ts_node, source, builder, current_parent_id, facts);
             }
             "preproc_def" => {
-                Self::process_preproc_def(ts_node, source, builder, container_chain, current_parent_id, facts);
+                Self::process_preproc_def(
+                    ts_node,
+                    source,
+                    builder,
+                    container_chain,
+                    current_parent_id,
+                    facts,
+                );
             }
             "preproc_function_def" => {
-                Self::process_preproc_function_def(ts_node, source, builder, container_chain, current_parent_id, facts);
+                Self::process_preproc_function_def(
+                    ts_node,
+                    source,
+                    builder,
+                    container_chain,
+                    current_parent_id,
+                    facts,
+                );
             }
             "using_declaration" => {
                 Self::process_using_declaration(ts_node, source, builder, current_parent_id, facts);
@@ -723,11 +737,7 @@ impl CppLanguagePack {
                 attrs.insert("visibility".to_string(), serde_json::json!(acc));
             }
 
-            let qualified = Some(format!(
-                "{}::{}",
-                container_chain.join("::"),
-                name
-            ));
+            let qualified = Some(format!("{}::{}", container_chain.join("::"), name));
 
             let claim = builder.make_node(
                 node_kind,
@@ -908,7 +918,7 @@ impl CppLanguagePack {
         loop {
             match curr.kind() {
                 "identifier" | "qualified_identifier" | "field_identifier" => {
-                    return node_text(&curr, source).trim().to_string()
+                    return node_text(&curr, source).trim().to_string();
                 }
                 "pointer_declarator"
                 | "reference_declarator"
@@ -1364,12 +1374,10 @@ impl CppLanguagePack {
                     if let Some(func_node) = child.child_by_field_name("function") {
                         let fn_name = match func_node.kind() {
                             "identifier" => node_text(&func_node, source).trim().to_string(),
-                            "field_expression" => {
-                                func_node
-                                    .child_by_field_name("field")
-                                    .map(|f| node_text(&f, source).trim().to_string())
-                                    .unwrap_or_default()
-                            }
+                            "field_expression" => func_node
+                                .child_by_field_name("field")
+                                .map(|f| node_text(&f, source).trim().to_string())
+                                .unwrap_or_default(),
                             "qualified_identifier" => {
                                 node_text(&func_node, source).trim().to_string()
                             }
@@ -1377,11 +1385,8 @@ impl CppLanguagePack {
                         };
 
                         if !fn_name.is_empty() {
-                            let simple_name = fn_name
-                                .rsplit("::")
-                                .next()
-                                .unwrap_or(&fn_name)
-                                .to_string();
+                            let simple_name =
+                                fn_name.rsplit("::").next().unwrap_or(&fn_name).to_string();
 
                             facts.unresolved.push(UnresolvedRef {
                                 from: from_id,

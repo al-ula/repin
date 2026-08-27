@@ -36,7 +36,10 @@ impl EmbeddingModel for FakeEmbedder {
             .iter()
             .map(|text| {
                 let len = text.len() as f32;
-                let hash = text.bytes().fold(0_u32, |acc, b| acc.wrapping_add(b as u32)) as f32;
+                let hash = text
+                    .bytes()
+                    .fold(0_u32, |acc, b| acc.wrapping_add(b as u32))
+                    as f32;
                 vec![len.sin(), (len * 0.5).cos(), (hash % 10.0) / 10.0]
             })
             .collect())
@@ -67,12 +70,15 @@ impl LexicalSource for StoreLexical<'_> {
         let hits = {
             let conn_lock = self.store.raw_connection();
             let conn = conn_lock.lock().unwrap();
-            repin_store_sqlite::Fts5Index::search(&conn, query, limit)
-                .map_err(|e| e.to_string())?
+            repin_store_sqlite::Fts5Index::search(&conn, query, limit).map_err(|e| e.to_string())?
         };
         let mut results = Vec::new();
         for hit in hits {
-            if view.node(&hit.node_id).map_err(|e| e.to_string())?.is_some() {
+            if view
+                .node(&hit.node_id)
+                .map_err(|e| e.to_string())?
+                .is_some()
+            {
                 results.push(LexicalHit {
                     node_id: hit.node_id,
                     score: 1.0 / (1.0 + hit.rank.abs()),
@@ -108,7 +114,9 @@ fn run_rag<E: EmbeddingModel, I: CallerInference>(
         .map_err(|e| e.to_string())?[0]
         .clone();
 
-    let all_nodes = view.nodes_by_name("build", &Default::default()).map_err(|e| e.to_string())?;
+    let all_nodes = view
+        .nodes_by_name("build", &Default::default())
+        .map_err(|e| e.to_string())?;
     for node in &all_nodes {
         let node_vec = embedder
             .embed(std::slice::from_ref(&node.name))
@@ -138,10 +146,7 @@ fn run_rag<E: EmbeddingModel, I: CallerInference>(
     envelope.evidence = assembled
         .snippets
         .into_iter()
-        .map(|s| {
-            repin_core::protocol::evidence::Evidence::new(s.path)
-                .with_preview(s.content)
-        })
+        .map(|s| repin_core::protocol::evidence::Evidence::new(s.path).with_preview(s.content))
         .collect();
 
     Ok(RagOutput { envelope })
@@ -152,9 +157,11 @@ fn main() -> Result<(), String> {
     let src = dir.path().join("src");
     fs::create_dir_all(&src).map_err(|e| e.to_string())?;
     let rust_file = src.join("lib.rs");
-    fs::write(&rust_file, b"pub fn build() { println!(\"building\"); }\n").map_err(|e| e.to_string())?;
+    fs::write(&rust_file, b"pub fn build() { println!(\"building\"); }\n")
+        .map_err(|e| e.to_string())?;
     let readme = dir.path().join("README.md");
-    fs::write(&readme, b"# Project\nHow to build: run cargo build.\n").map_err(|e| e.to_string())?;
+    fs::write(&readme, b"# Project\nHow to build: run cargo build.\n")
+        .map_err(|e| e.to_string())?;
 
     let embedder = FakeEmbedder;
     let inference = FakeInference;

@@ -14,8 +14,8 @@ pub mod remote_api {
     pub use repin_intelligence::remote_api::*;
 }
 
+pub use registry::IntelligenceRegistry;
 pub use repin_intelligence::{
     AgentRunnerReranker, EmbeddedOnnxModel, EmbeddedOnnxReranker, GoogleGeminiProvider,
     OllamaProvider, OpenAiProvider, ensure_hf_model_assets, list_cached_models, normalize_l2,
 };
-pub use registry::IntelligenceRegistry;

@@ -1,8 +1,11 @@
 use repin_core::hash::ContentHash;
 use repin_core::model::registries::{ArtifactClass, NodeKind};
-use repin_packs::{CLanguagePack, CppLanguagePack, CSharpLanguagePack, GoLanguagePack, JavaLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
+use repin_packs::{
+    CLanguagePack, CSharpLanguagePack, CppLanguagePack, GoLanguagePack, JavaLanguagePack,
+    ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack,
+};
 
 #[test]
 fn test_rust_comprehensive_extraction() {
@@ -339,10 +342,10 @@ def standalone_helper(x: int, y: int) -> int:
     assert!(seeking.contains(&"BaseService"));
 
     // Verify extends edge in unresolved
-    let extends_ref = facts
-        .unresolved
-        .iter()
-        .find(|u| u.seeking == "BaseService" && u.edge_kind == repin_core::model::registries::EdgeKind::Extends);
+    let extends_ref = facts.unresolved.iter().find(|u| {
+        u.seeking == "BaseService"
+            && u.edge_kind == repin_core::model::registries::EdgeKind::Extends
+    });
     assert!(extends_ref.is_some());
 }
 
@@ -469,11 +472,7 @@ func (c *ServiceConfig) UpdatePort(port int) {
         &serde_json::json!("ServiceConfig defines server settings.")
     );
 
-    let port_field = facts
-        .nodes
-        .iter()
-        .find(|n| n.node.name == "Port")
-        .unwrap();
+    let port_field = facts.nodes.iter().find(|n| n.node.name == "Port").unwrap();
     assert_eq!(
         port_field.node.attributes.get("tag").unwrap(),
         &serde_json::json!("`json:\"port\"`")
@@ -515,25 +514,33 @@ func (c *ServiceConfig) UpdatePort(port int) {
     assert!(seeking.contains(&"pprof"));
 
     // Check Calls edge for unimported/intra-package function call
-    let calls_ref = facts
-        .unresolved
-        .iter()
-        .find(|u| u.seeking == "validateHost" && u.edge_kind == repin_core::model::registries::EdgeKind::Calls);
-    assert!(calls_ref.is_some(), "expected Calls unresolved ref for validateHost");
+    let calls_ref = facts.unresolved.iter().find(|u| {
+        u.seeking == "validateHost" && u.edge_kind == repin_core::model::registries::EdgeKind::Calls
+    });
+    assert!(
+        calls_ref.is_some(),
+        "expected Calls unresolved ref for validateHost"
+    );
 
     // Check Instantiates edge for struct literal
-    let inst_ref = facts
-        .unresolved
-        .iter()
-        .find(|u| u.seeking == "ServiceConfig" && u.edge_kind == repin_core::model::registries::EdgeKind::Instantiates);
-    assert!(inst_ref.is_some(), "expected Instantiates unresolved ref for ServiceConfig");
+    let inst_ref = facts.unresolved.iter().find(|u| {
+        u.seeking == "ServiceConfig"
+            && u.edge_kind == repin_core::model::registries::EdgeKind::Instantiates
+    });
+    assert!(
+        inst_ref.is_some(),
+        "expected Instantiates unresolved ref for ServiceConfig"
+    );
 
     // Check Extends edge for embedded struct
-    let extends_ref = facts
-        .unresolved
-        .iter()
-        .find(|u| u.seeking == "ServiceConfig" && u.edge_kind == repin_core::model::registries::EdgeKind::Extends);
-    assert!(extends_ref.is_some(), "expected Extends unresolved ref for embedded ServiceConfig");
+    let extends_ref = facts.unresolved.iter().find(|u| {
+        u.seeking == "ServiceConfig"
+            && u.edge_kind == repin_core::model::registries::EdgeKind::Extends
+    });
+    assert!(
+        extends_ref.is_some(),
+        "expected Extends unresolved ref for embedded ServiceConfig"
+    );
 }
 
 #[test]
@@ -612,13 +619,15 @@ int manhattan_distance(struct Point p1, struct Point p2) {
     assert!(node_names.contains(&("manhattan_distance", NodeKind::Function)));
 
     // Check doc summary
-    let point_node = facts
-        .nodes
-        .iter()
-        .find(|n| n.node.name == "Point")
-        .unwrap();
+    let point_node = facts.nodes.iter().find(|n| n.node.name == "Point").unwrap();
     assert_eq!(
-        point_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        point_node
+            .node
+            .attributes
+            .get("doc_summary")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "Point structure in 2D space"
     );
 
@@ -628,7 +637,13 @@ int manhattan_distance(struct Point p1, struct Point p2) {
         .find(|n| n.node.name == "manhattan_distance")
         .unwrap();
     assert_eq!(
-        fn_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        fn_node
+            .node
+            .attributes
+            .get("doc_summary")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "Compute Manhattan distance between two points"
     );
 
@@ -757,7 +772,13 @@ using RendererPtr = VulkanRenderer<void>*;
         .find(|n| n.node.name == "IRenderer")
         .unwrap();
     assert_eq!(
-        renderer_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        renderer_node
+            .node
+            .attributes
+            .get("doc_summary")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "Rendering engine interface"
     );
 
@@ -870,7 +891,10 @@ public class OrderServiceImpl extends BaseOrderService implements IOrderService 
         .map(|n| (n.node.name.as_str(), n.node.kind))
         .collect();
 
-    assert!(node_names.contains(&("src/main/java/org/repin/server/OrderServiceImpl.java", NodeKind::File)));
+    assert!(node_names.contains(&(
+        "src/main/java/org/repin/server/OrderServiceImpl.java",
+        NodeKind::File
+    )));
     assert!(node_names.contains(&("org.repin.server", NodeKind::Package)));
     assert!(node_names.contains(&("IOrderService", NodeKind::Interface)));
     assert!(node_names.contains(&("processOrder", NodeKind::Method)));
@@ -895,7 +919,13 @@ public class OrderServiceImpl extends BaseOrderService implements IOrderService 
         .find(|n| n.node.name == "IOrderService")
         .unwrap();
     assert_eq!(
-        iface_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        iface_node
+            .node
+            .attributes
+            .get("doc_summary")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "Core order management service interface."
     );
 
@@ -1055,7 +1085,13 @@ public class NotificationService : BaseService, INotificationService
         .find(|n| n.node.name == "INotificationService")
         .unwrap();
     assert_eq!(
-        iface_node.node.attributes.get("doc_summary").unwrap().as_str().unwrap(),
+        iface_node
+            .node
+            .attributes
+            .get("doc_summary")
+            .unwrap()
+            .as_str()
+            .unwrap(),
         "Notification dispatcher interface."
     );
 
