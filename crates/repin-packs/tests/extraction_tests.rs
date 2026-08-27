@@ -1,6 +1,6 @@
 use repin_core::hash::ContentHash;
 use repin_core::model::registries::{ArtifactClass, NodeKind};
-use repin_packs::{ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
+use repin_packs::{GoLanguagePack, ProseLanguagePack, PyLanguagePack, RustLanguagePack, TsLanguagePack};
 use repin_core::ports::fs::FileSnapshot;
 use repin_core::ports::pack::LanguagePack;
 
@@ -355,4 +355,150 @@ fn test_py_shebang_and_stubs_detection() {
     assert!(pack.can_handle("types/stub.pyi", b""));
     assert!(pack.can_handle("gui/app.pyw", b""));
     assert!(!pack.can_handle("src/other.txt", b"plain text"));
+}
+
+#[test]
+fn test_go_comprehensive_extraction() {
+    let source = br#"
+package server
+
+import (
+	"context"
+	"sync"
+	json "encoding/json"
+	_ "net/http/pprof"
+)
+
+const (
+	// DefaultPort is the fallback TCP port.
+	DefaultPort = 8080
+	MaxRetries  = 3
+)
+
+// GlobalState tracks running state.
+var GlobalState = "idle"
+
+// RequestID represents unique request identifier.
+type RequestID string
+
+// ServiceConfig defines server settings.
+type ServiceConfig struct {
+	// Port to listen on.
+	Port int `json:"port"`
+	Host string `json:"host"`
+}
+
+// Runner defines lifecycle execution.
+type Runner interface {
+	// Run starts the runner loop.
+	Run(ctx context.Context) error
+	Stop()
+}
+
+// NewConfig creates initialized configuration.
+func NewConfig(host string, port int) (*ServiceConfig, error) {
+	return &ServiceConfig{Host: host, Port: port}, nil
+}
+
+// Address returns formatted network host and port.
+func (c ServiceConfig) Address() string {
+	return ""
+}
+
+// UpdatePort sets new port value.
+func (c *ServiceConfig) UpdatePort(port int) {
+	c.Port = port
+}
+"#;
+
+    let snapshot = FileSnapshot {
+        root: "root".to_string(),
+        path: "pkg/server/server.go".to_string(),
+        content: source.to_vec(),
+        content_hash: ContentHash::of_bytes(source),
+        artifact_class: ArtifactClass::Code,
+    };
+
+    let pack = GoLanguagePack::new();
+    assert!(pack.can_handle("pkg/server/server.go", source));
+
+    let facts = pack.extract(&snapshot).unwrap();
+
+    let node_names: Vec<(&str, NodeKind)> = facts
+        .nodes
+        .iter()
+        .map(|n| (n.node.name.as_str(), n.node.kind))
+        .collect();
+
+    assert!(node_names.contains(&("pkg/server/server.go", NodeKind::File)));
+    assert!(node_names.contains(&("server", NodeKind::Package)));
+    assert!(node_names.contains(&("DefaultPort", NodeKind::Constant)));
+    assert!(node_names.contains(&("MaxRetries", NodeKind::Constant)));
+    assert!(node_names.contains(&("GlobalState", NodeKind::Variable)));
+    assert!(node_names.contains(&("RequestID", NodeKind::Type)));
+    assert!(node_names.contains(&("ServiceConfig", NodeKind::Struct)));
+    assert!(node_names.contains(&("Port", NodeKind::Field)));
+    assert!(node_names.contains(&("Host", NodeKind::Field)));
+    assert!(node_names.contains(&("Runner", NodeKind::Interface)));
+    assert!(node_names.contains(&("Run", NodeKind::Method)));
+    assert!(node_names.contains(&("Stop", NodeKind::Method)));
+    assert!(node_names.contains(&("NewConfig", NodeKind::Function)));
+    assert!(node_names.contains(&("Address", NodeKind::Method)));
+    assert!(node_names.contains(&("UpdatePort", NodeKind::Method)));
+
+    // Check doc summary
+    let config_node = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "ServiceConfig")
+        .unwrap();
+    assert_eq!(
+        config_node.node.attributes.get("doc_summary").unwrap(),
+        &serde_json::json!("ServiceConfig defines server settings.")
+    );
+
+    let port_field = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "Port")
+        .unwrap();
+    assert_eq!(
+        port_field.node.attributes.get("tag").unwrap(),
+        &serde_json::json!("`json:\"port\"`")
+    );
+    assert_eq!(
+        port_field.node.attributes.get("doc_summary").unwrap(),
+        &serde_json::json!("Port to listen on.")
+    );
+
+    let address_method = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "Address")
+        .unwrap();
+    assert_eq!(
+        address_method.node.qualified_name.as_deref(),
+        Some("ServiceConfig::Address")
+    );
+
+    let update_port_method = facts
+        .nodes
+        .iter()
+        .find(|n| n.node.name == "UpdatePort")
+        .unwrap();
+    assert_eq!(
+        update_port_method.node.qualified_name.as_deref(),
+        Some("ServiceConfig::UpdatePort")
+    );
+
+    // Check imports
+    let seeking: Vec<&str> = facts
+        .unresolved
+        .iter()
+        .map(|u| u.seeking.as_str())
+        .collect();
+    assert!(seeking.contains(&"context"));
+    assert!(seeking.contains(&"sync"));
+    assert!(seeking.contains(&"json"));
+    assert!(seeking.contains(&"pprof"));
 }

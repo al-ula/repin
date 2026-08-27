@@ -8,6 +8,8 @@ pub mod rust_pack;
 pub mod ts_pack;
 #[cfg(feature = "python")]
 pub mod py_pack;
+#[cfg(feature = "go")]
+pub mod go_pack;
 
 #[cfg(feature = "prose")]
 pub use prose_pack::{PROSE_PACK_VERSION, ProseLanguagePack};
@@ -17,6 +19,8 @@ pub use rust_pack::{RUST_PACK_VERSION, RustLanguagePack};
 pub use ts_pack::{TS_PACK_VERSION, TsLanguagePack};
 #[cfg(feature = "python")]
 pub use py_pack::{PY_PACK_VERSION, PyLanguagePack};
+#[cfg(feature = "go")]
+pub use go_pack::{GO_PACK_VERSION, GoLanguagePack};
 
 use repin_core::ports::pack::LanguagePack;
 
@@ -31,6 +35,8 @@ pub fn default_packs() -> Vec<Box<dyn LanguagePack>> {
     packs.push(Box::new(PyLanguagePack::new()));
     #[cfg(feature = "prose")]
     packs.push(Box::new(ProseLanguagePack::new()));
+    #[cfg(feature = "go")]
+    packs.push(Box::new(GoLanguagePack::new()));
     packs
 }
 
@@ -80,5 +86,25 @@ mod tests {
         assert_eq!(facts.nodes.len(), 2); // File + Function
         assert_eq!(facts.edges.len(), 1); // File -> Function contains
         assert_eq!(facts.unresolved.len(), 1); // import os -> seeking os
+    }
+    #[cfg(feature = "go")]
+    #[test]
+    fn test_go_pack_extraction() {
+        let code = b"package main\n\nimport \"fmt\"\n\nfunc Hello() {}\n";
+        let snapshot = FileSnapshot {
+            root: "root".to_string(),
+            path: "main.go".to_string(),
+            content: code.to_vec(),
+            content_hash: ContentHash::of_bytes(code),
+            artifact_class: ArtifactClass::Code,
+        };
+
+        let pack = GoLanguagePack::new();
+        assert!(pack.can_handle("main.go", code));
+
+        let facts = pack.extract(&snapshot).unwrap();
+        assert_eq!(facts.nodes.len(), 3); // File + Package + Function
+        assert_eq!(facts.edges.len(), 2); // File -> Package contains, File -> Function contains
+        assert_eq!(facts.unresolved.len(), 1); // import "fmt" -> seeking fmt
     }
 }

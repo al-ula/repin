@@ -61,6 +61,7 @@ Detection is deterministic and cheap. Ambiguity resolves by rule specificity, th
 - **`rust_pack`**: Extracts Rust source (`.rs`) into `struct`, `enum`, `trait`, `function`, `method`, `module`, doc summaries, and `UnresolvedRef` import dependencies.
 - **`ts_pack`**: Extracts TypeScript/JavaScript (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) into `class`, `interface`, `type`, `enum`, `function`, `method`, JSDoc summaries, and module imports.
 - **`py_pack`**: Extracts Python source and stubs (`.py`, `.pyi`, `.pyw`) into `class`, `function`, `method`, `variable`, docstring summaries, and `import` / `from ... import` dependencies.
+- **`go_pack`**: Extracts Go source (`.go`) into `package`, `struct`, `interface`, `type`, `function`, `method`, `constant`, `variable`, doc summaries, and module import dependencies.
 - **`prose_pack`**: Extracts Markdown (`.md`, `.markdown`) into document, section, and heading structural hierarchy.
 
 ## 3. Extractor contract
