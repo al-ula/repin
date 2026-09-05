@@ -24,14 +24,11 @@ repin --version
 # Initialize current repository (creates .repin/ and indexes codebase)
 repin init
 
-# If already initialized, sync latest VCS worktree changes
-repin sync
-
-# Check daemon and index status
+# Confirm daemon and index status
 repin status
 ```
 
-*Note: For projects with existing `.repin`, run `repin sync` to update the graph incrementally after file modifications.*
+The daemon watches initialized repositories automatically. Do not run `repin sync` after every edit. Use it as an explicit freshness barrier only when querying immediately after a write, after a high-fan-out VCS operation, or when results show that a change was missed.
 
 ---
 
@@ -162,4 +159,6 @@ repin update
 5. **Need relevant code context for LLM prompt within token budget?**
    → `repin context "<TASK>" --budget <BYTES>`
 6. **Code modified?**
-   → `repin sync` to update graph instantly.
+   → Query normally; the daemon watcher updates the graph automatically.
+7. **Need an immediate freshness barrier or explicit reconciliation?**
+   → `repin sync`.
